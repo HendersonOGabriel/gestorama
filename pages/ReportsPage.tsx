@@ -249,7 +249,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, accounts, cards
                 <>
                 <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
-                    <Pie data={categoryData.pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={120} labelLine={false} label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}>
+                    <Pie data={categoryData.pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={120} labelLine={false} label={({ name, percent }: any) => `${((percent as number) * 100).toFixed(0)}%`}>
                         {categoryData.pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
                     </Pie>
                     <Tooltip formatter={(v: number) => toCurrency(v)} />

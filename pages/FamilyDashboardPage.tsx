@@ -76,7 +76,7 @@ const FamilyDashboardPage: React.FC<FamilyDashboardPageProps> = ({ transactions,
        return Object.entries(familyData.spendingByCategory)
         .map(([catId, value]) => ({ name: getCategoryName(catId), value }))
         // FIX: Added fallbacks to 0 to ensure the values are always numbers, resolving the arithmetic operation error.
-        .sort((a, b) => (b.value || 0) - (a.value || 0))
+        .sort((a, b) => (Number(b.value) || 0) - (Number(a.value) || 0))
         .slice(0, 7); // Top 7 categories
     }, [familyData.spendingByCategory, getCategoryName]);
 
