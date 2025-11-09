@@ -6,7 +6,7 @@ import { toCurrency, displayDate, cn } from '../utils/helpers';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import SummaryCard from '../components/shared/SummaryCard';
-import { PIE_COLORS } from '../../data/initialData';
+import { PIE_COLORS } from '../data/initialData';
 
 interface FamilyDashboardPageProps {
   transactions: Transaction[];

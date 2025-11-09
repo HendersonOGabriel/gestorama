@@ -9,7 +9,7 @@ import { Button } from '../components/ui/Button';
 import { Label } from '../components/ui/Label';
 import SummaryCard from '../components/shared/SummaryCard';
 import RecurringList from '../components/recurring/RecurringList';
-import { PIE_COLORS } from '../../data/initialData';
+import { PIE_COLORS } from '../data/initialData';
 
 interface DashboardPageProps {
   transactions: Transaction[];
