@@ -9,7 +9,7 @@ import { Button } from '../components/ui/Button';
 import { Label } from '../components/ui/Label';
 import SummaryCard from '../components/shared/SummaryCard';
 import RecurringList from '../components/recurring/RecurringList';
-import { PIE_COLORS } from '../../data/initialData';
+import { PIE_COLORS } from '../data/initialData';
 
 interface DashboardPageProps {
   transactions: Transaction[];
@@ -504,13 +504,13 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
         <CardContent>
           <ResponsiveContainer width="100%" height={260}>
             {summaryChartType === 'bar' ? (
-                <BarChart data={summaryByTypeData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}><XAxis dataKey="month" stroke="currentColor" className="text-xs" /><YAxis stroke="currentColor" formatter={(v: number) => v.toFixed(0)} /><Tooltip formatter={(v: number) => toCurrency(v)} /><Legend /><Bar dataKey="cartao" name="Cartão" fill="#6366f1" radius={[4, 4, 0, 0]} /><Bar dataKey="prazo" name="A prazo" fill="#facc15" radius={[4, 4, 0, 0]} /><Bar dataKey="vista" name="À vista" fill="#22c55e" radius={[4, 4, 0, 0]} /></BarChart>
+                <BarChart data={summaryByTypeData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}><XAxis dataKey="month" stroke="currentColor" className="text-xs" /><YAxis stroke="currentColor" tickFormatter={(v: number) => v.toFixed(0)} /><Tooltip formatter={(v: number) => toCurrency(v)} /><Legend /><Bar dataKey="cartao" name="Cartão" fill="#6366f1" radius={[4, 4, 0, 0]} /><Bar dataKey="prazo" name="A prazo" fill="#facc15" radius={[4, 4, 0, 0]} /><Bar dataKey="vista" name="À vista" fill="#22c55e" radius={[4, 4, 0, 0]} /></BarChart>
             ) : summaryChartType === 'stacked' ? (
-                <BarChart data={summaryByTypeData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}><XAxis dataKey="month" stroke="currentColor" className="text-xs" /><YAxis stroke="currentColor" formatter={(v: number) => v.toFixed(0)} /><Tooltip formatter={(v: number) => toCurrency(v)} /><Legend /><Bar dataKey="cartao" name="Cartão" fill="#6366f1" stackId="a" radius={[4, 4, 0, 0]} /><Bar dataKey="prazo" name="A prazo" fill="#facc15" stackId="a" /><Bar dataKey="vista" name="À vista" fill="#22c55e" stackId="a" radius={[0, 0, 4, 4]} /></BarChart>
+                <BarChart data={summaryByTypeData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}><XAxis dataKey="month" stroke="currentColor" className="text-xs" /><YAxis stroke="currentColor" tickFormatter={(v: number) => v.toFixed(0)} /><Tooltip formatter={(v: number) => toCurrency(v)} /><Legend /><Bar dataKey="cartao" name="Cartão" fill="#6366f1" stackId="a" radius={[4, 4, 0, 0]} /><Bar dataKey="prazo" name="A prazo" fill="#facc15" stackId="a" /><Bar dataKey="vista" name="À vista" fill="#22c55e" stackId="a" radius={[0, 0, 4, 4]} /></BarChart>
             ) : summaryChartType === 'pie' ? (
                 <PieChart><Tooltip formatter={(value: number) => toCurrency(value)} /><Legend /><Pie data={summaryPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100}>{summaryPieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}</Pie></PieChart>
             ) : (
-                <LineChart data={summaryByTypeData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}><XAxis dataKey="month" stroke="currentColor" className="text-xs" /><YAxis stroke="currentColor" formatter={(v: number) => v.toFixed(0)} /><Tooltip formatter={(v: number) => toCurrency(v)} /><Legend /><Line type="monotone" dataKey="cartao" name="Cartão" stroke="#6366f1" strokeWidth={2} /><Line type="monotone" dataKey="prazo" name="A prazo" stroke="#facc15" strokeWidth={2} /><Line type="monotone" dataKey="vista" name="À vista" stroke="#22c55e" strokeWidth={2} /></LineChart>
+                <LineChart data={summaryByTypeData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}><XAxis dataKey="month" stroke="currentColor" className="text-xs" /><YAxis stroke="currentColor" tickFormatter={(v: number) => v.toFixed(0)} /><Tooltip formatter={(v: number) => toCurrency(v)} /><Legend /><Line type="monotone" dataKey="cartao" name="Cartão" stroke="#6366f1" strokeWidth={2} /><Line type="monotone" dataKey="prazo" name="A prazo" stroke="#facc15" strokeWidth={2} /><Line type="monotone" dataKey="vista" name="À vista" stroke="#22c55e" strokeWidth={2} /></LineChart>
             )}
           </ResponsiveContainer>
         </CardContent>
@@ -794,17 +794,17 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
                   <ResponsiveContainer width="100%" height={260}>
                     {trendsChartType === 'bar' ? (
                       <BarChart data={trendData.monthlyData.map(d => ({ ...d, month: displayMonthYear(d.month) }))}>
-                          <XAxis dataKey="month" stroke="currentColor" className="text-xs" /><YAxis stroke="currentColor" className="text-xs" formatter={yAxisFormatter} /><Tooltip formatter={(v: number) => toCurrency(v)} /><Legend /><Bar dataKey="income" name="Receita" fill="#22c55e" radius={[4, 4, 0, 0]} /><Bar dataKey="expense" name="Despesa" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                          <XAxis dataKey="month" stroke="currentColor" className="text-xs" /><YAxis stroke="currentColor" className="text-xs" tickFormatter={yAxisFormatter} /><Tooltip formatter={(v: number) => toCurrency(v)} /><Legend /><Bar dataKey="income" name="Receita" fill="#22c55e" radius={[4, 4, 0, 0]} /><Bar dataKey="expense" name="Despesa" fill="#ef4444" radius={[4, 4, 0, 0]} />
                       </BarChart>
                     ) : trendsChartType === 'area' ? (
                       <AreaChart data={trendData.monthlyData.map(d => ({ ...d, month: displayMonthYear(d.month) }))}>
-                          <XAxis dataKey="month" stroke="currentColor" className="text-xs" /><YAxis stroke="currentColor" className="text-xs" formatter={yAxisFormatter} /><Tooltip formatter={(v: number) => toCurrency(v)} /><Legend />
+                          <XAxis dataKey="month" stroke="currentColor" className="text-xs" /><YAxis stroke="currentColor" className="text-xs" tickFormatter={yAxisFormatter} /><Tooltip formatter={(v: number) => toCurrency(v)} /><Legend />
                           <Area type="monotone" dataKey="income" name="Receita" stroke="#22c55e" fill="#22c55e" fillOpacity={0.3} />
                           <Area type="monotone" dataKey="expense" name="Despesa" stroke="#ef4444" fill="#ef4444" fillOpacity={0.3} />
                       </AreaChart>
                     ) : (
                       <LineChart data={trendData.monthlyData.map(d => ({ ...d, month: displayMonthYear(d.month) }))}>
-                          <XAxis dataKey="month" stroke="currentColor" className="text-xs" /><YAxis stroke="currentColor" className="text-xs" formatter={yAxisFormatter} /><Tooltip formatter={(v: number) => toCurrency(v)} /><Legend /><Line type="monotone" dataKey="income" name="Receita" stroke="#22c55e" strokeWidth={2} /><Line type="monotone" dataKey="expense" name="Despesa" stroke="#ef4444" strokeWidth={2} />
+                          <XAxis dataKey="month" stroke="currentColor" className="text-xs" /><YAxis stroke="currentColor" className="text-xs" tickFormatter={yAxisFormatter} /><Tooltip formatter={(v: number) => toCurrency(v)} /><Legend /><Line type="monotone" dataKey="income" name="Receita" stroke="#22c55e" strokeWidth={2} /><Line type="monotone" dataKey="expense" name="Despesa" stroke="#ef4444" strokeWidth={2} />
                       </LineChart>
                     )}
                   </ResponsiveContainer>
@@ -841,7 +841,7 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
                       <AreaChart data={projectionData} margin={{ top: 5, right: 20, left: 5, bottom: 5 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="currentColor" opacity={0.2} />
                           <XAxis dataKey="month" stroke="currentColor" className="text-xs" />
-                          <YAxis stroke="currentColor" className="text-xs" formatter={yAxisFormatter} />
+                          <YAxis stroke="currentColor" className="text-xs" tickFormatter={yAxisFormatter} />
                           <Tooltip formatter={(v: number) => toCurrency(v)} />
                           <Area type="monotone" dataKey="Saldo Projetado" stroke="#8b5cf6" fill="#c4b5fd" fillOpacity={0.4} strokeWidth={2} dot={{ r: 4, fill: '#8b5cf6' }} activeDot={{ r: 6 }} />
                       </AreaChart>
@@ -849,7 +849,7 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
                       <BarChart data={projectionData} margin={{ top: 5, right: 20, left: 5, bottom: 5 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="currentColor" opacity={0.2} />
                           <XAxis dataKey="month" stroke="currentColor" className="text-xs" />
-                          <YAxis stroke="currentColor" className="text-xs" formatter={yAxisFormatter} />
+                          <YAxis stroke="currentColor" className="text-xs" tickFormatter={yAxisFormatter} />
                           <Tooltip formatter={(v: number) => toCurrency(v)} />
                           <Bar dataKey="Saldo Projetado" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
                       </BarChart>
@@ -857,7 +857,7 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
                       <LineChart data={projectionData} margin={{ top: 5, right: 20, left: 5, bottom: 5 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="currentColor" opacity={0.2} />
                           <XAxis dataKey="month" stroke="currentColor" className="text-xs" />
-                          <YAxis stroke="currentColor" className="text-xs" formatter={yAxisFormatter} />
+                          <YAxis stroke="currentColor" className="text-xs" tickFormatter={yAxisFormatter} />
                           <Tooltip formatter={(v: number) => toCurrency(v)} />
                           <Line type="monotone" dataKey="Saldo Projetado" stroke="#8b5cf6" strokeWidth={2} dot={{ r: 4, fill: '#8b5cf6' }} activeDot={{ r: 6 }} />
                       </LineChart>
