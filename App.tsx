@@ -34,7 +34,7 @@ import { MOCK_ACCOUNTS, MOCK_CARDS, MOCK_TRANSACTIONS, MOCK_RECURRING, MOCK_BUDG
 import { DEFAULT_CATEGORIES } from './data/initialData';
 import { monthKey, getInvoiceMonthKey, getInvoiceDueDate, toCurrency } from './utils/helpers';
 import { runRecurringItem } from './services/recurringService';
-import { loadState, saveState, getOnboardingStatus, setOnboardingCompleted } from './services/storageService';
+import { loadState, saveState, getOnboardingStatus, setOnboardingCompleted, resetOnboardingStatus } from './services/storageService';
 import { cn } from './utils/helpers';
 import { Button } from './components/ui/Button';
 import { Input } from './components/ui/Input';
@@ -299,6 +299,8 @@ const App: React.FC = () => {
     
     // -- Effects --
     useEffect(() => {
+        // FIX: Onboarding status is now checked for all users, not just new ones.
+        // resetOnboardingStatus(); // TEMP: Uncomment to force tour on every refresh
         const stored = loadState();
         const isNewUser = !(stored.accounts && stored.accounts.length > 0);
 
@@ -312,12 +314,6 @@ const App: React.FC = () => {
             setBudgets(MOCK_BUDGETS);
             setGoals(MOCK_GOALS);
             setUsers([{ id: 'user1', name: 'Usuário', email: 'user@gestorama.com', avatar: null, role: 'owner' }]);
-            
-            const onboardingCompleted = getOnboardingStatus();
-            if (!onboardingCompleted) {
-                // Add a small delay to ensure the dashboard page has started rendering
-                setTimeout(() => setShowOnboarding(true), 1000);
-            }
         } else {
             // Load from storage
             setAccounts(stored.accounts!);
@@ -334,6 +330,12 @@ const App: React.FC = () => {
             setThemePreference(stored.themePreference || 'system');
             setGamification(stored.gamification || { level: 1, xp: 0, xpToNextLevel: 100 });
             setYaraUsage(stored.yaraUsage || { count: 0, lastReset: new Date().toISOString().slice(0, 10)});
+        }
+
+        const onboardingCompleted = getOnboardingStatus();
+        if (!onboardingCompleted) {
+            // Add a small delay to ensure the dashboard page has started rendering
+            setTimeout(() => setShowOnboarding(true), 1000);
         }
 
         setIsLoading(false);

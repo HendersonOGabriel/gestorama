@@ -79,3 +79,11 @@ export const setOnboardingCompleted = () => {
     console.error("Failed to set onboarding status", e);
   }
 };
+
+export const resetOnboardingStatus = () => {
+  try {
+    localStorage.removeItem(ONBOARDING_KEY);
+  } catch (e) {
+    console.error("Failed to reset onboarding status", e);
+  }
+};
