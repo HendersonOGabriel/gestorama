@@ -1,0 +1,5 @@
+{
+  "name": "Gestorama - Personal Finance Manager",
+  "description": "A comprehensive personal finance management application to track income, expenses, budgets, and savings goals. It features detailed dashboards, transaction management, recurring payments, credit card invoice tracking, and future financial projections.",
+  "requestFramePermissions": []
+}

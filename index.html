@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gestorama - Personal Finance Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            animation: {
+              'flash-bg': 'flash-bg 1.5s ease-out forwards',
+              'toast-in': 'toast-in 0.5s ease-out forwards',
+            },
+            keyframes: {
+              'flash-bg': {
+                '0%': { backgroundColor: 'rgba(79, 70, 229, 0.2)' },
+                '100%': { backgroundColor: 'transparent' },
+              },
+              'toast-in': {
+                'from': { transform: 'translateY(100%)', opacity: 0 },
+                'to': { transform: 'translateY(0)', opacity: 1 },
+              }
+            },
+          },
+        },
+      }
+    </script>
+  <script type="importmap">
+{
+  "imports": {
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.552.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "recharts": "https://aistudiocdn.com/recharts@^3.3.0"
+  }
+}
+</script>
+<style>
+  .tour-highlight {
+    position: relative;
+    z-index: 10000; /* High z-index to bring it above the overlay */
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
+    border-radius: 0.5rem;
+    transition: box-shadow 0.3s ease-in-out;
+    pointer-events: none; /* Allows clicks to go through if needed, though we block it with the overlay */
+  }
+</style>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
