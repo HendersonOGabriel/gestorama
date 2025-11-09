@@ -10,6 +10,7 @@ import { Label } from '../components/ui/Label';
 import SummaryCard from '../components/shared/SummaryCard';
 import RecurringList from '../components/recurring/RecurringList';
 import { PIE_COLORS } from '../data/initialData';
+import AnimatedItem from '../components/animations/AnimatedItem';
 
 interface DashboardPageProps {
   transactions: Transaction[];
@@ -400,46 +401,52 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
 
   return (
     <div className="space-y-6">
-      <div className="relative rounded-xl overflow-hidden mb-6 p-8 min-h-[160px] flex flex-col justify-center text-white bg-slate-900">
-          <img
-              src={greetingImage}
-              alt="Imagem de saudação contextual"
-              className="absolute inset-0 w-full h-full object-cover opacity-30"
-              aria-hidden="true"
-          />
-          <div className="relative z-10">
-              <h2 className="text-3xl font-bold">{greeting}, {ownerProfile.name}!</h2>
-              <p className="mt-1 text-slate-300">Aqui está um resumo de suas finanças hoje.</p>
-          </div>
-      </div>
+      <AnimatedItem>
+        <div className="relative rounded-xl overflow-hidden mb-6 p-8 min-h-[160px] flex flex-col justify-center text-white bg-slate-900">
+            <img
+                src={greetingImage}
+                alt="Imagem de saudação contextual"
+                className="absolute inset-0 w-full h-full object-cover opacity-30"
+                aria-hidden="true"
+            />
+            <div className="relative z-10">
+                <h2 className="text-3xl font-bold">{greeting}, {ownerProfile.name}!</h2>
+                <p className="mt-1 text-slate-300">Aqui está um resumo de suas finanças hoje.</p>
+            </div>
+        </div>
+      </AnimatedItem>
       
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6" data-tour-id="summary-cards">
-        <SummaryCard title="Receita Paga" value={toCurrency(summaryData.paidIncome)} colorClass="text-green-500" icon={<ArrowUpCircle />} />
-        <SummaryCard title="Despesa Paga" value={toCurrency(summaryData.paidExpense)} colorClass="text-red-500" icon={<ArrowDownCircle />} />
-        <SummaryCard title="Saldo Atual" value={toCurrency(totalBalance)} colorClass="text-indigo-500" icon={<Wallet />} />
-        <SummaryCard title="Contas a Pagar" value={toCurrency(summaryData.pendingBills)} colorClass="text-amber-500" icon={<AlertTriangle />} />
+        <AnimatedItem delay={100}><SummaryCard title="Receita Paga" value={toCurrency(summaryData.paidIncome)} colorClass="text-green-500" icon={<ArrowUpCircle />} /></AnimatedItem>
+        <AnimatedItem delay={200}><SummaryCard title="Despesa Paga" value={toCurrency(summaryData.paidExpense)} colorClass="text-red-500" icon={<ArrowDownCircle />} /></AnimatedItem>
+        <AnimatedItem delay={300}><SummaryCard title="Saldo Atual" value={toCurrency(totalBalance)} colorClass="text-indigo-500" icon={<Wallet />} /></AnimatedItem>
+        <AnimatedItem delay={400}><SummaryCard title="Contas a Pagar" value={toCurrency(summaryData.pendingBills)} colorClass="text-amber-500" icon={<AlertTriangle />} /></AnimatedItem>
       </div>
 
       <div className="relative">
         {/* Desktop Grid */}
         <div className="hidden lg:grid grid-cols-1 lg:grid-cols-3 gap-6">
           {insights.map((insight, index) => (
-            <InsightCard key={index} icon={insight.icon} title={insight.title}>
-              {insight.content}
-            </InsightCard>
+            <AnimatedItem delay={500 + index * 100} key={index}>
+              <InsightCard icon={insight.icon} title={insight.title}>
+                {insight.content}
+              </InsightCard>
+            </AnimatedItem>
           ))}
         </div>
 
         {/* Mobile Carousel */}
-        <div 
-          className="lg:hidden"
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
-        >
-          <InsightCard icon={insights[currentInsight].icon} title={insights[currentInsight].title}>
-            {insights[currentInsight].content}
-          </InsightCard>
-        </div>
+        <AnimatedItem delay={500}>
+          <div
+            className="lg:hidden"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
+            <InsightCard icon={insights[currentInsight].icon} title={insights[currentInsight].title}>
+              {insights[currentInsight].content}
+            </InsightCard>
+          </div>
+        </AnimatedItem>
         
         {/* Dots */}
         <div className="lg:hidden flex justify-center items-center gap-2 pt-8">
@@ -458,72 +465,80 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-1">
-          <CardHeader><CardTitle>Despesas por Categoria</CardTitle></CardHeader>
-          <CardContent>{categoryExpenseData.length > 0 ? (<>
-                <ResponsiveContainer width="100%" height={200}><PieChart><Pie data={categoryExpenseData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} fill="#8884d8" paddingAngle={2} dataKey="value">{categoryExpenseData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.fill} />))}</Pie><Tooltip formatter={(value: number) => toCurrency(value)} /></PieChart></ResponsiveContainer>
-                <div className="mt-4 space-y-2 text-sm">{categoryExpenseData.map((entry) => (<div key={entry.id} className="flex justify-between items-center"><div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.fill }}></span><span>{entry.name}</span></div><span className="font-medium">{entry.percentage.toFixed(1)}%</span></div>))}</div>
-                </>) : (<div className="h-[200px] flex items-center justify-center text-slate-500">Nenhuma despesa paga.</div>)}
-          </CardContent>
-        </Card>
-        
-        <Card className="lg:col-span-2">
-            <CardHeader><CardTitle>Próximos Pagamentos</CardTitle></CardHeader>
-            <CardContent>
-                {upcomingPaymentsData.length > 0 ? (
-                    <ul className="divide-y divide-slate-200 dark:divide-slate-700">
-                        {upcomingPaymentsData.map((payment) => (
-                            <li key={payment.id} className="py-3 sm:py-4 flex items-center space-x-4">
-                                <div className="flex-shrink-0"><span className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900"><AlertTriangle className="h-4 w-4 text-amber-500" /></span></div>
-                                <div className="flex-1 min-w-0"><p className="text-sm font-medium truncate">{payment.desc}</p><p className="text-sm text-slate-500 dark:text-slate-400 truncate">Venc: {displayDate(payment.date)}</p></div>
-                                <div className="inline-flex items-center text-base font-semibold text-red-500">{toCurrency(payment.amount)}</div>
-                            </li>
-                        ))}
-                    </ul>
-                ) : (<div className="h-[200px] flex items-center justify-center text-slate-500">Nenhum pagamento pendente.</div>)}
+        <AnimatedItem delay={600}>
+          <Card className="lg:col-span-1">
+            <CardHeader><CardTitle>Despesas por Categoria</CardTitle></CardHeader>
+            <CardContent>{categoryExpenseData.length > 0 ? (<>
+                  <ResponsiveContainer width="100%" height={200}><PieChart><Pie data={categoryExpenseData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} fill="#8884d8" paddingAngle={2} dataKey="value">{categoryExpenseData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.fill} />))}</Pie><Tooltip formatter={(value: number) => toCurrency(value)} /></PieChart></ResponsiveContainer>
+                  <div className="mt-4 space-y-2 text-sm">{categoryExpenseData.map((entry) => (<div key={entry.id} className="flex justify-between items-center"><div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.fill }}></span><span>{entry.name}</span></div><span className="font-medium">{entry.percentage.toFixed(1)}%</span></div>))}</div>
+                  </>) : (<div className="h-[200px] flex items-center justify-center text-slate-500">Nenhuma despesa paga.</div>)}
             </CardContent>
-        </Card>
+          </Card>
+        </AnimatedItem>
+
+        <AnimatedItem delay={700}>
+          <Card className="lg:col-span-2">
+              <CardHeader><CardTitle>Próximos Pagamentos</CardTitle></CardHeader>
+              <CardContent>
+                  {upcomingPaymentsData.length > 0 ? (
+                      <ul className="divide-y divide-slate-200 dark:divide-slate-700">
+                          {upcomingPaymentsData.map((payment) => (
+                              <li key={payment.id} className="py-3 sm:py-4 flex items-center space-x-4">
+                                  <div className="flex-shrink-0"><span className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900"><AlertTriangle className="h-4 w-4 text-amber-500" /></span></div>
+                                  <div className="flex-1 min-w-0"><p className="text-sm font-medium truncate">{payment.desc}</p><p className="text-sm text-slate-500 dark:text-slate-400 truncate">Venc: {displayDate(payment.date)}</p></div>
+                                  <div className="inline-flex items-center text-base font-semibold text-red-500">{toCurrency(payment.amount)}</div>
+                              </li>
+                          ))}
+                      </ul>
+                  ) : (<div className="h-[200px] flex items-center justify-center text-slate-500">Nenhum pagamento pendente.</div>)}
+              </CardContent>
+          </Card>
+        </AnimatedItem>
       </div>
 
-      <Card>
-        <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center !pb-2 gap-2">
-          <CardTitle>Resumo Geral</CardTitle>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1 p-0.5 rounded-md border bg-slate-100 dark:bg-slate-800">
-                <Button onClick={() => setSummaryChartType('bar')} variant={summaryChartType === 'bar' ? 'default' : 'ghost'} size="sm" className="h-7 px-2" aria-label="Ver gráfico em barras"><BarChart3 className="w-4 h-4"/></Button>
-                <Button onClick={() => setSummaryChartType('stacked')} variant={summaryChartType === 'stacked' ? 'default' : 'ghost'} size="sm" className="h-7 px-2" aria-label="Ver gráfico em barras empilhadas"><Layers className="w-4 h-4"/></Button>
-                <Button onClick={() => setSummaryChartType('line')} variant={summaryChartType === 'line' ? 'default' : 'ghost'} size="sm" className="h-7 px-2" aria-label="Ver gráfico de linhas"><LineChartIcon className="w-4 h-4"/></Button>
-                <Button onClick={() => setSummaryChartType('pie')} variant={summaryChartType === 'pie' ? 'default' : 'ghost'} size="sm" className="h-7 px-2" aria-label="Ver gráfico de pizza"><PieChartIcon className="w-4 h-4"/></Button>
+      <AnimatedItem delay={800}>
+        <Card>
+          <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center !pb-2 gap-2">
+            <CardTitle>Resumo Geral</CardTitle>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1 p-0.5 rounded-md border bg-slate-100 dark:bg-slate-800">
+                  <Button onClick={() => setSummaryChartType('bar')} variant={summaryChartType === 'bar' ? 'default' : 'ghost'} size="sm" className="h-7 px-2" aria-label="Ver gráfico em barras"><BarChart3 className="w-4 h-4"/></Button>
+                  <Button onClick={() => setSummaryChartType('stacked')} variant={summaryChartType === 'stacked' ? 'default' : 'ghost'} size="sm" className="h-7 px-2" aria-label="Ver gráfico em barras empilhadas"><Layers className="w-4 h-4"/></Button>
+                  <Button onClick={() => setSummaryChartType('line')} variant={summaryChartType === 'line' ? 'default' : 'ghost'} size="sm" className="h-7 px-2" aria-label="Ver gráfico de linhas"><LineChartIcon className="w-4 h-4"/></Button>
+                  <Button onClick={() => setSummaryChartType('pie')} variant={summaryChartType === 'pie' ? 'default' : 'ghost'} size="sm" className="h-7 px-2" aria-label="Ver gráfico de pizza"><PieChartIcon className="w-4 h-4"/></Button>
+              </div>
+              <div className="text-sm flex items-center gap-2">
+                <Label htmlFor="summary-period" className="mb-0">Período</Label>
+                <select id="summary-period" value={summaryChartPeriod} onChange={e => setSummaryChartPeriod(parseInt(e.target.value))} className="p-1 rounded border dark:bg-slate-700 h-8 text-xs"><option value={3}>3 meses</option><option value={6}>6 meses</option><option value={12}>12 meses</option></select>
+              </div>
             </div>
-            <div className="text-sm flex items-center gap-2">
-              <Label htmlFor="summary-period" className="mb-0">Período</Label>
-              <select id="summary-period" value={summaryChartPeriod} onChange={e => setSummaryChartPeriod(parseInt(e.target.value))} className="p-1 rounded border dark:bg-slate-700 h-8 text-xs"><option value={3}>3 meses</option><option value={6}>6 meses</option><option value={12}>12 meses</option></select>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={260}>
-            {summaryChartType === 'bar' ? (
-                <BarChart data={summaryByTypeData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}><XAxis dataKey="month" stroke="currentColor" className="text-xs" /><YAxis stroke="currentColor" tickFormatter={(v: number) => v.toFixed(0)} /><Tooltip formatter={(v: number) => toCurrency(v)} /><Legend /><Bar dataKey="cartao" name="Cartão" fill="#6366f1" radius={[4, 4, 0, 0]} /><Bar dataKey="prazo" name="A prazo" fill="#facc15" radius={[4, 4, 0, 0]} /><Bar dataKey="vista" name="À vista" fill="#22c55e" radius={[4, 4, 0, 0]} /></BarChart>
-            ) : summaryChartType === 'stacked' ? (
-                <BarChart data={summaryByTypeData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}><XAxis dataKey="month" stroke="currentColor" className="text-xs" /><YAxis stroke="currentColor" tickFormatter={(v: number) => v.toFixed(0)} /><Tooltip formatter={(v: number) => toCurrency(v)} /><Legend /><Bar dataKey="cartao" name="Cartão" fill="#6366f1" stackId="a" radius={[4, 4, 0, 0]} /><Bar dataKey="prazo" name="A prazo" fill="#facc15" stackId="a" /><Bar dataKey="vista" name="À vista" fill="#22c55e" stackId="a" radius={[0, 0, 4, 4]} /></BarChart>
-            ) : summaryChartType === 'pie' ? (
-                <PieChart><Tooltip formatter={(value: number) => toCurrency(value)} /><Legend /><Pie data={summaryPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100}>{summaryPieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}</Pie></PieChart>
-            ) : (
-                <LineChart data={summaryByTypeData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}><XAxis dataKey="month" stroke="currentColor" className="text-xs" /><YAxis stroke="currentColor" tickFormatter={(v: number) => v.toFixed(0)} /><Tooltip formatter={(v: number) => toCurrency(v)} /><Legend /><Line type="monotone" dataKey="cartao" name="Cartão" stroke="#6366f1" strokeWidth={2} /><Line type="monotone" dataKey="prazo" name="A prazo" stroke="#facc15" strokeWidth={2} /><Line type="monotone" dataKey="vista" name="À vista" stroke="#22c55e" strokeWidth={2} /></LineChart>
-            )}
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={260}>
+              {summaryChartType === 'bar' ? (
+                  <BarChart data={summaryByTypeData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}><XAxis dataKey="month" stroke="currentColor" className="text-xs" /><YAxis stroke="currentColor" tickFormatter={(v: number) => v.toFixed(0)} /><Tooltip formatter={(v: number) => toCurrency(v)} /><Legend /><Bar dataKey="cartao" name="Cartão" fill="#6366f1" radius={[4, 4, 0, 0]} /><Bar dataKey="prazo" name="A prazo" fill="#facc15" radius={[4, 4, 0, 0]} /><Bar dataKey="vista" name="À vista" fill="#22c55e" radius={[4, 4, 0, 0]} /></BarChart>
+              ) : summaryChartType === 'stacked' ? (
+                  <BarChart data={summaryByTypeData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}><XAxis dataKey="month" stroke="currentColor" className="text-xs" /><YAxis stroke="currentColor" tickFormatter={(v: number) => v.toFixed(0)} /><Tooltip formatter={(v: number) => toCurrency(v)} /><Legend /><Bar dataKey="cartao" name="Cartão" fill="#6366f1" stackId="a" radius={[4, 4, 0, 0]} /><Bar dataKey="prazo" name="A prazo" fill="#facc15" stackId="a" /><Bar dataKey="vista" name="À vista" fill="#22c55e" stackId="a" radius={[0, 0, 4, 4]} /></BarChart>
+              ) : summaryChartType === 'pie' ? (
+                  <PieChart><Tooltip formatter={(value: number) => toCurrency(value)} /><Legend /><Pie data={summaryPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100}>{summaryPieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}</Pie></PieChart>
+              ) : (
+                  <LineChart data={summaryByTypeData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}><XAxis dataKey="month" stroke="currentColor" className="text-xs" /><YAxis stroke="currentColor" tickFormatter={(v: number) => v.toFixed(0)} /><Tooltip formatter={(v: number) => toCurrency(v)} /><Legend /><Line type="monotone" dataKey="cartao" name="Cartão" stroke="#6366f1" strokeWidth={2} /><Line type="monotone" dataKey="prazo" name="A prazo" stroke="#facc15" strokeWidth={2} /><Line type="monotone" dataKey="vista" name="À vista" stroke="#22c55e" strokeWidth={2} /></LineChart>
+              )}
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </AnimatedItem>
       
-      <div className="border-b border-slate-300 dark:border-slate-700">
-        <nav className="-mb-px flex space-x-6">
-          <button onClick={() => setMainTab('transactions')} className={`py-3 px-1 border-b-2 text-sm ${mainTab === 'transactions' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500'}`}>Transações</button>
-          <button onClick={() => setMainTab('invoices')} className={`py-3 px-1 border-b-2 text-sm ${mainTab === 'invoices' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500'}`}>Faturas</button>
-          <button onClick={() => setMainTab('recurring')} className={`py-3 px-1 border-b-2 text-sm ${mainTab === 'recurring' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500'}`}>Recorrências</button>
-          <button onClick={() => setMainTab('transfers')} className={`py-3 px-1 border-b-2 text-sm ${mainTab === 'transfers' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500'}`}>Transferências</button>
-        </nav>
-      </div>
+      <AnimatedItem delay={900}>
+        <div className="border-b border-slate-300 dark:border-slate-700">
+          <nav className="-mb-px flex space-x-6">
+            <button onClick={() => setMainTab('transactions')} className={`py-3 px-1 border-b-2 text-sm ${mainTab === 'transactions' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500'}`}>Transações</button>
+            <button onClick={() => setMainTab('invoices')} className={`py-3 px-1 border-b-2 text-sm ${mainTab === 'invoices' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500'}`}>Faturas</button>
+            <button onClick={() => setMainTab('recurring')} className={`py-3 px-1 border-b-2 text-sm ${mainTab === 'recurring' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500'}`}>Recorrências</button>
+            <button onClick={() => setMainTab('transfers')} className={`py-3 px-1 border-b-2 text-sm ${mainTab === 'transfers' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500'}`}>Transferências</button>
+          </nav>
+        </div>
+      </AnimatedItem>
 
         {mainTab === 'transactions' && (
              <Card data-tour-id="transactions-list">
