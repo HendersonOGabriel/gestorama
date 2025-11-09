@@ -40,6 +40,7 @@ import { Button } from './components/ui/Button';
 import { Input } from './components/ui/Input';
 import { Label } from './components/ui/Label';
 import { Plus, Edit3, Trash2 } from 'lucide-react';
+import GroupForm from './components/categories/GroupForm';
 
 const CategoryManager: React.FC<{
   categories: Category[];
@@ -50,8 +51,13 @@ const CategoryManager: React.FC<{
   const [name, setName] = useState('');
   const [group, setGroup] = useState('');
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [groups, setGroups] = useState<string[]>([]);
 
-  const existingGroups = useMemo(() => Array.from(new Set(categories.filter(c => c.group).map(c => c.group!))).sort(), [categories]);
+  useEffect(() => {
+    const existingGroups = Array.from(new Set(categories.filter(c => c.group).map(c => c.group!))).sort();
+    setGroups(existingGroups);
+  }, [categories]);
+
   const categoryGroups = useMemo(() => {
     return categories.reduce((acc, cat) => {
         const groupName = cat.group || 'Sem Grupo';
@@ -87,6 +93,11 @@ const CategoryManager: React.FC<{
     }
   };
 
+  const handleGroupAdded = (newGroup: string) => {
+    setGroups(prev => [...prev, newGroup].sort());
+    setGroup(newGroup);
+  };
+
   return (
     <div className="space-y-6 max-h-[70vh] flex flex-col">
       <div className="flex-1 overflow-y-auto pr-2 space-y-4">
@@ -120,20 +131,28 @@ const CategoryManager: React.FC<{
           </div>
         ))}
       </div>
-      <form onSubmit={handleAdd} className="mt-4 p-4 border-t space-y-3 bg-white dark:bg-slate-950 sticky bottom-0">
-        <h4 className="font-semibold">Adicionar Nova Categoria</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div><Label htmlFor="new-cat-name">Nome</Label><Input id="new-cat-name" value={name} onChange={e => setName(e.target.value)} /></div>
-            <div>
-              <Label htmlFor="new-cat-group">Grupo (Opcional)</Label>
-              <Input id="new-cat-group" list="existing-groups" value={group} onChange={e => setGroup(e.target.value)} />
-              <datalist id="existing-groups">
-                {existingGroups.map(g => <option key={g} value={g}/>)}
-              </datalist>
-            </div>
-        </div>
-        <Button type="submit" className="w-full"><Plus className="w-4 h-4 mr-2"/>Adicionar</Button>
-      </form>
+      <div className="mt-4 p-4 border-t bg-white dark:bg-slate-950 sticky bottom-0">
+        <form onSubmit={handleAdd} className="space-y-3">
+          <h4 className="font-semibold">Adicionar Nova Categoria</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div><Label htmlFor="new-cat-name">Nome</Label><Input id="new-cat-name" value={name} onChange={e => setName(e.target.value)} /></div>
+              <div>
+                <Label htmlFor="new-cat-group">Grupo (Opcional)</Label>
+                <select
+                  id="new-cat-group"
+                  value={group}
+                  onChange={e => setGroup(e.target.value)}
+                  className="w-full p-2 h-10 border rounded-md bg-white dark:bg-slate-800 dark:border-slate-700"
+                >
+                  <option value="">Selecione um grupo</option>
+                  {groups.map(g => <option key={g} value={g}>{g}</option>)}
+                </select>
+              </div>
+          </div>
+          <Button type="submit" className="w-full"><Plus className="w-4 h-4 mr-2"/>Adicionar Categoria</Button>
+        </form>
+        <GroupForm existingGroups={groups} onGroupAdded={handleGroupAdded} />
+      </div>
     </div>
   );
 };
