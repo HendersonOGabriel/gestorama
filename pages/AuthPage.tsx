@@ -6,29 +6,31 @@ import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 
 interface AuthPageProps {
-  addToast: (message: string, type: 'success' | 'error' | 'info') => void;
+  onAuthSuccess: () => void;
 }
 
-export const AuthPage: React.FC<AuthPageProps> = ({ addToast }) => {
+export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate('/');
+        onAuthSuccess();
       }
     });
-  }, [navigate]);
+  }, [onAuthSuccess]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
 
     try {
       if (isLogin) {
@@ -39,8 +41,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ addToast }) => {
 
         if (error) throw error;
 
-        addToast('Login realizado com sucesso!', 'success');
-        navigate('/');
+        onAuthSuccess();
       } else {
         const { error } = await supabase.auth.signUp({
           email,
@@ -55,16 +56,15 @@ export const AuthPage: React.FC<AuthPageProps> = ({ addToast }) => {
 
         if (error) throw error;
 
-        addToast('Conta criada com sucesso!', 'success');
-        navigate('/');
+        onAuthSuccess();
       }
     } catch (error: any) {
       if (error.message.includes('already registered')) {
-        addToast('Este email já está cadastrado. Faça login.', 'error');
+        setError('Este email já está cadastrado. Faça login.');
       } else if (error.message.includes('Invalid login credentials')) {
-        addToast('Email ou senha incorretos.', 'error');
+        setError('Email ou senha incorretos.');
       } else {
-        addToast(error.message || 'Erro na autenticação', 'error');
+        setError(error.message || 'Erro na autenticação');
       }
     } finally {
       setLoading(false);
@@ -73,6 +73,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ addToast }) => {
 
   const handleGoogleLogin = async () => {
     setLoading(true);
+    setError(null);
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -83,7 +84,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ addToast }) => {
 
       if (error) throw error;
     } catch (error: any) {
-      addToast(error.message || 'Erro ao fazer login com Google', 'error');
+      setError(error.message || 'Erro ao fazer login com Google');
       setLoading(false);
     }
   };
@@ -102,6 +103,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({ addToast }) => {
                 : 'Comece a controlar suas finanças hoje'}
             </p>
           </div>
+
+          {error && (
+            <div className="mb-4 p-3 bg-destructive/10 border border-destructive rounded-lg text-destructive text-sm">
+              {error}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
@@ -207,19 +214,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({ addToast }) => {
                 : 'Já tem uma conta? Fazer login'}
             </button>
           </div>
-
-          {isLogin && (
-            <div className="mt-4 text-center">
-              <button
-                type="button"
-                onClick={() => navigate('/auth/reset-password')}
-                className="text-muted-foreground hover:text-primary text-sm"
-                disabled={loading}
-              >
-                Esqueceu sua senha?
-              </button>
-            </div>
-          )}
         </div>
       </div>
     </div>
