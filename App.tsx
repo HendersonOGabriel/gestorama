@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { User as SupabaseUser, Session } from '@supabase/supabase-js';
-import { supabase } from '@/src/integrations/supabase/client';
-import Sidebar from '@/components/shared/Sidebar';
+import Sidebar from './components/shared/Sidebar';
 import GlobalHeader from './components/shared/GlobalHeader';
 import DashboardPage from './pages/DashboardPage';
 import PlanningPage from './pages/PlanningPage';
@@ -25,6 +23,7 @@ import OnboardingTour from './components/tour/OnboardingTour';
 import YaraChat from './components/chat/YaraChat';
 import { ToastContainer, ToastProps } from './components/ui/Toast';
 import ImportTransactionsModal from './components/transactions/ImportTransactionsModal';
+import LandingPage from './pages/LandingPage';
 import FamilyDashboardPage from './pages/FamilyDashboardPage';
 
 import { 
@@ -159,12 +158,7 @@ const CategoryManager: React.FC<{
 };
 
 
-interface AppProps {
-  user: SupabaseUser;
-  session: Session;
-}
-
-const App: React.FC<AppProps> = ({ user, session }) => {
+const App: React.FC = () => {
     // Main App State
     const [isLoading, setIsLoading] = useState(true);
 
@@ -184,7 +178,7 @@ const App: React.FC<AppProps> = ({ user, session }) => {
     const [subscription, setSubscription] = useState<Subscription>({ plan: 'free', memberSlots: 1, expires: null });
     
     // UI State
-    const [currentPage, setCurrentPage] = useState('dashboard');
+    const [currentPage, setCurrentPage] = useState('landing');
     const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [themePreference, setThemePreference] = useState<'light' | 'dark' | 'system'>('system');
@@ -452,6 +446,10 @@ const App: React.FC<AppProps> = ({ user, session }) => {
         }
     };
 
+    if (currentPage === 'landing') {
+        return <LandingPage onEnter={handleEnterApp} />
+    }
+
     return (
         <div className={cn("bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-50", themePreference === 'system' ? '' : themePreference)}>
             <div className="flex min-h-screen">
@@ -460,7 +458,7 @@ const App: React.FC<AppProps> = ({ user, session }) => {
                   onOpenAccounts={() => setModal('accounts')} onOpenCards={() => setModal('cards')} onOpenCategories={() => setModal('categories')}
                   isMinimized={isSidebarMinimized} setIsMinimized={setIsSidebarMinimized}
                   isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen}
-                  onGoToLanding={() => supabase.auth.signOut()}
+                  onGoToLanding={() => setCurrentPage('landing')}
                   subscription={subscription}
                 />
                 <main className={cn("flex-1 p-4 sm:p-6 transition-all duration-300 ease-in-out", isSidebarMinimized ? "md:ml-20" : "md:ml-64")}>
