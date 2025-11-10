@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
-import { supabase } from './src/integrations/supabase/client';
-import Sidebar from './components/shared/Sidebar';
+import { supabase } from '@/src/integrations/supabase/client';
+import Sidebar from '@/components/shared/Sidebar';
 import GlobalHeader from './components/shared/GlobalHeader';
 import DashboardPage from './pages/DashboardPage';
 import PlanningPage from './pages/PlanningPage';
