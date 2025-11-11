@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { supabase } from '@/src/integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
 import App from '@/App';
 import { AuthPage } from '@/pages/AuthPage';
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
 import { UpdatePasswordPage } from '@/pages/UpdatePasswordPage';
+import LandingPage from '@/pages/LandingPage';
 import { ToastContainer, ToastProps } from '@/components/ui/Toast';
 
 export const AppRouter: React.FC = () => {
@@ -62,12 +63,24 @@ export const AppRouter: React.FC = () => {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Landing page - accessible to everyone */}
+        <Route
+          path="/"
+          element={
+            session ? (
+              <Navigate to="/app" replace />
+            ) : (
+              <LandingPageWrapper />
+            )
+          }
+        />
+
         {/* Auth routes - accessible only when NOT logged in */}
         <Route
           path="/auth"
           element={
             session ? (
-              <Navigate to="/" replace />
+              <Navigate to="/app" replace />
             ) : (
               <AuthPage addToast={addToast} />
             )
@@ -77,7 +90,7 @@ export const AppRouter: React.FC = () => {
           path="/auth/reset-password"
           element={
             session ? (
-              <Navigate to="/" replace />
+              <Navigate to="/app" replace />
             ) : (
               <ResetPasswordPage addToast={addToast} />
             )
@@ -90,12 +103,12 @@ export const AppRouter: React.FC = () => {
 
         {/* Protected routes - require authentication */}
         <Route
-          path="/*"
+          path="/app/*"
           element={
             session ? (
               <App user={user!} session={session} />
             ) : (
-              <Navigate to="/auth" replace />
+              <Navigate to="/" replace />
             )
           }
         />
@@ -104,4 +117,10 @@ export const AppRouter: React.FC = () => {
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </BrowserRouter>
   );
+};
+
+// Wrapper to use navigate inside LandingPage
+const LandingPageWrapper = () => {
+  const navigate = useNavigate();
+  return <LandingPage onEnter={() => navigate('/auth')} />;
 };
