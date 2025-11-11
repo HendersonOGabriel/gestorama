@@ -14,6 +14,17 @@ export default defineConfig(({ mode }) => {
         react(),
         mode === 'development' && componentTagger(),
       ].filter(Boolean),
+      define: {
+        'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(
+          env.VITE_SUPABASE_URL || 'https://rbbkwsonvmfcworkmuro.supabase.co'
+        ),
+        'import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY': JSON.stringify(
+          env.VITE_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJiYmt3c29udm1mY3dvcmttdXJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI3MTcwOTIsImV4cCI6MjA3ODI5MzA5Mn0.1KSE5QCHYV3yZ7o72599LPnGxxMwnO3sduheRmlBD3U'
+        ),
+        'import.meta.env.VITE_SUPABASE_PROJECT_ID': JSON.stringify(
+          env.VITE_SUPABASE_PROJECT_ID || 'rbbkwsonvmfcworkmuro'
+        ),
+      },
       envPrefix: 'VITE_',
       resolve: {
         alias: {
