@@ -169,7 +169,7 @@ const LandingPageWrapper = ({
   
   // Mark that user has visited landing page
   React.useEffect(() => {
-    sessionStorage.setItem('hasVisitedLanding', 'true');
+    localStorage.setItem('hasVisitedLanding', 'true');
   }, []);
   
   return (
@@ -192,7 +192,7 @@ const AuthPageWrapper = ({
   setThemePreference: (theme: 'light' | 'dark' | 'system') => void;
 }) => {
   const navigate = useNavigate();
-  const hasVisitedLanding = sessionStorage.getItem('hasVisitedLanding');
+  const hasVisitedLanding = localStorage.getItem('hasVisitedLanding');
   
   // If user hasn't visited landing page, redirect to it first
   if (!hasVisitedLanding) {
