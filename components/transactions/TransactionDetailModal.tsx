@@ -131,11 +131,11 @@ const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
             </div>
           )}
         </div>
-        <div className="flex justify-between gap-2 mt-6">
-          <Button variant="destructive" onClick={handleDelete}><Trash2 className="w-4 h-4 mr-2"/>Excluir</Button>
-          <div className="flex gap-2">
-            <Button variant="ghost" onClick={onClose}>Fechar</Button>
-            <Button onClick={handleEdit}><Edit3 className="w-4 h-4 mr-2"/>Editar</Button>
+        <div className="flex flex-col sm:flex-row justify-between gap-2 mt-6">
+          <Button variant="destructive" onClick={handleDelete} className="w-full sm:w-auto"><Trash2 className="w-4 h-4 mr-2"/>Excluir</Button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button variant="ghost" onClick={onClose} className="w-full sm:w-auto">Fechar</Button>
+            <Button onClick={handleEdit} className="w-full sm:w-auto"><Edit3 className="w-4 h-4 mr-2"/>Editar</Button>
           </div>
         </div>
       </DialogContent>

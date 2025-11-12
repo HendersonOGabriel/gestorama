@@ -400,9 +400,9 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <AnimatedItem>
-        <div className="relative rounded-xl overflow-hidden mb-6 p-8 min-h-[160px] flex flex-col justify-center text-white bg-slate-900">
+        <div className="relative rounded-xl overflow-hidden mb-6 p-6 sm:p-8 min-h-[160px] flex flex-col justify-center text-white bg-slate-900">
             <img
                 src={greetingImage}
                 alt="Imagem de saudação contextual"
@@ -410,7 +410,7 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
                 aria-hidden="true"
             />
             <div className="relative z-10">
-                <h2 className="text-3xl font-bold">{greeting}, {ownerProfile.name}!</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold">{greeting}, {ownerProfile.name}!</h2>
                 <p className="mt-1 text-slate-300">Aqui está um resumo de suas finanças hoje.</p>
             </div>
         </div>
@@ -552,10 +552,11 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="overflow-x-auto"><table className="min-w-full text-sm">
-                      <thead className="border-b border-slate-200 dark:border-slate-700">
-                        <tr>
-                          <th className="p-3 text-left font-semibold">Descrição</th>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                        <thead className="border-b border-slate-200 dark:border-slate-700">
+                          <tr>
+                            <th className="p-2 sm:p-3 text-left font-semibold">Descrição</th>
                           <th className="p-3 text-right font-semibold">Valor</th>
                           <th className="p-3 text-left font-semibold hidden sm:table-cell">Data</th>
                           <th className="p-3 text-center font-semibold">Status</th>
@@ -584,15 +585,15 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
                               tabIndex={0}
                               onKeyDown={(e) => { if(e.key === 'Enter' || e.key === ' ') onViewTransaction(t); }}
                             >
-                              <td className="p-3">
+                              <td className="p-2 sm:p-3">
                                 <p className="font-medium">{t.desc}</p>
                                 <p className="text-xs text-slate-500">{getCategoryName(t.categoryId)}</p>
                               </td>
-                              <td className={`p-3 text-right font-medium ${t.isIncome ? 'text-green-500' : 'text-red-500'}`}>
+                              <td className={`p-2 sm:p-3 text-right font-medium ${t.isIncome ? 'text-green-500' : 'text-red-500'}`}>
                                 {toCurrency(t.amount)}
                               </td>
-                              <td className="p-3 hidden sm:table-cell">{displayDate(t.date)}</td>
-                              <td className="p-3 text-center"><span className={`text-xs px-2 py-1 rounded-full ${t.paid ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300'}`}>{t.paid ? 'Pago' : 'Pendente'}</span></td>
+                              <td className="p-2 sm:p-3 hidden sm:table-cell">{displayDate(t.date)}</td>
+                              <td className="p-2 sm:p-3 text-center"><span className={`text-xs px-2 py-1 rounded-full ${t.paid ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300'}`}>{t.paid ? 'Pago' : 'Pendente'}</span></td>
                             </tr>
                           ))
                         )}
@@ -737,12 +738,12 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
               <table className="min-w-full text-sm text-left">
                 <thead className="border-b border-slate-200 dark:border-slate-700">
                   <tr>
-                    <th className="p-3 font-semibold">Descrição</th>
-                    <th className="p-3 font-semibold">Origem</th>
-                    <th className="p-3 font-semibold">Destino</th>
-                    <th className="p-3 font-semibold text-right">Valor</th>
-                    <th className="p-3 font-semibold">Data</th>
-                    <th className="p-3 font-semibold text-center">Ações</th>
+                    <th className="p-2 sm:p-3 font-semibold">Descrição</th>
+                    <th className="p-2 sm:p-3 font-semibold">Origem</th>
+                    <th className="p-2 sm:p-3 font-semibold">Destino</th>
+                    <th className="p-2 sm:p-3 font-semibold text-right">Valor</th>
+                    <th className="p-2 sm:p-3 font-semibold hidden md:table-cell">Data</th>
+                    <th className="p-2 sm:p-3 font-semibold text-center">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -762,12 +763,12 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
                   ) : (
                     internalMovements.map(mov => (
                       <tr key={mov.id} className="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                        <td className="p-3">{mov.desc}</td>
-                        <td className="p-3">{mov.from}</td>
-                        <td className="p-3">{mov.to}</td>
-                        <td className="p-3 text-right">{toCurrency(mov.amount)}</td>
-                        <td className="p-3">{displayDate(mov.date)}</td>
-                        <td className="p-3 text-center">
+                        <td className="p-2 sm:p-3">{mov.desc}</td>
+                        <td className="p-2 sm:p-3">{mov.from}</td>
+                        <td className="p-2 sm:p-3">{mov.to}</td>
+                        <td className="p-2 sm:p-3 text-right">{toCurrency(mov.amount)}</td>
+                        <td className="p-2 sm:p-3 hidden md:table-cell">{displayDate(mov.date)}</td>
+                        <td className="p-2 sm:p-3 text-center">
                           {mov.type === 'transfer' ? (
                             <div className="flex justify-center gap-1">
                               <Button size="icon" variant="ghost" className="h-8 w-8" aria-label={`Editar transferência de ${toCurrency(mov.amount)}`} onClick={() => onEditTransfer(transfers.find(t => t.id === mov.id)!)}><Edit3 className="w-4 h-4"/></Button>
