@@ -4,3 +4,4 @@ dist
 npm-debug.log
 yarn-error.log
 dev_server.log
+npm_output.log
