@@ -382,7 +382,22 @@ const App: React.FC<AppProps> = ({ user, session, themePreference, setThemePrefe
             setRecurring(updatedRecurringItems);
             addToast(`${newTxs.length} transaç${newTxs.length > 1 ? 'ões' : 'ão'} recorrente${newTxs.length > 1 ? 's' : ''} gerada${newTxs.length > 1 ? 's' : ''}.`, 'success');
         }
-    }, [isLoading]); 
+    }, [isLoading]);
+
+    // Body scroll lock for modals and mobile menu
+    useEffect(() => {
+        const isOverlayActive = modal !== null || isMobileMenuOpen;
+        if (isOverlayActive) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'auto';
+        }
+
+        // Cleanup function
+        return () => {
+            document.body.style.overflow = 'auto';
+        };
+    }, [modal, isMobileMenuOpen]);
     
     const stateToExport: Partial<AppState> = { accounts, cards, transactions, transfers, recurring, categories, budgets, goals, reminders, users, subscription, themePreference, gamification, yaraUsage };
 
