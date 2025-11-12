@@ -21,7 +21,7 @@ const SummaryCard: React.FC<SummaryCardProps> = ({ title, value, icon, colorClas
       </span>
     </CardHeader>
     <CardContent className="text-center">
-      <div className={`text-xl sm:text-2xl font-bold ${colorClass}`}>{value}</div>
+      <div className={`text-lg sm:text-xl font-bold ${colorClass} break-words`}>{value}</div>
     </CardContent>
   </Card>
 );

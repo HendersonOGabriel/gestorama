@@ -66,7 +66,7 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ currentPage, notifications,
           >
             <Menu className="w-6 h-6" />
           </Button>
-          <h1 className="text-xl sm:text-2xl font-semibold truncate">{getTitle()}</h1>
+          <h1 className="text-lg sm:text-xl font-semibold truncate">{getTitle()}</h1>
         </div>
          <div className="flex items-center gap-2 sm:gap-4">
             <GamificationWidget gamification={gamification} />
