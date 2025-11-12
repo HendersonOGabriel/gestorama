@@ -103,12 +103,12 @@ const TransactionFilterModal: React.FC<TransactionFilterModalProps> = ({ isOpen,
                 </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row justify-between items-center pt-4 gap-2">
-              <Button variant="ghost" onClick={handleClear} className="w-full sm:w-auto">Limpar Filtros</Button>
-              <div className="flex gap-2 w-full sm:w-auto">
-                <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">Cancelar</Button>
-                <Button onClick={handleApply} className="w-full sm:w-auto">Aplicar</Button>
-              </div>
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-between items-center pt-4 gap-2">
+                <Button variant="ghost" onClick={handleClear} className="w-full sm:w-auto">Limpar Filtros</Button>
+                <div className="flex flex-col-reverse sm:flex-row gap-2 w-full sm:w-auto">
+                    <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">Cancelar</Button>
+                    <Button onClick={handleApply} className="w-full sm:w-auto">Aplicar</Button>
+                </div>
             </div>
         </div>
       </DialogContent>

@@ -53,8 +53,8 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ currentPage, notifications,
 
   return (
     <>
-      <header className="py-4 sm:py-6 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <header className="sticky top-0 z-30 bg-slate-100 dark:bg-slate-950 py-4 sm:py-6 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <Button 
             variant="ghost" 
             size="icon" 
@@ -66,11 +66,11 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ currentPage, notifications,
           >
             <Menu className="w-6 h-6" />
           </Button>
-          <h1 className="text-2xl font-semibold">{getTitle()}</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold truncate">{getTitle()}</h1>
         </div>
-         <div className="flex items-center gap-4">
+         <div className="flex items-center gap-2 sm:gap-4">
             <GamificationWidget gamification={gamification} />
-            <div className="relative z-50">
+            <div className="relative">
                <NotificationBell notifications={notifications} onClear={onClearNotifications} />
             </div>
         </div>
