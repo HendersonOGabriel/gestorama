@@ -71,8 +71,13 @@ const YaraChat: React.FC<YaraChatProps> = ({ subscription, yaraUsage, incrementY
                 content: msg.text
             }));
 
+            const { data: { session } } = await supabase.auth.getSession();
+            
             const { data, error } = await supabase.functions.invoke('yara-chat', {
-                body: { messages: conversationHistory }
+                body: { messages: conversationHistory },
+                headers: {
+                    Authorization: `Bearer ${session?.access_token}`
+                }
             });
 
             // Remove typing indicator
