@@ -82,7 +82,7 @@ export const AppRouter: React.FC = () => {
             session ? (
               <Navigate to="/app" replace />
             ) : (
-              <AuthPage addToast={addToast} />
+              <AuthPageWrapper addToast={addToast} />
             )
           }
         />
@@ -122,5 +122,24 @@ export const AppRouter: React.FC = () => {
 // Wrapper to use navigate inside LandingPage
 const LandingPageWrapper = () => {
   const navigate = useNavigate();
+  
+  // Mark that user has visited landing page
+  React.useEffect(() => {
+    sessionStorage.setItem('hasVisitedLanding', 'true');
+  }, []);
+  
   return <LandingPage onEnter={() => navigate('/auth')} />;
+};
+
+// Wrapper for AuthPage that ensures user visited landing first
+const AuthPageWrapper = ({ addToast }: { addToast: (message: string, type: 'success' | 'error' | 'info') => void }) => {
+  const navigate = useNavigate();
+  const hasVisitedLanding = sessionStorage.getItem('hasVisitedLanding');
+  
+  // If user hasn't visited landing page, redirect to it first
+  if (!hasVisitedLanding) {
+    return <Navigate to="/" replace />;
+  }
+  
+  return <AuthPage addToast={addToast} />;
 };
