@@ -92,7 +92,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ addToast, themePreference, o
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background text-foreground p-4">
+    <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-slate-900 p-4">
       <div className="w-full max-w-md relative">
         <Button
           variant="ghost"
