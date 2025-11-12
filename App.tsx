@@ -35,14 +35,13 @@ import { MOCK_ACCOUNTS, MOCK_CARDS, MOCK_TRANSACTIONS, MOCK_RECURRING, MOCK_BUDG
 import { DEFAULT_CATEGORIES } from './data/initialData';
 import { monthKey, getInvoiceMonthKey, getInvoiceDueDate, toCurrency } from './utils/helpers';
 import { runRecurringItem } from './services/recurringService';
-import { loadState, saveState, getOnboardingStatus, setOnboardingCompleted, resetOnboardingStatus, clearState } from './services/storageService';
+import { loadState, saveState, getOnboardingStatus, setOnboardingCompleted, resetOnboardingStatus } from './services/storageService';
 import { cn } from './utils/helpers';
 import { Button } from './components/ui/Button';
 import { Input } from './components/ui/Input';
 import { Label } from './components/ui/Label';
 import { Plus, Edit3, Trash2 } from 'lucide-react';
 import GroupForm from './components/categories/GroupForm';
-import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 
 const CategoryManager: React.FC<{
   categories: Category[];
@@ -159,14 +158,8 @@ const CategoryManager: React.FC<{
   );
 };
 
-interface AppProps {
-  user: SupabaseUser;
-  session: Session;
-  themePreference: 'light' | 'dark' | 'system';
-  setThemePreference: (theme: 'light' | 'dark' | 'system') => void;
-}
 
-const App: React.FC<AppProps> = ({ user, session, themePreference, setThemePreference }) => {
+const App: React.FC = () => {
     // Main App State
     const [isLoading, setIsLoading] = useState(true);
 
@@ -189,6 +182,7 @@ const App: React.FC<AppProps> = ({ user, session, themePreference, setThemePrefe
     const [currentPage, setCurrentPage] = useState('dashboard');
     const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [themePreference, setThemePreference] = useState<'light' | 'dark' | 'system'>('system');
     const [toasts, setToasts] = useState<ToastProps[]>([]);
     const [notifications, setNotifications] = useState<{ id: string, type: string, message: string }[]>([]);
     
@@ -303,13 +297,6 @@ const App: React.FC<AppProps> = ({ user, session, themePreference, setThemePrefe
     const handleEnterApp = (page?: string) => {
         setCurrentPage(page || 'dashboard');
     };
-
-    const handleLogout = async () => {
-      await supabase.auth.signOut();
-      clearState();
-      resetOnboardingStatus();
-      // AppRouter will handle redirect automatically on SIGNED_OUT event
-    };
     
     // -- Effects --
     useEffect(() => {
@@ -341,6 +328,7 @@ const App: React.FC<AppProps> = ({ user, session, themePreference, setThemePrefe
             setReminders(stored.reminders || []);
             setUsers(stored.users || [{ id: 'user1', name: 'Usuário', email: 'user@gestorama.com', avatar: null, role: 'owner' }]);
             setSubscription(stored.subscription || { plan: 'free', memberSlots: 1, expires: null });
+            setThemePreference(stored.themePreference || 'system');
             setGamification(stored.gamification || { level: 1, xp: 0, xpToNextLevel: 100 });
             setYaraUsage(stored.yaraUsage || { count: 0, lastReset: new Date().toISOString().slice(0, 10)});
         }
@@ -382,22 +370,28 @@ const App: React.FC<AppProps> = ({ user, session, themePreference, setThemePrefe
             setRecurring(updatedRecurringItems);
             addToast(`${newTxs.length} transaç${newTxs.length > 1 ? 'ões' : 'ão'} recorrente${newTxs.length > 1 ? 's' : ''} gerada${newTxs.length > 1 ? 's' : ''}.`, 'success');
         }
-    }, [isLoading]);
-
-    // Body scroll lock for modals and mobile menu
+    }, [isLoading]); 
+    
     useEffect(() => {
-        const isOverlayActive = modal !== null || isMobileMenuOpen;
-        if (isOverlayActive) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = 'auto';
-        }
-
-        // Cleanup function
-        return () => {
-            document.body.style.overflow = 'auto';
+        const applyTheme = (theme: 'light' | 'dark') => {
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
         };
-    }, [modal, isMobileMenuOpen]);
+
+        if (themePreference === 'system') {
+            const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+            applyTheme(mediaQuery.matches ? 'dark' : 'light');
+
+            const handler = (e: MediaQueryListEvent) => applyTheme(e.matches ? 'dark' : 'light');
+            mediaQuery.addEventListener('change', handler);
+            return () => mediaQuery.removeEventListener('change', handler);
+        } else {
+            applyTheme(themePreference);
+        }
+    }, [themePreference]);
     
     const stateToExport: Partial<AppState> = { accounts, cards, transactions, transfers, recurring, categories, budgets, goals, reminders, users, subscription, themePreference, gamification, yaraUsage };
 
@@ -439,7 +433,6 @@ const App: React.FC<AppProps> = ({ user, session, themePreference, setThemePrefe
                 onOpenImport={() => setModal('import')}
                 appState={stateToExport}
                 gamification={gamification}
-                onLogout={handleLogout}
             />;
             case 'subscription': return <SubscriptionPage 
                 currentSubscription={subscription} isLoading={isLoading} addToast={addToast}
@@ -455,7 +448,7 @@ const App: React.FC<AppProps> = ({ user, session, themePreference, setThemePrefe
     };
 
     return (
-        <div className="bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-50">
+        <div className={cn("bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-50", themePreference === 'system' ? '' : themePreference)}>
             <div className="flex min-h-screen">
                 <Sidebar 
                   currentPage={currentPage} setCurrentPage={setCurrentPage} 

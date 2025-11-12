@@ -3,15 +3,12 @@ import { Button } from "../components/ui/Button";
 import { Card, CardContent } from "../components/ui/Card";
 import { CheckCircle, Smartphone, Wallet, TrendingUp, LogIn, Quote, MessageCircle, Sliders, Shield, Mail, User, Users, Home, Plus, Minus, Menu, X, BarChart3, Target, BrainCircuit } from "lucide-react";
 import { cn } from '../utils/helpers';
-import ThemeSwitcher from '../components/shared/ThemeSwitcher';
 
 interface LandingPageProps {
   onEnter: (page?: string) => void;
-  themePreference: 'light' | 'dark' | 'system';
-  onSetThemePreference: (theme: 'light' | 'dark' | 'system') => void;
 }
 
-export default function LandingPage({ onEnter, themePreference, onSetThemePreference }: LandingPageProps) {
+export default function LandingPage({ onEnter }: LandingPageProps) {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [familyMembers, setFamilyMembers] = useState(2);
@@ -150,10 +147,8 @@ export default function LandingPage({ onEnter, themePreference, onSetThemePrefer
             <Button onClick={() => onEnter()} variant="outline" className="flex items-center gap-2 border-indigo-400 text-indigo-200 hover:bg-slate-800">
               <LogIn className="h-4 w-4" /> Acessar App
             </Button>
-            <ThemeSwitcher themePreference={themePreference} onSetThemePreference={onSetThemePreference} />
           </nav>
-          <div className="md:hidden flex items-center gap-2">
-            <ThemeSwitcher themePreference={themePreference} onSetThemePreference={onSetThemePreference} />
+          <div className="md:hidden">
             <Button variant="ghost" size="icon" onClick={() => setIsMobileNavOpen(!isMobileNavOpen)}>
               {isMobileNavOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>

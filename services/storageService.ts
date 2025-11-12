@@ -21,11 +21,32 @@ export const loadState = (): Partial<AppState> => {
   return {};
 };
 
-export const saveState = (newState: Partial<AppState>) => {
+export const saveState = (state: Partial<AppState>) => {
   try {
-    const currentState = loadState();
-    const mergedState = { ...currentState, ...newState };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(mergedState));
+    // FIX: Explicitly list all keys to be saved from AppState.
+    const stateToSave: Partial<AppState> = {
+      accounts: state.accounts,
+      cards: state.cards,
+      transactions: state.transactions,
+      transfers: state.transfers,
+      recurring: state.recurring,
+      categories: state.categories,
+      budgets: state.budgets,
+      goals: state.goals,
+      reminders: state.reminders,
+      themePreference: state.themePreference,
+      users: state.users,
+      subscription: state.subscription,
+      notifiedGoalIds: state.notifiedGoalIds,
+      notifiedBudgetKeys: state.notifiedBudgetKeys,
+      notifiedInvoiceKeys: state.notifiedInvoiceKeys,
+      notifiedReminderIds: state.notifiedReminderIds,
+      gamification: state.gamification,
+      notifiedTxReminderKeys: state.notifiedTxReminderKeys,
+      notifiedAnomalyKeys: state.notifiedAnomalyKeys,
+      yaraUsage: state.yaraUsage,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
   } catch (e) {
     console.error("Failed to save state to localStorage", e);
   }

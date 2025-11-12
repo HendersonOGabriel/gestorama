@@ -416,7 +416,7 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
         </div>
       </AnimatedItem>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6" data-tour-id="summary-cards">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6" data-tour-id="summary-cards">
         <AnimatedItem delay={100}><SummaryCard title="Receita Paga" value={toCurrency(summaryData.paidIncome)} colorClass="text-green-500" icon={<ArrowUpCircle />} /></AnimatedItem>
         <AnimatedItem delay={200}><SummaryCard title="Despesa Paga" value={toCurrency(summaryData.paidExpense)} colorClass="text-red-500" icon={<ArrowDownCircle />} /></AnimatedItem>
         <AnimatedItem delay={300}><SummaryCard title="Saldo Atual" value={toCurrency(totalBalance)} colorClass="text-indigo-500" icon={<Wallet />} /></AnimatedItem>
@@ -449,7 +449,7 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
         </AnimatedItem>
         
         {/* Dots */}
-        <div className="lg:hidden flex justify-center items-center gap-2 pt-4 sm:pt-8">
+        <div className="lg:hidden flex justify-center items-center gap-2 pt-8">
           {insights.map((_, index) => (
             <button
               key={index}
@@ -500,7 +500,7 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
         <Card>
           <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center !pb-2 gap-2">
             <CardTitle>Resumo Geral</CardTitle>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+            <div className="flex items-center gap-4">
               <div className="flex items-center gap-1 p-0.5 rounded-md border bg-slate-100 dark:bg-slate-800">
                   <Button onClick={() => setSummaryChartType('bar')} variant={summaryChartType === 'bar' ? 'default' : 'ghost'} size="sm" className="h-7 px-2" aria-label="Ver gráfico em barras"><BarChart3 className="w-4 h-4"/></Button>
                   <Button onClick={() => setSummaryChartType('stacked')} variant={summaryChartType === 'stacked' ? 'default' : 'ghost'} size="sm" className="h-7 px-2" aria-label="Ver gráfico em barras empilhadas"><Layers className="w-4 h-4"/></Button>
@@ -530,8 +530,8 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
       </AnimatedItem>
       
       <AnimatedItem delay={900}>
-        <div className="border-b border-slate-300 dark:border-slate-700 overflow-x-auto">
-          <nav className="-mb-px flex space-x-4 sm:space-x-6">
+        <div className="border-b border-slate-300 dark:border-slate-700">
+          <nav className="-mb-px flex space-x-6">
             <button onClick={() => setMainTab('transactions')} className={`py-3 px-1 border-b-2 text-sm ${mainTab === 'transactions' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500'}`}>Transações</button>
             <button onClick={() => setMainTab('invoices')} className={`py-3 px-1 border-b-2 text-sm ${mainTab === 'invoices' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500'}`}>Faturas</button>
             <button onClick={() => setMainTab('recurring')} className={`py-3 px-1 border-b-2 text-sm ${mainTab === 'recurring' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500'}`}>Recorrências</button>
@@ -544,9 +544,9 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
              <Card data-tour-id="transactions-list">
                 <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                   <CardTitle>Transações</CardTitle>
-                  <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                  <div className="flex gap-2 w-full sm:w-auto">
                     <Button onClick={onOpenFilter} size="sm" variant="outline" className="relative w-full sm:w-auto"><Filter className="w-4 h-4 mr-1.5" />Filtrar</Button>
-                    <div data-tour-id="add-transaction-button" className="w-full sm:w-auto">
+                    <div data-tour-id="add-transaction-button">
                       <Button onClick={onAddTransaction} size="sm" className="w-full sm:w-auto"><Plus className="w-4 h-4 mr-1.5" /> Adicionar</Button>
                     </div>
                   </div>
@@ -789,7 +789,7 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
           <Card>
               <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center !pb-2 gap-2">
                   <CardTitle>Tendência Financeira</CardTitle>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+                  <div className="flex items-center gap-4">
                       <div className="flex items-center gap-1 p-0.5 rounded-md border bg-slate-100 dark:bg-slate-800">
                           <Button onClick={() => setTrendsChartType('bar')} variant={trendsChartType === 'bar' ? 'default' : 'ghost'} size="sm" className="h-7 px-2" aria-label="Ver gráfico de tendências em barras"><BarChart3 className="w-4 h-4"/></Button>
                           <Button onClick={() => setTrendsChartType('line')} variant={trendsChartType === 'line' ? 'default' : 'ghost'} size="sm" className="h-7 px-2" aria-label="Ver gráfico de tendências de linhas"><LineChartIcon className="w-4 h-4"/></Button>
@@ -834,7 +834,7 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
           <Card>
               <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center !pb-2 gap-2">
                   <CardTitle>Projeção de Saldo</CardTitle>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+                  <div className="flex items-center gap-4">
                       <div className="flex items-center gap-1 p-0.5 rounded-md border bg-slate-100 dark:bg-slate-800">
                           <Button onClick={() => setProjectionsChartType('area')} variant={projectionsChartType === 'area' ? 'default' : 'ghost'} size="sm" className="h-7 px-2" aria-label="Ver gráfico de projeção de área"><AreaChartIcon className="w-4 h-4"/></Button>
                           <Button onClick={() => setProjectionsChartType('line')} variant={projectionsChartType === 'line' ? 'default' : 'ghost'} size="sm" className="h-7 px-2" aria-label="Ver gráfico de projeção de linhas"><LineChartIcon className="w-4 h-4"/></Button>

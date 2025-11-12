@@ -174,7 +174,7 @@ const RecurringForm: React.FC<RecurringFormProps> = ({ recurringItem, onAdd, onU
                 </select>
             </div>
             
-            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-4">
+            <div className="flex justify-end gap-2 pt-4">
               <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
               <Button type="submit" loading={isLoading}>{recurringItem ? 'Salvar' : 'Adicionar'}</Button>
             </div>
