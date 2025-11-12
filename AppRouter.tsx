@@ -8,7 +8,7 @@ import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
 import { UpdatePasswordPage } from '@/pages/UpdatePasswordPage';
 import LandingPage from '@/pages/LandingPage';
 import { ToastContainer, ToastProps } from '@/components/ui/Toast';
-import { loadState } from './services/storageService';
+import { loadState, saveState } from './services/storageService';
 
 export const AppRouter: React.FC = () => {
   const [session, setSession] = useState<Session | null>(null);
@@ -40,6 +40,11 @@ export const AppRouter: React.FC = () => {
         applyTheme(themePreference);
     }
   }, [themePreference]);
+
+  const handleSetThemePreference = (theme: 'light' | 'dark' | 'system') => {
+    setThemePreference(theme);
+    saveState({ themePreference: theme });
+  };
 
   const addToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
     const id = Date.now().toString();
@@ -96,9 +101,9 @@ export const AppRouter: React.FC = () => {
             session ? (
               <Navigate to="/app" replace />
             ) : (
-              <LandingPageWrapper
+              <RootWrapper
                 themePreference={themePreference}
-                setThemePreference={setThemePreference}
+                setThemePreference={handleSetThemePreference}
               />
             )
           }
@@ -111,10 +116,10 @@ export const AppRouter: React.FC = () => {
             session ? (
               <Navigate to="/app" replace />
             ) : (
-              <AuthPageWrapper
+              <AuthPage
                 addToast={addToast}
                 themePreference={themePreference}
-                setThemePreference={setThemePreference}
+                onSetThemePreference={handleSetThemePreference}
               />
             )
           }
@@ -143,7 +148,7 @@ export const AppRouter: React.FC = () => {
                 user={user!}
                 session={session}
                 themePreference={themePreference}
-                setThemePreference={setThemePreference}
+                setThemePreference={handleSetThemePreference}
               />
             ) : (
               <Navigate to="/" replace />
@@ -157,8 +162,8 @@ export const AppRouter: React.FC = () => {
   );
 };
 
-// Wrapper to use navigate inside LandingPage
-const LandingPageWrapper = ({
+// Wrapper for the root route
+const RootWrapper = ({
   themePreference,
   setThemePreference,
 }: {
@@ -166,11 +171,18 @@ const LandingPageWrapper = ({
   setThemePreference: (theme: 'light' | 'dark' | 'system') => void;
 }) => {
   const navigate = useNavigate();
-  
-  // Mark that user has visited landing page
+  const hasVisitedLanding = localStorage.getItem('hasVisitedLanding');
+
   React.useEffect(() => {
-    localStorage.setItem('hasVisitedLanding', 'true');
-  }, []);
+    if (!hasVisitedLanding) {
+      // Mark that user has now visited the landing page
+      localStorage.setItem('hasVisitedLanding', 'true');
+    }
+  }, [hasVisitedLanding]);
+
+  if (hasVisitedLanding) {
+    return <Navigate to="/auth" replace />;
+  }
   
   return (
     <LandingPage
@@ -181,29 +193,3 @@ const LandingPageWrapper = ({
   );
 };
 
-// Wrapper for AuthPage that ensures user visited landing first
-const AuthPageWrapper = ({
-  addToast,
-  themePreference,
-  setThemePreference,
-}: {
-  addToast: (message: string, type: 'success' | 'error' | 'info') => void;
-  themePreference: 'light' | 'dark' | 'system';
-  setThemePreference: (theme: 'light' | 'dark' | 'system') => void;
-}) => {
-  const navigate = useNavigate();
-  const hasVisitedLanding = localStorage.getItem('hasVisitedLanding');
-  
-  // If user hasn't visited landing page, redirect to it first
-  if (!hasVisitedLanding) {
-    return <Navigate to="/" replace />;
-  }
-  
-  return (
-    <AuthPage
-      addToast={addToast}
-      themePreference={themePreference}
-      onSetThemePreference={setThemePreference}
-    />
-  );
-};
