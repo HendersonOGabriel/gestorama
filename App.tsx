@@ -42,6 +42,7 @@ import { Input } from './components/ui/Input';
 import { Label } from './components/ui/Label';
 import { Plus, Edit3, Trash2 } from 'lucide-react';
 import GroupForm from './components/categories/GroupForm';
+import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 
 const CategoryManager: React.FC<{
   categories: Category[];
@@ -158,8 +159,14 @@ const CategoryManager: React.FC<{
   );
 };
 
+interface AppProps {
+  user: SupabaseUser;
+  session: Session;
+  themePreference: 'light' | 'dark' | 'system';
+  setThemePreference: (theme: 'light' | 'dark' | 'system') => void;
+}
 
-const App: React.FC = () => {
+const App: React.FC<AppProps> = ({ user, session, themePreference, setThemePreference }) => {
     // Main App State
     const [isLoading, setIsLoading] = useState(true);
 
@@ -182,7 +189,6 @@ const App: React.FC = () => {
     const [currentPage, setCurrentPage] = useState('dashboard');
     const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [themePreference, setThemePreference] = useState<'light' | 'dark' | 'system'>('system');
     const [toasts, setToasts] = useState<ToastProps[]>([]);
     const [notifications, setNotifications] = useState<{ id: string, type: string, message: string }[]>([]);
     
@@ -328,7 +334,6 @@ const App: React.FC = () => {
             setReminders(stored.reminders || []);
             setUsers(stored.users || [{ id: 'user1', name: 'Usuário', email: 'user@gestorama.com', avatar: null, role: 'owner' }]);
             setSubscription(stored.subscription || { plan: 'free', memberSlots: 1, expires: null });
-            setThemePreference(stored.themePreference || 'system');
             setGamification(stored.gamification || { level: 1, xp: 0, xpToNextLevel: 100 });
             setYaraUsage(stored.yaraUsage || { count: 0, lastReset: new Date().toISOString().slice(0, 10)});
         }
@@ -371,27 +376,6 @@ const App: React.FC = () => {
             addToast(`${newTxs.length} transaç${newTxs.length > 1 ? 'ões' : 'ão'} recorrente${newTxs.length > 1 ? 's' : ''} gerada${newTxs.length > 1 ? 's' : ''}.`, 'success');
         }
     }, [isLoading]); 
-    
-    useEffect(() => {
-        const applyTheme = (theme: 'light' | 'dark') => {
-            if (theme === 'dark') {
-                document.documentElement.classList.add('dark');
-            } else {
-                document.documentElement.classList.remove('dark');
-            }
-        };
-
-        if (themePreference === 'system') {
-            const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-            applyTheme(mediaQuery.matches ? 'dark' : 'light');
-
-            const handler = (e: MediaQueryListEvent) => applyTheme(e.matches ? 'dark' : 'light');
-            mediaQuery.addEventListener('change', handler);
-            return () => mediaQuery.removeEventListener('change', handler);
-        } else {
-            applyTheme(themePreference);
-        }
-    }, [themePreference]);
     
     const stateToExport: Partial<AppState> = { accounts, cards, transactions, transfers, recurring, categories, budgets, goals, reminders, users, subscription, themePreference, gamification, yaraUsage };
 
@@ -448,7 +432,7 @@ const App: React.FC = () => {
     };
 
     return (
-        <div className={cn("bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-50", themePreference === 'system' ? '' : themePreference)}>
+        <div className="bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-50">
             <div className="flex min-h-screen">
                 <Sidebar 
                   currentPage={currentPage} setCurrentPage={setCurrentPage} 
