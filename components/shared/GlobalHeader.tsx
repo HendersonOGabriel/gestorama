@@ -21,7 +21,7 @@ const GamificationWidget: React.FC<{ gamification: GamificationState }> = ({ gam
   return (
     <div className="flex items-center gap-2 text-sm" title={`Nível ${gamification.level} - ${gamification.xp} / ${gamification.xpToNextLevel} XP`}>
       <Star className="w-5 h-5 text-amber-400 flex-shrink-0" />
-      <div className="hidden sm:block font-semibold text-indigo-400">{gamification.level}</div>
+      <div className="font-semibold text-indigo-400">{gamification.level}</div>
       <div className="w-16 sm:w-24 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
         <div 
           className="h-full bg-amber-400 transition-all duration-500"
@@ -37,28 +37,28 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ currentPage, notifications,
   const getTitle = () => {
     switch(currentPage) {
       case 'dashboard': return 'Visão Geral';
-      case 'reports': return 'Relatórios';
+      case 'reports': return 'Relatórios Avançados';
       case 'planning': return 'Planejamento';
       case 'calendar': return 'Calendário';
-      case 'profile': return 'Perfil';
-      case 'subscription': return 'Assinatura';
-      case 'about': return 'Sobre';
-      case 'faq': return 'FAQ';
-      case 'contact': return 'Contato';
+      case 'profile': return 'Perfil de Usuário';
+      case 'subscription': return 'Planos e Assinatura';
+      case 'about': return 'Sobre o Gestorama';
+      case 'faq': return 'Perguntas Frequentes (FAQ)';
+      case 'contact': return 'Contato e Suporte';
       case 'terms': return 'Termos de Uso';
-      case 'privacy': return 'Privacidade';
+      case 'privacy': return 'Política de Privacidade';
       default: return 'Gestorama';
     }
   };
 
   return (
     <>
-      <header className="py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2 min-w-0">
+      <header className="py-4 sm:py-6 flex items-center justify-between">
+        <div className="flex items-center gap-2">
           <Button 
             variant="ghost" 
             size="icon" 
-            className="md:hidden -ml-2 flex-shrink-0"
+            className="md:hidden -ml-2" 
             onClick={onToggleMobileMenu}
             aria-label="Abrir menu"
             aria-controls="sidebar"
@@ -66,9 +66,9 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ currentPage, notifications,
           >
             <Menu className="w-6 h-6" />
           </Button>
-          <h1 className="text-xl sm:text-2xl font-semibold truncate">{getTitle()}</h1>
+          <h1 className="text-2xl font-semibold">{getTitle()}</h1>
         </div>
-         <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+         <div className="flex items-center gap-4">
             <GamificationWidget gamification={gamification} />
             <div className="relative z-50">
                <NotificationBell notifications={notifications} onClear={onClearNotifications} />
