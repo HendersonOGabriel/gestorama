@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/src/integrations/supabase/client';
 import { Button } from '@/components/ui/Button';
@@ -6,10 +6,12 @@ import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 
 interface AuthPageProps {
-  onAuthSuccess: () => void;
+  addToast: (message: string, type?: 'success' | 'error' | 'info') => void;
+  themePreference: 'light' | 'dark' | 'system';
+  onSetThemePreference: (theme: 'light' | 'dark' | 'system') => void;
 }
 
-export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
+export const AuthPage: React.FC<AuthPageProps> = ({ addToast, themePreference, onSetThemePreference }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,15 +19,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    // Check if user is already logged in
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        onAuthSuccess();
-      }
-    });
-  }, [onAuthSuccess]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,9 +34,9 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
 
         if (error) throw error;
 
-        onAuthSuccess();
+        // AppRouter will handle navigation
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -56,7 +49,16 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
 
         if (error) throw error;
 
-        onAuthSuccess();
+        if (data.session) {
+          // User is already logged in (e.g., auto-confirm is on)
+        } else {
+          addToast(
+            'Verifique seu e-mail para confirmar sua conta.',
+            'info'
+          );
+          // Stay on the page to show the toast.
+          setIsLogin(true); // Switch to login view
+        }
       }
     } catch (error: any) {
       if (error.message.includes('already registered')) {
@@ -90,14 +92,26 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-card rounded-2xl shadow-xl p-8 border border-border">
+    <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-slate-900 p-4">
+      <div className="w-full max-w-md relative">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-4 left-4 text-slate-600 dark:text-slate-400"
+          onClick={() => navigate('/')}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6"><path d="m15 18-6-6 6-6"/></svg>
+        </Button>
+        <div className="absolute top-4 right-4">
+            {/* O ThemeSwitcher pode ser adicionado aqui se desejado no futuro */}
+        </div>
+
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 border border-slate-200 dark:border-slate-700">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">
               {isLogin ? 'Bem-vindo de volta!' : 'Criar conta'}
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-slate-600 dark:text-slate-400">
               {isLogin
                 ? 'Entre para gerenciar suas finanças'
                 : 'Comece a controlar suas finanças hoje'}
@@ -105,7 +119,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
           </div>
 
           {error && (
-            <div className="mb-4 p-3 bg-destructive/10 border border-destructive rounded-lg text-destructive text-sm">
+            <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-600 rounded-lg text-red-700 dark:text-red-400 text-sm">
               {error}
             </div>
           )}
@@ -165,10 +179,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border"></div>
+              <div className="w-full border-t border-slate-200 dark:border-slate-700"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-card text-muted-foreground">
+              <span className="px-2 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400">
                 ou continue com
               </span>
             </div>
