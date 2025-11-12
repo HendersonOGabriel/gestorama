@@ -118,7 +118,7 @@ const RecurringForm: React.FC<RecurringFormProps> = ({ recurringItem, onAdd, onU
                 <Label>Descrição</Label>
                 <Input value={desc} onChange={e => setDesc(e.target.value)} />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                     <Label>Valor</Label>
                     <Input type="number" min="0" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} />
@@ -129,7 +129,7 @@ const RecurringForm: React.FC<RecurringFormProps> = ({ recurringItem, onAdd, onU
                 </div>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                     <Label>Finalidade</Label>
                     <select value={isIncome.toString()} onChange={e => setIsIncome(e.target.value === 'true')} className="w-full p-2 h-10 border rounded-md bg-white dark:bg-slate-800 dark:border-slate-700">

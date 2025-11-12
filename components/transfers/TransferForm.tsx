@@ -62,7 +62,7 @@ const TransferForm: React.FC<TransferFormProps> = ({ accounts, transfer, onTrans
         <Label htmlFor="toAccount">Para</Label>
         <select id="toAccount" value={toAccount} onChange={e => setToAccount(e.target.value)} className="w-full p-2 h-10 border rounded-md bg-white dark:bg-slate-800 dark:border-slate-700">{accounts.map(a => <option key={a.id} value={a.id}>{a.name} ({toCurrency(a.balance)})</option>)}</select>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
           <Label htmlFor="amount">Valor</Label>
           <Input id="amount" type="number" min="0" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} />

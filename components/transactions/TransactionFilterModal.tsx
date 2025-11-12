@@ -53,7 +53,7 @@ const TransactionFilterModal: React.FC<TransactionFilterModalProps> = ({ isOpen,
               <Input id="filter-desc" value={filters.description} onChange={e=>setFilters(f=>({...f, description: e.target.value}))}/>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Label htmlFor="filter-cat">Categoria</Label>
                 <select id="filter-cat" value={filters.categoryId} onChange={e=>setFilters(f=>({...f, categoryId: e.target.value}))} className="w-full p-2 h-10 border rounded-md bg-white dark:bg-slate-800 dark:border-slate-700">
@@ -75,7 +75,7 @@ const TransactionFilterModal: React.FC<TransactionFilterModalProps> = ({ isOpen,
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Label htmlFor="filter-account">Conta</Label>
                 <select id="filter-account" value={filters.accountId} onChange={e=>setFilters(f=>({...f, accountId: e.target.value}))} className="w-full p-2 h-10 border rounded-md bg-white dark:bg-slate-800 dark:border-slate-700">
@@ -92,7 +92,7 @@ const TransactionFilterModal: React.FC<TransactionFilterModalProps> = ({ isOpen,
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                     <Label htmlFor="filter-start">Data Início</Label>
                     <Input id="filter-start" type="date" value={filters.startDate} onChange={e=>setFilters(f=>({...f, startDate: e.target.value}))}/>

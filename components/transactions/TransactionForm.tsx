@@ -123,7 +123,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ isOpen, onClose, onSu
               <Input id="desc" value={form.desc} onChange={e=>setForm(f=>({...f, desc: e.target.value}))}/>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Label htmlFor="amount">Valor</Label>
                 <Input id="amount" type="number" min="0" step="0.01" value={form.amount} onChange={e=>setForm(f=>({...f, amount: e.target.value}))}/>
@@ -134,7 +134,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ isOpen, onClose, onSu
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Label htmlFor="isIncome">Finalidade</Label>
                 <select
@@ -178,7 +178,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ isOpen, onClose, onSu
               </div>
             )}
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Label htmlFor="account">Conta</Label>
                 <select id="account" value={selectedAccount} onChange={e => setSelectedAccount(e.target.value)} className="w-full p-2 h-10 border rounded-md bg-white dark:bg-slate-800 dark:border-slate-700" disabled={isCardExpense}>
