@@ -4,6 +4,7 @@ import { cn } from '../../utils/helpers';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Subscription, YaraUsage } from '../../types';
+import { supabase } from '@/src/integrations/supabase/client';
 
 interface Message {
   text: string;
@@ -38,7 +39,7 @@ const YaraChat: React.FC<YaraChatProps> = ({ subscription, yaraUsage, incrementY
         }
     }, [messages, isOpen]);
 
-    const handleSendMessage = (e: React.FormEvent) => {
+    const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
         const trimmedInput = inputValue.trim();
         if (!trimmedInput) return;
@@ -59,13 +60,50 @@ const YaraChat: React.FC<YaraChatProps> = ({ subscription, yaraUsage, incrementY
         setInputValue('');
         incrementYaraUsage();
 
-        setTimeout(() => {
+        // Add typing indicator
+        const typingMessage: Message = { text: "Yara está digitando...", sender: 'yara' };
+        setMessages(prev => [...prev, typingMessage]);
+
+        try {
+            // Send all messages to maintain context
+            const conversationHistory = [...messages, userMessage].map(msg => ({
+                role: msg.sender === 'user' ? 'user' : 'assistant',
+                content: msg.text
+            }));
+
+            const { data, error } = await supabase.functions.invoke('yara-chat', {
+                body: { messages: conversationHistory }
+            });
+
+            // Remove typing indicator
+            setMessages(prev => prev.filter(msg => msg.text !== "Yara está digitando..."));
+
+            if (error) {
+                console.error('Error calling yara-chat:', error);
+                const errorMessage: Message = { 
+                    text: "Desculpe, tive um problema ao processar sua mensagem. Tente novamente.", 
+                    sender: 'yara' 
+                };
+                setMessages(prev => [...prev, errorMessage]);
+                return;
+            }
+
             const yaraResponse: Message = { 
-                text: "Entendido! Estou processando sua solicitação. Esta funcionalidade ainda está em desenvolvimento e logo poderei registrar suas transações.", 
+                text: data.message || "Desculpe, não consegui processar sua mensagem.", 
                 sender: 'yara' 
             };
             setMessages(prev => [...prev, yaraResponse]);
-        }, 1000);
+        } catch (error) {
+            console.error('Error in handleSendMessage:', error);
+            // Remove typing indicator
+            setMessages(prev => prev.filter(msg => msg.text !== "Yara está digitando..."));
+            
+            const errorMessage: Message = { 
+                text: "Desculpe, tive um problema ao processar sua mensagem. Tente novamente.", 
+                sender: 'yara' 
+            };
+            setMessages(prev => [...prev, errorMessage]);
+        }
     };
 
     return (
