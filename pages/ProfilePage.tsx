@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { User, Subscription, AppState, GamificationState } from '../types';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/Dialog';
 import ProfileEditModal from '../components/profile/ProfileEditModal';
 import PlanManagementCard from '../components/profile/PlanManagementCard';
 import YaraWhatsAppCard from '../components/profile/YaraWhatsAppCard';
@@ -23,6 +24,7 @@ interface ProfilePageProps {
   onOpenImport: () => void;
   appState: Partial<AppState>;
   gamification: GamificationState;
+  onLogout: () => void;
 }
 
 const ProfilePage: React.FC<ProfilePageProps> = ({
@@ -39,9 +41,11 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
   isLoading,
   onOpenImport,
   appState,
-  gamification
+  gamification,
+  onLogout
 }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const progress = (gamification.xp / gamification.xpToNextLevel) * 100;
 
   const handleExportData = () => {
@@ -168,7 +172,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                  <Button variant="outline" className="w-full" onClick={onGoToSubscription}>
                     Ver Planos e Assinatura
                  </Button>
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full" onClick={() => setIsLogoutModalOpen(true)}>
                     <LogOut className="w-4 h-4 mr-2" />
                     Sair (Logout)
                 </Button>
@@ -188,6 +192,25 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
         addToast={addToast}
         isLoading={isLoading}
       />
+
+      <Dialog open={isLogoutModalOpen} onOpenChange={setIsLogoutModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar Logout</DialogTitle>
+            <div className="text-sm text-slate-500 dark:text-slate-400">
+              Você tem certeza de que deseja sair da sua conta?
+            </div>
+          </DialogHeader>
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setIsLogoutModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button variant="default" onClick={onLogout}>
+              Sair
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -35,7 +35,7 @@ import { MOCK_ACCOUNTS, MOCK_CARDS, MOCK_TRANSACTIONS, MOCK_RECURRING, MOCK_BUDG
 import { DEFAULT_CATEGORIES } from './data/initialData';
 import { monthKey, getInvoiceMonthKey, getInvoiceDueDate, toCurrency } from './utils/helpers';
 import { runRecurringItem } from './services/recurringService';
-import { loadState, saveState, getOnboardingStatus, setOnboardingCompleted, resetOnboardingStatus } from './services/storageService';
+import { loadState, saveState, getOnboardingStatus, setOnboardingCompleted, resetOnboardingStatus, clearState } from './services/storageService';
 import { cn } from './utils/helpers';
 import { Button } from './components/ui/Button';
 import { Input } from './components/ui/Input';
@@ -303,6 +303,13 @@ const App: React.FC<AppProps> = ({ user, session, themePreference, setThemePrefe
     const handleEnterApp = (page?: string) => {
         setCurrentPage(page || 'dashboard');
     };
+
+    const handleLogout = async () => {
+      await supabase.auth.signOut();
+      clearState();
+      resetOnboardingStatus();
+      // AppRouter will handle redirect automatically on SIGNED_OUT event
+    };
     
     // -- Effects --
     useEffect(() => {
@@ -417,6 +424,7 @@ const App: React.FC<AppProps> = ({ user, session, themePreference, setThemePrefe
                 onOpenImport={() => setModal('import')}
                 appState={stateToExport}
                 gamification={gamification}
+                onLogout={handleLogout}
             />;
             case 'subscription': return <SubscriptionPage 
                 currentSubscription={subscription} isLoading={isLoading} addToast={addToast}
