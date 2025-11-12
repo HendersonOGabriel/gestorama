@@ -224,7 +224,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ isOpen, onClose, onSu
                </div>
             )}
 
-            <div className="flex justify-end gap-2 pt-4">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-4">
               <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
               <Button type="submit" loading={isLoading}>Salvar</Button>
             </div>
