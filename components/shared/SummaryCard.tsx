@@ -8,10 +8,11 @@ interface SummaryCardProps {
   // FIX: Explicitly typed the icon prop to ensure it accepts a className, resolving a TypeScript error where icon.props was treated as 'unknown'.
   icon: React.ReactElement<{ className?: string }>;
   colorClass?: string;
+  className?: string;
 }
 
-const SummaryCard: React.FC<SummaryCardProps> = ({ title, value, icon, colorClass = 'text-indigo-500' }) => (
-  <Card>
+const SummaryCard: React.FC<SummaryCardProps> = ({ title, value, icon, colorClass = 'text-indigo-500', className }) => (
+  <Card className={className}>
     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
       <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">{title}</CardTitle>
       {/* FIX: Removed colorClass from the icon span to allow the icon itself (e.g., ChangeIndicator) to control its color. */}
@@ -20,7 +21,7 @@ const SummaryCard: React.FC<SummaryCardProps> = ({ title, value, icon, colorClas
       </span>
     </CardHeader>
     <CardContent className="text-center">
-      <div className={`text-2xl font-bold ${colorClass}`}>{value}</div>
+      <div className={`text-lg sm:text-xl font-bold ${colorClass} break-words`}>{value}</div>
     </CardContent>
   </Card>
 );

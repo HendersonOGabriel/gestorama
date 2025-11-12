@@ -410,17 +410,17 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
                 aria-hidden="true"
             />
             <div className="relative z-10">
-                <h2 className="text-3xl font-bold">{greeting}, {ownerProfile.name}!</h2>
-                <p className="mt-1 text-slate-300">Aqui está um resumo de suas finanças hoje.</p>
+                <h2 className="text-2xl sm:text-3xl font-bold">{greeting}, {ownerProfile.name}!</h2>
+                <p className="mt-1 text-slate-300 text-sm sm:text-base">Aqui está um resumo de suas finanças hoje.</p>
             </div>
         </div>
       </AnimatedItem>
       
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6" data-tour-id="summary-cards">
-        <AnimatedItem delay={100}><SummaryCard title="Receita Paga" value={toCurrency(summaryData.paidIncome)} colorClass="text-green-500" icon={<ArrowUpCircle />} /></AnimatedItem>
-        <AnimatedItem delay={200}><SummaryCard title="Despesa Paga" value={toCurrency(summaryData.paidExpense)} colorClass="text-red-500" icon={<ArrowDownCircle />} /></AnimatedItem>
-        <AnimatedItem delay={300}><SummaryCard title="Saldo Atual" value={toCurrency(totalBalance)} colorClass="text-indigo-500" icon={<Wallet />} /></AnimatedItem>
-        <AnimatedItem delay={400}><SummaryCard title="Contas a Pagar" value={toCurrency(summaryData.pendingBills)} colorClass="text-amber-500" icon={<AlertTriangle />} /></AnimatedItem>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4" data-tour-id="summary-cards">
+        <AnimatedItem delay={100}><SummaryCard title="Receita Paga" value={toCurrency(summaryData.paidIncome)} colorClass="text-green-500" icon={<ArrowUpCircle />} className="p-3 sm:p-4" /></AnimatedItem>
+        <AnimatedItem delay={200}><SummaryCard title="Despesa Paga" value={toCurrency(summaryData.paidExpense)} colorClass="text-red-500" icon={<ArrowDownCircle />} className="p-3 sm:p-4" /></AnimatedItem>
+        <AnimatedItem delay={300}><SummaryCard title="Saldo Atual" value={toCurrency(totalBalance)} colorClass="text-indigo-500" icon={<Wallet />} className="p-3 sm:p-4" /></AnimatedItem>
+        <AnimatedItem delay={400}><SummaryCard title="Contas a Pagar" value={toCurrency(summaryData.pendingBills)} colorClass="text-amber-500" icon={<AlertTriangle />} className="p-3 sm:p-4" /></AnimatedItem>
       </div>
 
       <div className="relative">
