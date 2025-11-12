@@ -3,3 +3,4 @@ dist
 .env
 npm-debug.log
 yarn-error.log
+dev_server.log
