@@ -416,7 +416,7 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
         </div>
       </AnimatedItem>
       
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6" data-tour-id="summary-cards">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6" data-tour-id="summary-cards">
         <AnimatedItem delay={100}><SummaryCard title="Receita Paga" value={toCurrency(summaryData.paidIncome)} colorClass="text-green-500" icon={<ArrowUpCircle />} /></AnimatedItem>
         <AnimatedItem delay={200}><SummaryCard title="Despesa Paga" value={toCurrency(summaryData.paidExpense)} colorClass="text-red-500" icon={<ArrowDownCircle />} /></AnimatedItem>
         <AnimatedItem delay={300}><SummaryCard title="Saldo Atual" value={toCurrency(totalBalance)} colorClass="text-indigo-500" icon={<Wallet />} /></AnimatedItem>
@@ -552,10 +552,10 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="overflow-x-auto"><table className="min-w-full text-sm">
+                  <div className="overflow-x-auto -mx-6 sm:mx-0"><table className="min-w-full text-sm">
                       <thead className="border-b border-slate-200 dark:border-slate-700">
-                        <tr>
-                          <th className="p-3 text-left font-semibold">Descrição</th>
+                        <tr className="px-6 sm:px-0">
+                          <th className="p-3 pl-6 sm:pl-3 text-left font-semibold">Descrição</th>
                           <th className="p-3 text-right font-semibold">Valor</th>
                           <th className="p-3 text-left font-semibold hidden sm:table-cell">Data</th>
                           <th className="p-3 text-center font-semibold">Status</th>
@@ -624,11 +624,11 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
                   </div>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto max-h-60">
+                <div className="overflow-x-auto max-h-60 -mx-6 sm:mx-0">
                   <table className="min-w-full text-sm">
                     <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800/50">
-                      <tr>
-                        <th className="p-2 text-left font-semibold">Mês</th>
+                      <tr className="px-6 sm:px-0">
+                        <th className="p-2 pl-6 sm:pl-2 text-left font-semibold">Mês</th>
                         <th className="p-2 text-right font-semibold">Valor Total</th>
                       </tr>
                     </thead>
@@ -733,11 +733,11 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
         {mainTab === 'recurring' && <Card><CardHeader className="flex flex-row items-center gap-4"><CardTitle>Recorrências</CardTitle><Button onClick={onAddRecurring} size="sm"><Plus className="w-4 h-4 mr-1"/> Adicionar</Button></CardHeader><CardContent><RecurringList recurring={recurring} onAdd={onAddRecurring} onEdit={onEditRecurring} onUpdate={(item) => onUpdateRecurring(prev => prev.map(r => r.id === item.id ? item : r))} onRemove={(id) => onRemoveRecurring(prev => prev.filter(r => r.id !== id))} accounts={accounts} cards={cards} categories={categories} /></CardContent></Card>}
         
         {mainTab === 'transfers' && <Card><CardHeader className="flex flex-row items-center gap-4"><CardTitle>Transferências e Movimentações Internas</CardTitle><Button onClick={onAddTransfer} size="sm"><Plus className="w-4 h-4 mr-1"/>Adicionar</Button></CardHeader><CardContent>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto -mx-6 sm:mx-0">
               <table className="min-w-full text-sm text-left">
                 <thead className="border-b border-slate-200 dark:border-slate-700">
-                  <tr>
-                    <th className="p-3 font-semibold">Descrição</th>
+                  <tr className="px-6 sm:px-0">
+                    <th className="p-3 pl-6 sm:pl-3 font-semibold">Descrição</th>
                     <th className="p-3 font-semibold">Origem</th>
                     <th className="p-3 font-semibold">Destino</th>
                     <th className="p-3 font-semibold text-right">Valor</th>
