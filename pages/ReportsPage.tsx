@@ -256,16 +256,18 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, accounts, cards
                     <Tooltip formatter={(v: number) => toCurrency(v)} />
                     </PieChart>
                 </ResponsiveContainer>
-                <div className="max-h-[300px] overflow-auto">
-                    <table className="w-full text-sm">
-                        <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800"><tr className="text-left"><th className="p-2 font-medium">Categoria</th><th className="p-2 font-medium text-right">Valor</th><th className="p-2 font-medium text-right">%</th></tr></thead>
-                        <tbody>
-                            {categoryData.tableData.map(item => (
-                                <tr key={item.id} className="border-t dark:border-slate-700"><td className="p-2">{item.name}</td><td className="p-2 text-right">{toCurrency(item.value)}</td><td className="p-2 text-right">{item.percentage.toFixed(1)}%</td></tr>
-                            ))}
-                        </tbody>
-                         <tfoot><tr className="border-t-2 font-bold"><td className="p-2">Total</td><td className="p-2 text-right">{toCurrency(categoryData.total)}</td><td className="p-2 text-right">100%</td></tr></tfoot>
-                    </table>
+                <div className="overflow-x-auto">
+                    <div className="max-h-[300px] overflow-y-auto">
+                        <table className="min-w-full text-sm">
+                            <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800"><tr className="text-left"><th className="p-2 font-medium">Categoria</th><th className="p-2 font-medium text-right">Valor</th><th className="p-2 font-medium text-right">%</th></tr></thead>
+                            <tbody>
+                                {categoryData.tableData.map(item => (
+                                    <tr key={item.id} className="border-t dark:border-slate-700"><td className="p-2">{item.name}</td><td className="p-2 text-right">{toCurrency(item.value)}</td><td className="p-2 text-right">{item.percentage.toFixed(1)}%</td></tr>
+                                ))}
+                            </tbody>
+                            <tfoot><tr className="border-t-2 font-bold"><td className="p-2">Total</td><td className="p-2 text-right">{toCurrency(categoryData.total)}</td><td className="p-2 text-right">100%</td></tr></tfoot>
+                        </table>
+                    </div>
                 </div>
                 </>
             ) : <div className="col-span-2 text-center py-20 text-slate-500">Nenhuma despesa encontrada para os filtros selecionados.</div>}
@@ -295,12 +297,12 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, accounts, cards
                 <div className="text-center text-sm text-slate-500">
                   Comparando {displayDate(primaryDate.startDate)} até {displayDate(primaryDate.endDate)} com {displayDate(calculatedCompareDate.startDate)} até {displayDate(calculatedCompareDate.endDate)}
                 </div>
-                <div className="grid md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <SummaryCard title="Receitas" value={toCurrency(comparisonData.primary.income)} icon={<ChangeIndicator value={comparisonData.incomeChange} positiveIsGood={true} />} colorClass="text-slate-800 dark:text-slate-100" />
                     <SummaryCard title="Despesas" value={toCurrency(comparisonData.primary.expense)} icon={<ChangeIndicator value={comparisonData.expenseChange} />} colorClass="text-slate-800 dark:text-slate-100" />
                     <SummaryCard title="Saldo Final" value={toCurrency(comparisonData.primary.balance)} icon={<ChangeIndicator value={comparisonData.balanceChange} positiveIsGood={true} />} colorClass="text-slate-800 dark:text-slate-100" />
                 </div>
-                <div className="text-sm text-slate-500 grid md:grid-cols-3 gap-6 text-center">
+                <div className="text-sm text-slate-500 grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
                   <div>vs. {toCurrency(comparisonData.compare.income)}</div>
                   <div>vs. {toCurrency(comparisonData.compare.expense)}</div>
                   <div>vs. {toCurrency(comparisonData.compare.balance)}</div>
@@ -320,10 +322,10 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, accounts, cards
           <CardContent className="space-y-4">
           <div>
             <Label>Período Principal</Label>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-1">
               <Input type="date" value={primaryDate.startDate} onChange={e => setPrimaryDate(p => ({...p, startDate: e.target.value}))} />
               <Input type="date" value={primaryDate.endDate} onChange={e => setPrimaryDate(p => ({...p, endDate: e.target.value}))} />
-              <div className="col-span-2 flex items-center gap-2 flex-wrap">
+              <div className="col-span-1 sm:col-span-2 flex items-center gap-2 flex-wrap">
                  <Button size="sm" variant="outline" onClick={() => handleSetPreset('this_month')}>Este Mês</Button>
                  <Button size="sm" variant="outline" onClick={() => handleSetPreset('last_month')}>Mês Passado</Button>
                  <Button size="sm" variant="outline" onClick={() => handleSetPreset('this_year')}>Este Ano</Button>
@@ -342,7 +344,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, accounts, cards
                 </select>
               )}
            </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t dark:border-slate-700">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t dark:border-slate-700">
             <div>
               <Label>Tipo de Movimentação</Label>
               <select value={txType} onChange={e => setTxType(e.target.value as any)} className="w-full p-2 h-10 border rounded-md bg-white dark:bg-slate-800 dark:border-slate-700"><option value="all">Todos</option><option value="income">Receitas</option><option value="expense">Despesas</option></select>
