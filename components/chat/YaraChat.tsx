@@ -114,7 +114,7 @@ const YaraChat: React.FC<YaraChatProps> = ({ subscription, yaraUsage, incrementY
     return (
         <>
             {/* Floating Input when chat is closed */}
-            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20 w-full max-w-lg px-4">
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20 w-[calc(100%-2rem)] sm:max-w-lg">
                  <div 
                     className={cn(
                         "relative transition-all duration-300 ease-in-out",
