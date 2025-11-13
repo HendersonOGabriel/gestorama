@@ -308,7 +308,7 @@ const PlanningPage: React.FC<PlanningPageProps> = ({ categories, budgets, setBud
     };
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start w-full">
             <BudgetSection 
               categories={categories} 
               budgets={budgets} 
