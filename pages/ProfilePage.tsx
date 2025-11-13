@@ -23,6 +23,7 @@ interface ProfilePageProps {
   onOpenImport: () => void;
   appState: Partial<AppState>;
   gamification: GamificationState;
+  onLogout: () => void;
 }
 
 const ProfilePage: React.FC<ProfilePageProps> = ({
@@ -39,7 +40,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
   isLoading,
   onOpenImport,
   appState,
-  gamification
+  gamification,
+  onLogout
 }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const progress = (gamification.xp / gamification.xpToNextLevel) * 100;
@@ -168,7 +170,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                  <Button variant="outline" className="w-full" onClick={onGoToSubscription}>
                     Ver Planos e Assinatura
                  </Button>
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full" onClick={onLogout}>
                     <LogOut className="w-4 h-4 mr-2" />
                     Sair (Logout)
                 </Button>
