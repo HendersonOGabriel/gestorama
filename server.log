@@ -1,3 +1,6 @@
 
-> gestorama---personal-finance-manager@0.0.0 dev
-> vite
+> gestorama---personal-finance-manager@0.0.0 preview
+> vite build && vite preview
+
+vite v6.4.1 building for production...
+transforming...

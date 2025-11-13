@@ -372,13 +372,14 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, accounts, cards
         </CardContent>
       </Card>
 
-      <div className="flex justify-center gap-2 p-1 rounded-lg bg-slate-200 dark:bg-slate-800">
+      <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 p-1 rounded-lg bg-slate-200 dark:bg-slate-800">
         <Button onClick={() => setReportType('evolution')} variant={reportType==='evolution' ? 'default' : 'ghost'} className="flex-1"><LineChartIcon className="w-4 h-4 mr-2"/>Evolução Mensal</Button>
         <Button onClick={() => setReportType('category')} variant={reportType==='category' ? 'default' : 'ghost'} className="flex-1"><PieChartIcon className="w-4 h-4 mr-2"/>Análise por Categoria</Button>
         <Button onClick={() => setReportType('comparison')} variant={reportType==='comparison' ? 'default' : 'ghost'} className="flex-1"><Replace className="w-4 h-4 mr-2"/>Comparativo</Button>
       </div>
 
-      <Card>
+      <div className="overflow-x-auto">
+        <Card>
         <CardHeader>
             <CardTitle>
                 {reportType === 'evolution' && 'Evolução de Receitas e Despesas'}
@@ -389,7 +390,8 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, accounts, cards
         <CardContent>
             {renderReportContent()}
         </CardContent>
-      </Card>
+        </Card>
+      </div>
       </div>
       <ReportSummary
         reportType={reportType}
