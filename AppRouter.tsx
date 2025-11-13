@@ -30,12 +30,6 @@ export const AppRouter: React.FC = () => {
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
-        
-        if (event === 'SIGNED_IN') {
-          console.log('User signed in:', session?.user?.email);
-        } else if (event === 'SIGNED_OUT') {
-          console.log('User signed out');
-        }
       }
     );
 

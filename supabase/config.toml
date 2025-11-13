@@ -1,4 +1,1 @@
 project_id = "rbbkwsonvmfcworkmuro"
-
-[functions.yara-chat]
-verify_jwt = false
