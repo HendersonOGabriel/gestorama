@@ -315,7 +315,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, accounts, cards
 
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start w-full">
       <div className="lg:col-span-2 space-y-6">
         <Card>
           <CardHeader><CardTitle className="flex items-center gap-2"><Filter className="w-5 h-5"/> Filtros de Relatório</CardTitle></CardHeader>
