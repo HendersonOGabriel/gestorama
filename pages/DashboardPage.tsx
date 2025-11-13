@@ -400,9 +400,9 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="grid grid-cols-1 gap-6">
       <AnimatedItem>
-        <div className="relative rounded-xl overflow-hidden mb-6 p-8 min-h-[160px] flex flex-col justify-center text-white bg-slate-900">
+        <div className="relative rounded-xl overflow-hidden p-8 min-h-[160px] flex flex-col justify-center text-white bg-slate-900">
             <img
                 src={greetingImage}
                 alt="Imagem de saudação contextual"

@@ -87,7 +87,7 @@ const FamilyDashboardPage: React.FC<FamilyDashboardPageProps> = ({ transactions,
     }
 
     return (
-        <div className="space-y-6">
+        <div className="grid grid-cols-1 gap-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <SummaryCard title="Renda Familiar (Mês)" value={toCurrency(familyData.totalIncome)} icon={<ArrowUpCircle />} colorClass="text-green-500" />
                 <SummaryCard title="Despesa Familiar (Mês)" value={toCurrency(familyData.totalExpense)} icon={<ArrowDownCircle />} colorClass="text-red-500" />

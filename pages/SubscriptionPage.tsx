@@ -89,7 +89,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ addToast, onUpgrade
   };
 
   return (
-    <div className="space-y-8">
+    <div className="grid grid-cols-1 gap-8">
       <div className="text-center">
         <h2 className="text-3xl font-bold">Escolha o Plano Ideal para Você</h2>
         <p className="text-slate-500 dark:text-slate-400 mt-2">Transforme suas finanças hoje. Cancele quando quiser.</p>
