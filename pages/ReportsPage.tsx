@@ -256,7 +256,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, accounts, cards
                     <Tooltip formatter={(v: number) => toCurrency(v)} />
                     </PieChart>
                 </ResponsiveContainer>
-                <div className="max-h-[300px] overflow-y-auto">
+                <div className="max-h-[300px] overflow-auto">
                     <table className="w-full text-sm">
                         <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800"><tr className="text-left"><th className="p-2 font-medium">Categoria</th><th className="p-2 font-medium text-right">Valor</th><th className="p-2 font-medium text-right">%</th></tr></thead>
                         <tbody>

@@ -724,6 +724,7 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
                                         ))}
                                     </div>
                                 </div>
+                                </div>
                             )}
                         </div>);
                     })}
