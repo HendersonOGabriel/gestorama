@@ -416,11 +416,11 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
         </div>
       </AnimatedItem>
       
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4" data-tour-id="summary-cards">
-        <AnimatedItem delay={100}><SummaryCard title="Receita Paga" value={toCurrency(summaryData.paidIncome)} colorClass="text-green-500" icon={<ArrowUpCircle />} className="p-3 sm:p-4" /></AnimatedItem>
-        <AnimatedItem delay={200}><SummaryCard title="Despesa Paga" value={toCurrency(summaryData.paidExpense)} colorClass="text-red-500" icon={<ArrowDownCircle />} className="p-3 sm:p-4" /></AnimatedItem>
-        <AnimatedItem delay={300}><SummaryCard title="Saldo Atual" value={toCurrency(totalBalance)} colorClass="text-indigo-500" icon={<Wallet />} className="p-3 sm:p-4" /></AnimatedItem>
-        <AnimatedItem delay={400}><SummaryCard title="Contas a Pagar" value={toCurrency(summaryData.pendingBills)} colorClass="text-amber-500" icon={<AlertTriangle />} className="p-3 sm:p-4" /></AnimatedItem>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6" data-tour-id="summary-cards">
+        <AnimatedItem delay={100}><SummaryCard title="Receita Paga" value={toCurrency(summaryData.paidIncome)} colorClass="text-green-500" icon={<ArrowUpCircle />} /></AnimatedItem>
+        <AnimatedItem delay={200}><SummaryCard title="Despesa Paga" value={toCurrency(summaryData.paidExpense)} colorClass="text-red-500" icon={<ArrowDownCircle />} /></AnimatedItem>
+        <AnimatedItem delay={300}><SummaryCard title="Saldo Atual" value={toCurrency(totalBalance)} colorClass="text-indigo-500" icon={<Wallet />} /></AnimatedItem>
+        <AnimatedItem delay={400}><SummaryCard title="Contas a Pagar" value={toCurrency(summaryData.pendingBills)} colorClass="text-amber-500" icon={<AlertTriangle />} /></AnimatedItem>
       </div>
 
       <div className="relative">
@@ -624,11 +624,12 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
                   </div>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto max-h-60">
-                  <table className="min-w-full text-sm">
-                    <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800/50">
-                      <tr>
-                        <th className="p-2 text-left font-semibold">Mês</th>
+                <div className="overflow-x-auto">
+                  <div className="max-h-60 overflow-y-auto">
+                    <table className="min-w-full text-sm">
+                      <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800/50">
+                        <tr>
+                          <th className="p-2 text-left font-semibold">Mês</th>
                         <th className="p-2 text-right font-semibold">Valor Total</th>
                       </tr>
                     </thead>
