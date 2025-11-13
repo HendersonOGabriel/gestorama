@@ -652,6 +652,7 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
                       )}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               </CardContent>
             </Card>

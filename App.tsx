@@ -297,6 +297,11 @@ const App: React.FC = () => {
     const handleEnterApp = (page?: string) => {
         setCurrentPage(page || 'dashboard');
     };
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        window.location.href = '/auth';
+    };
     
     // -- Effects --
     useEffect(() => {
@@ -433,6 +438,7 @@ const App: React.FC = () => {
                 onOpenImport={() => setModal('import')}
                 appState={stateToExport}
                 gamification={gamification}
+                onLogout={handleLogout}
             />;
             case 'subscription': return <SubscriptionPage 
                 currentSubscription={subscription} isLoading={isLoading} addToast={addToast}
