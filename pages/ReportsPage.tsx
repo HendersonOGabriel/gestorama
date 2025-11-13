@@ -256,7 +256,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, accounts, cards
                     <Tooltip formatter={(v: number) => toCurrency(v)} />
                     </PieChart>
                 </ResponsiveContainer>
-                <div className="max-h-[300px] overflow-y-auto">
+                <div className="max-h-[300px] overflow-auto">
                     <table className="w-full text-sm">
                         <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800"><tr className="text-left"><th className="p-2 font-medium">Categoria</th><th className="p-2 font-medium text-right">Valor</th><th className="p-2 font-medium text-right">%</th></tr></thead>
                         <tbody>
@@ -372,7 +372,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, accounts, cards
         </CardContent>
       </Card>
 
-      <div className="flex justify-center gap-2 p-1 rounded-lg bg-slate-200 dark:bg-slate-800">
+      <div className="flex flex-col sm:flex-row justify-center gap-2 p-1 rounded-lg bg-slate-200 dark:bg-slate-800">
         <Button onClick={() => setReportType('evolution')} variant={reportType==='evolution' ? 'default' : 'ghost'} className="flex-1"><LineChartIcon className="w-4 h-4 mr-2"/>Evolução Mensal</Button>
         <Button onClick={() => setReportType('category')} variant={reportType==='category' ? 'default' : 'ghost'} className="flex-1"><PieChartIcon className="w-4 h-4 mr-2"/>Análise por Categoria</Button>
         <Button onClick={() => setReportType('comparison')} variant={reportType==='comparison' ? 'default' : 'ghost'} className="flex-1"><Replace className="w-4 h-4 mr-2"/>Comparativo</Button>
