@@ -245,7 +245,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, accounts, cards
         );
       case 'category':
         return (
-          <div className="grid md:grid-cols-2 gap-6 items-center">
+          <div className="grid lg:grid-cols-2 gap-6 items-center">
             {categoryData.pieData.length > 0 ? (
                 <>
                 <ResponsiveContainer width="100%" height={300}>
@@ -323,7 +323,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, accounts, cards
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-1">
               <Input type="date" value={primaryDate.startDate} onChange={e => setPrimaryDate(p => ({...p, startDate: e.target.value}))} />
               <Input type="date" value={primaryDate.endDate} onChange={e => setPrimaryDate(p => ({...p, endDate: e.target.value}))} />
-              <div className="col-span-2 flex items-center gap-2">
+              <div className="col-span-2 flex items-center gap-2 flex-wrap">
                  <Button size="sm" variant="outline" onClick={() => handleSetPreset('this_month')}>Este Mês</Button>
                  <Button size="sm" variant="outline" onClick={() => handleSetPreset('last_month')}>Mês Passado</Button>
                  <Button size="sm" variant="outline" onClick={() => handleSetPreset('this_year')}>Este Ano</Button>
