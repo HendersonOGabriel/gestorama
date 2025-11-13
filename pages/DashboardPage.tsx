@@ -410,8 +410,8 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
                 aria-hidden="true"
             />
             <div className="relative z-10">
-                <h2 className="text-3xl font-bold">{greeting}, {ownerProfile.name}!</h2>
-                <p className="mt-1 text-slate-300">Aqui está um resumo de suas finanças hoje.</p>
+                <h2 className="text-2xl sm:text-3xl font-bold">{greeting}, {ownerProfile.name}!</h2>
+                <p className="mt-1 text-slate-300 text-sm sm:text-base">Aqui está um resumo de suas finanças hoje.</p>
             </div>
         </div>
       </AnimatedItem>
