@@ -4,6 +4,8 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 // @ts-ignore: Deno types
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.80.0';
+// @ts-ignore: Deno types
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 // @ts-ignore: Deno runtime
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -17,6 +19,26 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Validation schemas
+const messageSchema = z.object({
+  role: z.enum(['user', 'assistant', 'system']),
+  content: z.string().min(1).max(2000),
+});
+
+const requestSchema = z.object({
+  messages: z.array(messageSchema).min(1).max(50),
+});
+
+const transactionArgsSchema = z.object({
+  description: z.string().min(1).max(200),
+  amount: z.number().positive().max(999999999),
+  is_income: z.boolean(),
+  type: z.enum(['card', 'cash', 'prazo']),
+  installments: z.number().int().min(1).max(48).optional(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  person: z.string().max(100).optional(),
+});
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -24,10 +46,29 @@ serve(async (req) => {
   }
 
   try {
-    const { messages } = await req.json();
+    const requestBody = await req.json();
+    
+    // Validate request body
+    const validationResult = requestSchema.safeParse(requestBody);
+    if (!validationResult.success) {
+      const errorDetails = (validationResult as any).error.errors;
+      console.error('Validation error:', errorDetails);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid request format',
+          details: errorDetails 
+        }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+    
+    const { messages } = validationResult.data;
     const authHeader = req.headers.get('Authorization');
     
-    console.log('Received messages:', messages);
+    console.log('Received validated messages:', messages.length, 'messages');
 
     if (!openAIApiKey) {
       throw new Error('OPENAI_API_KEY not configured');
@@ -180,26 +221,41 @@ serve(async (req) => {
         const defaultAccount = accounts[0];
         const defaultCard = cards && cards.length > 0 ? cards[0] : null;
 
+        // Validate transaction arguments
+        const argsValidation = transactionArgsSchema.safeParse(functionArgs);
+        if (!argsValidation.success) {
+          const errorDetails = (argsValidation as any).error.errors;
+          console.error('Transaction args validation error:', errorDetails);
+          return new Response(
+            JSON.stringify({ 
+              message: 'Desculpe, não consegui entender os dados da transação. Por favor, tente novamente com informações mais claras.' 
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        const validatedArgs = argsValidation.data;
+        
         // Create transaction
-        const transactionDate = functionArgs.date || new Date().toISOString().split('T')[0];
-        const installments = functionArgs.installments || 1;
-        const amount = functionArgs.amount;
-        const isCardExpense = functionArgs.type === 'card' && !functionArgs.is_income;
+        const transactionDate = validatedArgs.date || new Date().toISOString().split('T')[0];
+        const installments = validatedArgs.installments || 1;
+        const amount = validatedArgs.amount;
+        const isCardExpense = validatedArgs.type === 'card' && !validatedArgs.is_income;
 
         const { data: transaction, error: txError } = await supabase
           .from('transactions')
           .insert({
             user_id: user.id,
-            description: functionArgs.description,
+            description: validatedArgs.description,
             amount: amount,
             date: transactionDate,
-            is_income: functionArgs.is_income,
-            type: functionArgs.type,
+            is_income: validatedArgs.is_income,
+            type: validatedArgs.type,
             installments: installments,
             account_id: defaultAccount.id,
             card_id: isCardExpense && defaultCard ? defaultCard.id : null,
-            person: functionArgs.type === 'prazo' ? functionArgs.person : null,
-            paid: functionArgs.is_income || functionArgs.type === 'cash'
+            person: validatedArgs.type === 'prazo' ? validatedArgs.person : null,
+            paid: validatedArgs.is_income || validatedArgs.type === 'cash'
           })
           .select()
           .single();
