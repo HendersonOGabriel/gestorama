@@ -37,7 +37,7 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ currentPage, notifications,
   const getTitle = () => {
     switch(currentPage) {
       case 'dashboard': return 'Visão Geral';
-      case 'reports': return 'Relatórios Avançados';
+      case 'reports': return 'Relatórios';
       case 'planning': return 'Planejamento';
       case 'calendar': return 'Calendário';
       case 'profile': return 'Perfil de Usuário';
@@ -54,7 +54,7 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ currentPage, notifications,
   return (
     <>
       <header className="py-4 sm:py-6 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink min-w-0">
           <Button 
             variant="ghost" 
             size="icon" 
