@@ -530,12 +530,12 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
       </AnimatedItem>
       
       <AnimatedItem delay={900}>
-        <div className="border-b border-slate-300 dark:border-slate-700">
-          <nav className="-mb-px flex space-x-6">
-            <button onClick={() => setMainTab('transactions')} className={`py-3 px-1 border-b-2 text-sm ${mainTab === 'transactions' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500'}`}>Transações</button>
-            <button onClick={() => setMainTab('invoices')} className={`py-3 px-1 border-b-2 text-sm ${mainTab === 'invoices' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500'}`}>Faturas</button>
-            <button onClick={() => setMainTab('recurring')} className={`py-3 px-1 border-b-2 text-sm ${mainTab === 'recurring' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500'}`}>Recorrências</button>
-            <button onClick={() => setMainTab('transfers')} className={`py-3 px-1 border-b-2 text-sm ${mainTab === 'transfers' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500'}`}>Transferências</button>
+        <div className="overflow-x-auto border-b border-slate-300 dark:border-slate-700">
+          <nav className="flex space-x-6">
+            <button onClick={() => setMainTab('transactions')} className={`py-3 px-1 border-b-2 text-sm whitespace-nowrap ${mainTab === 'transactions' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500'}`}>Transações</button>
+            <button onClick={() => setMainTab('invoices')} className={`py-3 px-1 border-b-2 text-sm whitespace-nowrap ${mainTab === 'invoices' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500'}`}>Faturas</button>
+            <button onClick={() => setMainTab('recurring')} className={`py-3 px-1 border-b-2 text-sm whitespace-nowrap ${mainTab === 'recurring' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500'}`}>Recorrências</button>
+            <button onClick={() => setMainTab('transfers')} className={`py-3 px-1 border-b-2 text-sm whitespace-nowrap ${mainTab === 'transfers' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500'}`}>Transferências</button>
           </nav>
         </div>
       </AnimatedItem>
