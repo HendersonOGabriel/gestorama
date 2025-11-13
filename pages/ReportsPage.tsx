@@ -3,6 +3,7 @@ import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Cart
 import { ArrowDown, ArrowUp, BarChart3, ChevronDown, Filter, LineChart as LineChartIcon, PieChart as PieChartIcon, Replace } from 'lucide-react';
 import { Transaction, Account, Card as CardType, Category } from '../types';
 import { toCurrency, cn, monthKey, displayMonthYear, displayDate } from '../utils/helpers';
+import ReportSummary from '../components/reports/ReportSummary';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -312,10 +313,11 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, accounts, cards
 
 
   return (
-    <div className="grid grid-cols-1 gap-6">
-      <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2"><Filter className="w-5 h-5"/> Filtros de Relatório</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      <div className="lg:col-span-2 space-y-6">
+        <Card>
+          <CardHeader><CardTitle className="flex items-center gap-2"><Filter className="w-5 h-5"/> Filtros de Relatório</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
           <div>
             <Label>Período Principal</Label>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-1">
@@ -388,6 +390,13 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, accounts, cards
             {renderReportContent()}
         </CardContent>
       </Card>
+      </div>
+      <ReportSummary
+        reportType={reportType}
+        evolutionData={evolutionData}
+        categoryData={categoryData}
+        comparisonData={comparisonData}
+      />
     </div>
   );
 };
