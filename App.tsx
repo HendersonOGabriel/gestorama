@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/src/integrations/supabase/client';
+import { useSupabase } from './hooks/useSupabase';
+import { useSupabaseData } from './hooks/useSupabaseData';
 import Sidebar from './components/shared/Sidebar';
 import GlobalHeader from './components/shared/GlobalHeader';
 import DashboardPage from './pages/DashboardPage';
@@ -31,7 +33,6 @@ import {
   Transaction, Account, Card as CardType, Transfer, RecurringItem, Category, Goal, Reminder, User, Subscription, 
   PayingInstallment, UnpayInvoiceDetails, SubscriptionPlan, YaraUsage, AppState, GamificationState
 } from './types';
-import { MOCK_ACCOUNTS, MOCK_CARDS, MOCK_TRANSACTIONS, MOCK_RECURRING, MOCK_BUDGETS, MOCK_GOALS } from './data/mockData';
 import { DEFAULT_CATEGORIES } from './data/initialData';
 import { monthKey, getInvoiceMonthKey, getInvoiceDueDate, toCurrency } from './utils/helpers';
 import { runRecurringItem } from './services/recurringService';
@@ -160,10 +161,13 @@ const CategoryManager: React.FC<{
 
 
 const App: React.FC = () => {
-    // Main App State
-    const [isLoading, setIsLoading] = useState(true);
+    // Auth state
+    const { user, loading: authLoading } = useSupabase();
+    
+    // Load all data from Supabase with realtime sync
+    const supabaseData = useSupabaseData(user?.id || null);
 
-    // Data State
+    // Data State (synced with Supabase)
     const [accounts, setAccounts] = useState<Account[]>([]);
     const [cards, setCards] = useState<CardType[]>([]);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -174,9 +178,11 @@ const App: React.FC = () => {
     const [goals, setGoals] = useState<Goal[]>([]);
     const [reminders, setReminders] = useState<Reminder[]>([]);
 
-    // User & Subscription State
+    // User & Subscription State (synced from Supabase)
     const [users, setUsers] = useState<User[]>([]);
-    const [subscription, setSubscription] = useState<Subscription>({ plan: 'free', memberSlots: 1, expires: null });
+    const [subscription, setSubscription] = useState<Subscription>(supabaseData.subscription);
+    const [gamification, setGamification] = useState<GamificationState>(supabaseData.gamification);
+    const [yaraUsage, setYaraUsage] = useState<YaraUsage>(supabaseData.yaraUsage);
     
     // UI State
     const [currentPage, setCurrentPage] = useState('dashboard');
@@ -196,10 +202,9 @@ const App: React.FC = () => {
 
     // Feature State
     const [showOnboarding, setShowOnboarding] = useState(false);
-    const [gamification, setGamification] = useState<GamificationState>({ level: 1, xp: 0, xpToNextLevel: 100 });
-    const [yaraUsage, setYaraUsage] = useState<YaraUsage>({count: 0, lastReset: new Date().toISOString().slice(0, 10)});
 
     // -- Derived State --
+    const isLoading = authLoading || supabaseData.loading;
     const ownerProfile = useMemo(() => users.find(u => u.role === 'owner')!, [users]);
 
     // -- Handlers --
@@ -304,58 +309,73 @@ const App: React.FC = () => {
     };
     
     // -- Effects --
+    // Sync data from Supabase hook to local state
     useEffect(() => {
-        // FIX: Onboarding status is now checked for all users, not just new ones.
-        // resetOnboardingStatus(); // TEMP: Uncomment to force tour on every refresh
-        const stored = loadState();
-        const isNewUser = !(stored.accounts && stored.accounts.length > 0);
-
-        if (isNewUser) {
-            // First time load with mock data
-            setAccounts(MOCK_ACCOUNTS);
-            setCards(MOCK_CARDS);
-            setTransactions(MOCK_TRANSACTIONS);
-            setRecurring(MOCK_RECURRING);
-            setCategories(DEFAULT_CATEGORIES);
-            setBudgets(MOCK_BUDGETS);
-            setGoals(MOCK_GOALS);
-            setUsers([{ id: 'user1', name: 'Usuário', email: 'user@gestorama.com', avatar: null, role: 'owner' }]);
-        } else {
-            // Load from storage
-            setAccounts(stored.accounts!);
-            setCards(stored.cards || []);
-            setTransactions(stored.transactions || []);
-            setTransfers(stored.transfers || []);
-            setRecurring(stored.recurring || []);
-            setCategories(stored.categories || DEFAULT_CATEGORIES);
-            setBudgets(stored.budgets || {});
-            setGoals(stored.goals || []);
-            setReminders(stored.reminders || []);
-            setUsers(stored.users || [{ id: 'user1', name: 'Usuário', email: 'user@gestorama.com', avatar: null, role: 'owner' }]);
-            setSubscription(stored.subscription || { plan: 'free', memberSlots: 1, expires: null });
-            setThemePreference(stored.themePreference || 'system');
-            setGamification(stored.gamification || { level: 1, xp: 0, xpToNextLevel: 100 });
-            setYaraUsage(stored.yaraUsage || { count: 0, lastReset: new Date().toISOString().slice(0, 10)});
+        if (!supabaseData.loading) {
+            setAccounts(supabaseData.accounts);
+            setCards(supabaseData.cards);
+            setTransactions(supabaseData.transactions);
+            setTransfers(supabaseData.transfers);
+            setRecurring(supabaseData.recurring);
+            setCategories(supabaseData.categories);
+            setBudgets(supabaseData.budgets);
+            setGoals(supabaseData.goals);
+            setReminders(supabaseData.reminders);
+            setSubscription(supabaseData.subscription);
+            setGamification(supabaseData.gamification);
+            setYaraUsage(supabaseData.yaraUsage);
         }
+    }, [supabaseData]);
 
+    // Load theme preference from localStorage (UI preference only)
+    useEffect(() => {
+        const stored = loadState();
+        setThemePreference(stored.themePreference || 'system');
+        
         const onboardingCompleted = getOnboardingStatus();
-        if (!onboardingCompleted) {
-            // Add a small delay to ensure the dashboard page has started rendering
+        if (!onboardingCompleted && user) {
             setTimeout(() => setShowOnboarding(true), 1000);
         }
+    }, [user]);
 
-        setIsLoading(false);
-    }, []);
-
+    // Load user profile from Supabase
     useEffect(() => {
-        if (!isLoading) {
-            saveState({ 
-                accounts, cards, transactions, transfers, recurring, categories, budgets, goals, reminders, users, subscription, themePreference, gamification, yaraUsage,
-                // These are reset on each save for simplicity in this example
-                notifiedGoalIds: [], notifiedBudgetKeys: [], notifiedInvoiceKeys: [], notifiedReminderIds: [], notifiedTxReminderKeys: [], notifiedAnomalyKeys: []
-            });
+        const loadProfile = async () => {
+            if (!user) {
+                setUsers([]);
+                return;
+            }
+
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('user_id', user.id)
+                .maybeSingle();
+
+            if (data && !error) {
+                setUsers([{
+                    id: data.user_id,
+                    name: data.name,
+                    email: data.email,
+                    avatar: data.avatar,
+                    role: data.role as 'owner' | 'member'
+                }]);
+            }
+        };
+
+        loadProfile();
+    }, [user]);
+
+    const refreshTransactions = useCallback(async () => {
+        await supabaseData.refetchTransactions();
+    }, [supabaseData]);
+
+    // Save theme preference to localStorage (UI preference only)
+    useEffect(() => {
+        if (!authLoading && !supabaseData.loading) {
+            saveState({ themePreference });
         }
-    }, [accounts, cards, transactions, transfers, recurring, categories, budgets, goals, reminders, users, subscription, themePreference, isLoading, gamification, yaraUsage]);
+    }, [themePreference, authLoading, supabaseData.loading]);
 
     useEffect(() => {
         if (isLoading) return; // Prevent running on initial load before state is settled
@@ -476,7 +496,7 @@ const App: React.FC = () => {
                         isMobileMenuOpen={isMobileMenuOpen}
                         gamification={gamification}
                     />
-                    <div className="mt-4 pb-32">
+                    <div className="mt-4 pb-32 w-full">
                         {pageContent()}
                     </div>
                 </main>
@@ -500,6 +520,7 @@ const App: React.FC = () => {
                 yaraUsage={yaraUsage} 
                 incrementYaraUsage={() => setYaraUsage(p => ({...p, count: p.count+1}))}
                 onUpgradeClick={() => setCurrentPage('subscription')}
+                onTransactionAdded={refreshTransactions}
             />}
             {showOnboarding && <OnboardingTour onComplete={() => {setShowOnboarding(false); setOnboardingCompleted();}} />}
             <ToastContainer toasts={toasts} removeToast={removeToast} />
