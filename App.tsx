@@ -102,9 +102,9 @@ const CategoryManager: React.FC<{
 
   return (
     <div className="flex flex-col flex-1">
-      <div className="flex-1 overflow-y-auto pr-2 space-y-4 min-h-0 mb-4">
+      <div className="flex-1 overflow-y-auto pr-2 min-h-0 mb-4">
         {Object.keys(categoryGroups).sort().map(groupName => (
-          <div key={groupName}>
+          <div key={groupName} className="mb-4">
             <h4 className="font-semibold text-indigo-600 dark:text-indigo-400 mb-2">{groupName}</h4>
             <div className="space-y-2">
               {categoryGroups[groupName].map(cat => (
