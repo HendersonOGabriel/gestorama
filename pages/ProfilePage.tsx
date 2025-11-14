@@ -153,7 +153,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
         />
         <Card>
             <CardHeader><CardTitle>Gerenciamento de Dados</CardTitle></CardHeader>
-            <CardContent className="flex flex-col sm:flex-row gap-3">
+            <CardContent className="flex flex-col sm:flex-row flex-wrap gap-3">
                  <Button variant="outline" className="w-full" onClick={onOpenImport}>
                     <Upload className="w-4 h-4 mr-2" />
                     Importar Transações (CSV)
@@ -166,7 +166,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
         </Card>
         <Card>
             <CardHeader><CardTitle>Ações da Conta</CardTitle></CardHeader>
-            <CardContent className="flex flex-col sm:flex-row gap-3">
+            <CardContent className="flex flex-col sm:flex-row flex-wrap gap-3">
                  <Button variant="outline" className="w-full" onClick={onGoToSubscription}>
                     Ver Planos e Assinatura
                  </Button>
