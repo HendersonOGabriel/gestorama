@@ -101,10 +101,10 @@ const CategoryManager: React.FC<{
   };
 
   return (
-    <div className="flex flex-col flex-1">
-      <div className="flex-1 overflow-y-auto pr-2 space-y-4 min-h-0 mb-4">
+    <div className="flex flex-col flex-1 min-h-0">
+      <div className="flex-1 overflow-y-auto pr-2 min-h-0 mb-4">
         {Object.keys(categoryGroups).sort().map(groupName => (
-          <div key={groupName}>
+          <div key={groupName} className="mb-4">
             <h4 className="font-semibold text-indigo-600 dark:text-indigo-400 mb-2">{groupName}</h4>
             <div className="space-y-2">
               {categoryGroups[groupName].map(cat => (
@@ -199,6 +199,10 @@ const App: React.FC = () => {
     const [selectedRecurring, setSelectedRecurring] = useState<RecurringItem | null>(null);
     const [selectedTransfer, setSelectedTransfer] = useState<Transfer | null>(null);
     const [filters, setFilters] = useState({ description: '', categoryId: '', accountId: '', cardId: '', status: 'all', startDate: '', endDate: '' });
+    const [goalModalOpen, setGoalModalOpen] = useState<'add' | 'edit' | 'funds' | 'withdraw' | null>(null);
+    const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
+    const [isReminderModalOpen, setReminderModalOpen] = useState(false);
+    const [editingReminder, setEditingReminder] = useState<Reminder | null>(null);
 
     // Feature State
     const [showOnboarding, setShowOnboarding] = useState(false);
@@ -206,6 +210,20 @@ const App: React.FC = () => {
     // -- Derived State --
     const isLoading = authLoading || supabaseData.loading;
     const ownerProfile = useMemo(() => users.find(u => u.role === 'owner')!, [users]);
+
+    // Effect to handle body scroll lock
+    useEffect(() => {
+        const body = document.body;
+        if (modal || isMobileMenuOpen || goalModalOpen || isReminderModalOpen) {
+            body.style.overflow = 'hidden';
+        } else {
+            body.style.overflow = 'auto';
+        }
+        // Cleanup function to restore scroll on component unmount
+        return () => {
+            body.style.overflow = 'auto';
+        };
+    }, [modal, isMobileMenuOpen, goalModalOpen, isReminderModalOpen]);
 
     // -- Handlers --
     const addToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
@@ -444,9 +462,20 @@ const App: React.FC = () => {
                 categories={categories} budgets={budgets} setBudgets={setBudgets} goals={goals} setGoals={setGoals} 
                 accounts={accounts} adjustAccountBalance={adjustAccountBalance} setTransactions={setTransactions} 
                 addToast={addToast} transactions={transactions} isLoading={isLoading} addXp={addXp}
+                onOpenGoalModal={(modal, goal) => { setGoalModalOpen(modal); if(goal) setSelectedGoal(goal); }}
+                onCloseGoalModal={() => { setGoalModalOpen(null); setSelectedGoal(null); }}
+                goalModalOpen={goalModalOpen}
+                selectedGoal={selectedGoal}
             />;
             case 'reports': return <ReportsPage transactions={transactions} accounts={accounts} cards={cards} categories={categories} getCategoryName={getCategoryName} />;
-            case 'calendar': return <CalendarPage transactions={transactions} reminders={reminders} setReminders={setReminders} getInstallmentDueDate={getInstallmentDueDate} getCategoryName={getCategoryName}/>;
+            case 'calendar': return <CalendarPage
+                transactions={transactions} reminders={reminders} setReminders={setReminders}
+                getInstallmentDueDate={getInstallmentDueDate} getCategoryName={getCategoryName}
+                onOpenReminderModal={(reminder) => { setReminderModalOpen(true); if(reminder) setEditingReminder(reminder); }}
+                onCloseReminderModal={() => { setReminderModalOpen(false); setEditingReminder(null); }}
+                isReminderModalOpen={isReminderModalOpen}
+                editingReminder={editingReminder}
+            />;
             case 'profile': return <ProfilePage 
                 ownerProfile={ownerProfile} users={users} subscription={subscription}
                 onUpdateUser={(user) => setUsers(prev => prev.map(u => u.id === user.id ? user : u))}
@@ -511,7 +540,7 @@ const App: React.FC = () => {
             <Dialog open={modal === 'addTransfer' || modal === 'editTransfer'} onOpenChange={() => {setModal(null); setSelectedTransfer(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editTransfer' ? 'Editar' : 'Nova'} Transferência</DialogTitle></DialogHeader><TransferForm accounts={accounts} transfer={selectedTransfer} onTransfer={onAddTransfer} onUpdate={(t) => {setTransfers(p=>p.map(tr=>tr.id===t.id?t:tr)); setModal(null)}} onDismiss={() => setModal(null)} onError={addToast} isLoading={isLoading}/></DialogContent></Dialog>
             <Dialog open={modal === 'accounts'} onOpenChange={() => setModal(null)}><DialogContent><DialogHeader><DialogTitle>Contas</DialogTitle></DialogHeader><AccountList accounts={accounts} setAccounts={setAccounts} adjustAccountBalance={adjustAccountBalance} setTransactions={setTransactions} addToast={addToast} onConfirmDelete={(acc) => {}} /><AccountForm setAccounts={setAccounts} setTransactions={setTransactions} /></DialogContent></Dialog>
             <Dialog open={modal === 'cards'} onOpenChange={() => setModal(null)}><DialogContent><DialogHeader><DialogTitle>Cartões</DialogTitle></DialogHeader><CardList cards={cards} setCards={setCards} transactions={transactions} addToast={addToast} onConfirmDelete={(c) => {}} accounts={accounts}/><CardForm setCards={setCards} accounts={accounts} addToast={addToast}/></DialogContent></Dialog>
-            <Dialog open={modal === 'categories'} onOpenChange={() => setModal(null)}><DialogContent className="h-[90vh] flex flex-col"><DialogHeader><DialogTitle>Categorias</DialogTitle></DialogHeader><CategoryManager categories={categories} setCategories={setCategories} transactions={transactions} recurring={recurring} /></DialogContent></Dialog>
+            <Dialog open={modal === 'categories'} onOpenChange={() => setModal(null)}><DialogContent className="max-h-[90vh] flex flex-col"><DialogHeader><DialogTitle>Categorias</DialogTitle></DialogHeader><CategoryManager categories={categories} setCategories={setCategories} transactions={transactions} recurring={recurring} /></DialogContent></Dialog>
             <ImportTransactionsModal isOpen={modal === 'import'} onClose={() => setModal(null)} accounts={accounts} onConfirmImport={(txs) => {}} addToast={addToast} isLoading={isLoading} />
 
             {/* Global UI */}
