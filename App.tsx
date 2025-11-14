@@ -347,6 +347,50 @@ const App: React.FC = () => {
         setIsLoading(false);
     }, []);
 
+    const refreshTransactions = useCallback(async () => {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session?.user) return;
+
+            const { data, error } = await supabase
+                .from('transactions')
+                .select('*')
+                .eq('user_id', session.user.id)
+                .order('date', { ascending: false });
+
+            if (error) {
+                console.error('Error fetching transactions:', error);
+                return;
+            }
+
+            if (data) {
+                // Convert Supabase data to app format
+                const formattedTransactions: Transaction[] = data.map(tx => ({
+                    id: tx.id,
+                    desc: tx.description,
+                    amount: Number(tx.amount),
+                    date: tx.date,
+                    isIncome: tx.is_income,
+                    type: tx.type as 'card' | 'cash' | 'prazo',
+                    installments: tx.installments,
+                    account: tx.account_id,
+                    card: tx.card_id,
+                    categoryId: tx.category_id,
+                    paid: tx.paid,
+                    person: tx.person,
+                    reminderDaysBefore: tx.reminder_days_before,
+                    recurringSourceId: tx.recurring_source_id,
+                    userId: tx.user_id,
+                    installmentsSchedule: []
+                }));
+                
+                setTransactions(formattedTransactions);
+            }
+        } catch (error) {
+            console.error('Error refreshing transactions:', error);
+        }
+    }, []);
+
     useEffect(() => {
         if (!isLoading) {
             saveState({ 
@@ -500,6 +544,7 @@ const App: React.FC = () => {
                 yaraUsage={yaraUsage} 
                 incrementYaraUsage={() => setYaraUsage(p => ({...p, count: p.count+1}))}
                 onUpgradeClick={() => setCurrentPage('subscription')}
+                onTransactionAdded={refreshTransactions}
             />}
             {showOnboarding && <OnboardingTour onComplete={() => {setShowOnboarding(false); setOnboardingCompleted();}} />}
             <ToastContainer toasts={toasts} removeToast={removeToast} />
