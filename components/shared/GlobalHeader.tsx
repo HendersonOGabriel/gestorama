@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import NotificationBell from './NotificationBell';
 import { Menu, Star } from 'lucide-react';
 import { Button } from '../ui/Button';
@@ -34,25 +34,6 @@ const GamificationWidget: React.FC<{ gamification: GamificationState }> = ({ gam
 };
 
 const GlobalHeader: React.FC<GlobalHeaderProps> = ({ currentPage, notifications, onClearNotifications, onToggleMobileMenu, isMobileMenuOpen, gamification }) => {
-  const [isVisible, setIsVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > lastScrollY && window.scrollY > 100) { // Scrolling down
-        setIsVisible(false);
-      } else { // Scrolling up
-        setIsVisible(true);
-      }
-      setLastScrollY(window.scrollY);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, [lastScrollY]);
-
   const getTitle = () => {
     switch(currentPage) {
       case 'dashboard': return 'Visão Geral';
@@ -72,7 +53,7 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ currentPage, notifications,
 
   return (
     <>
-      <header className="sticky top-0 z-20 bg-slate-100/80 dark:bg-slate-950/80 backdrop-blur-sm py-4 sm:py-6 flex items-center justify-between overflow-hidden">
+      <header className="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 py-4 sm:py-6 flex items-center justify-between">
         <div className="flex items-center gap-2 flex-shrink min-w-0">
           <Button 
             variant="ghost" 

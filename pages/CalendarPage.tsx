@@ -12,18 +12,13 @@ interface CalendarPageProps {
   setReminders: React.Dispatch<React.SetStateAction<Reminder[]>>;
   getInstallmentDueDate: (tx: Transaction, inst: any) => string;
   getCategoryName: (id: string | null) => string;
-  onOpenReminderModal: (reminder?: Reminder) => void;
-  onCloseReminderModal: () => void;
-  isReminderModalOpen: boolean;
-  editingReminder: Reminder | null;
 }
 
-const CalendarPage: React.FC<CalendarPageProps> = ({
-    transactions, reminders, setReminders, getInstallmentDueDate, getCategoryName,
-    onOpenReminderModal, onCloseReminderModal, isReminderModalOpen, editingReminder
-}) => {
+const CalendarPage: React.FC<CalendarPageProps> = ({ transactions, reminders, setReminders, getInstallmentDueDate, getCategoryName }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState(new Date());
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editReminder, setEditReminder] = useState<Reminder | null>(null);
 
   const dayDataMap = useMemo(() => {
     const map = new Map<string, { reminders: Reminder[], transactions: { tx: Transaction, inst: any }[] }>();
@@ -97,7 +92,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
         <CardHeader><CardTitle>Detalhes do Dia</CardTitle><p className="text-sm text-slate-500">{displayDate(selectedDayISO)}</p></CardHeader>
         <CardContent>
             <div>
-                <div className="flex justify-between items-center mb-2"><h4 className="font-semibold">Lembretes</h4><Button size="sm" onClick={() => onOpenReminderModal()}><Plus className="w-4 h-4 mr-1"/> Adicionar</Button></div>
+                <div className="flex justify-between items-center mb-2"><h4 className="font-semibold">Lembretes</h4><Button size="sm" onClick={() => { setEditReminder(null); setModalOpen(true); }}><Plus className="w-4 h-4 mr-1"/> Adicionar</Button></div>
                 {selectedDayData.reminders.length === 0 ? (
                   <div className="text-center text-sm text-slate-500 dark:text-slate-400 py-4">Nenhum lembrete para este dia.</div>
                 ) : (
@@ -110,7 +105,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
                             {rem.time && <span className="font-mono text-xs mr-2">{rem.time}</span>}
                             <span>{rem.desc}</span>
                         </div>
-                        <Button size="icon" variant="ghost" className="h-7 w-7 flex-shrink-0 text-slate-500 hover:text-indigo-500" onClick={() => onOpenReminderModal(rem)}>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 flex-shrink-0 text-slate-500 hover:text-indigo-500" onClick={() => { setEditReminder(rem); setModalOpen(true); }}>
                             <Edit3 className="w-4 h-4" />
                         </Button>
                     </li>
@@ -144,7 +139,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
             </div>
         </CardContent>
       </Card>
-      <ReminderFormModal isOpen={isReminderModalOpen} onClose={onCloseReminderModal} onSave={(data) => setReminders(p=>[...p, {...data, id: Date.now().toString()}])} onUpdate={(id, data) => setReminders(p=>p.map(r=>r.id===id?{...r, ...data}:r))} onDelete={(id) => setReminders(p=>p.filter(r=>r.id!==id))} reminder={editingReminder} selectedDateISO={selectedDayISO} />
+      <ReminderFormModal isOpen={modalOpen} onClose={() => setModalOpen(false)} onSave={(data) => setReminders(p=>[...p, {...data, id: Date.now().toString()}])} onUpdate={(id, data) => setReminders(p=>p.map(r=>r.id===id?{...r, ...data}:r))} onDelete={(id) => setReminders(p=>p.filter(r=>r.id!==id))} reminder={editReminder} selectedDateISO={selectedDayISO} />
     </div>
   );
 };
