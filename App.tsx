@@ -377,6 +377,11 @@ const App: React.FC = () => {
         }
     }, [themePreference, authLoading, supabaseData.loading]);
 
+    // Effect to scroll to top on page change
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [currentPage]);
+
     useEffect(() => {
         if (isLoading) return; // Prevent running on initial load before state is settled
         
