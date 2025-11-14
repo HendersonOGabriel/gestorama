@@ -476,7 +476,7 @@ const App: React.FC = () => {
                         isMobileMenuOpen={isMobileMenuOpen}
                         gamification={gamification}
                     />
-                    <div className="mt-4 pb-32">
+                    <div className="mt-4 pb-32 w-full">
                         {pageContent()}
                     </div>
                 </main>
