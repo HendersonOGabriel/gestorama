@@ -12,7 +12,9 @@ const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 // @ts-ignore: Deno runtime
 const supabaseUrl = Deno.env.get('SUPABASE_URL');
 // @ts-ignore: Deno runtime
-const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+// @ts-ignore: Deno runtime
+const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -79,13 +81,21 @@ serve(async (req) => {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const supabase = createClient(supabaseUrl!, supabaseKey!);
+    
+    // Create client with user's token for authentication
+    const supabaseAuth = createClient(supabaseUrl!, supabaseAnonKey!, {
+      global: { headers: { Authorization: authHeader } }
+    });
     
     // Get user from token
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
     if (userError || !user) {
+      console.error('Auth error:', userError);
       throw new Error('Unauthorized');
     }
+    
+    // Create service role client for database operations
+    const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
 
     // Define tools for OpenAI function calling
     const tools = [
