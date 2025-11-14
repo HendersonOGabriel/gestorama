@@ -500,7 +500,7 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
         <Card>
           <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center !pb-2 gap-2">
             <CardTitle>Resumo Geral</CardTitle>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center flex-wrap gap-4">
               <div className="flex items-center gap-1 p-0.5 rounded-md border bg-slate-100 dark:bg-slate-800">
                   <Button onClick={() => setSummaryChartType('bar')} variant={summaryChartType === 'bar' ? 'default' : 'ghost'} size="sm" className="h-7 px-2" aria-label="Ver gráfico em barras"><BarChart3 className="w-4 h-4"/></Button>
                   <Button onClick={() => setSummaryChartType('stacked')} variant={summaryChartType === 'stacked' ? 'default' : 'ghost'} size="sm" className="h-7 px-2" aria-label="Ver gráfico em barras empilhadas"><Layers className="w-4 h-4"/></Button>
