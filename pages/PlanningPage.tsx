@@ -56,7 +56,7 @@ const BudgetSection: React.FC<BudgetSectionProps> = ({ categories, budgets, onSe
     };
     
     return (
-        <Card className="h-fit">
+        <Card className="h-fit overflow-hidden">
             <CardHeader>
               <CardTitle>Acompanhamento de Orçamento</CardTitle>
               <div className="flex justify-between items-center mt-2">
@@ -161,7 +161,7 @@ const GoalsSection: React.FC<GoalsSectionProps> = ({ goals, accounts, onAddGoal,
     };
 
     return (
-        <Card className="h-fit">
+        <Card className="h-fit overflow-hidden">
             <CardHeader className="flex justify-between items-center"><CardTitle>Metas de Poupança</CardTitle><Button size="sm" onClick={() => { setForm({name: '', targetAmount: ''}); setModalOpen('add'); }}><Plus className="w-4 h-4 mr-1"/> Nova Meta</Button></CardHeader>
             <CardContent>
                 {goals.length === 0 ? (
