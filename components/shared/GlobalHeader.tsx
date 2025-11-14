@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import NotificationBell from './NotificationBell';
 import { Menu, Star } from 'lucide-react';
 import { Button } from '../ui/Button';
@@ -34,6 +34,25 @@ const GamificationWidget: React.FC<{ gamification: GamificationState }> = ({ gam
 };
 
 const GlobalHeader: React.FC<GlobalHeaderProps> = ({ currentPage, notifications, onClearNotifications, onToggleMobileMenu, isMobileMenuOpen, gamification }) => {
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > lastScrollY && window.scrollY > 100) { // Scrolling down
+        setIsVisible(false);
+      } else { // Scrolling up
+        setIsVisible(true);
+      }
+      setLastScrollY(window.scrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [lastScrollY]);
+
   const getTitle = () => {
     switch(currentPage) {
       case 'dashboard': return 'Visão Geral';
