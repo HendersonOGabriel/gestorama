@@ -492,7 +492,7 @@ const App: React.FC = () => {
                   }}
                   subscription={subscription}
                 />
-                <main className={cn("flex-1 p-4 sm:p-6 transition-all duration-300 ease-in-out", isSidebarMinimized ? "md:ml-20" : "md:ml-64")}>
+                <main className={cn("flex-1 p-4 sm:p-6 transition-all duration-300 ease-in-out overflow-x-hidden", isSidebarMinimized ? "md:ml-20" : "md:ml-64")}>
                     <GlobalHeader 
                         currentPage={currentPage}
                         notifications={notifications}
@@ -501,7 +501,7 @@ const App: React.FC = () => {
                         isMobileMenuOpen={isMobileMenuOpen}
                         gamification={gamification}
                     />
-                    <div className="mt-4 pb-32 w-full overflow-x-hidden">
+                    <div className="mt-4 pb-32 w-full">
                         {pageContent()}
                     </div>
                 </main>
