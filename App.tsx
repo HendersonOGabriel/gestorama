@@ -207,6 +207,20 @@ const App: React.FC = () => {
     const isLoading = authLoading || supabaseData.loading;
     const ownerProfile = useMemo(() => users.find(u => u.role === 'owner')!, [users]);
 
+    // Effect to handle body scroll lock
+    useEffect(() => {
+        const body = document.body;
+        if (modal || isMobileMenuOpen) {
+            body.style.overflow = 'hidden';
+        } else {
+            body.style.overflow = 'auto';
+        }
+        // Cleanup function to restore scroll on component unmount
+        return () => {
+            body.style.overflow = 'auto';
+        };
+    }, [modal, isMobileMenuOpen]);
+
     // -- Handlers --
     const addToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
         const id = Date.now().toString();
