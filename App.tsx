@@ -475,7 +475,7 @@ const App: React.FC = () => {
 
     return (
         <div className={cn("bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-50", themePreference === 'system' ? '' : themePreference)}>
-            <div className="flex min-h-screen">
+            <div className="flex min-h-screen overflow-hidden">
                 <Sidebar 
                   currentPage={currentPage} setCurrentPage={setCurrentPage} 
                   onOpenAccounts={() => setModal('accounts')} onOpenCards={() => setModal('cards')} onOpenCategories={() => setModal('categories')}
