@@ -70,7 +70,7 @@ const BudgetSection: React.FC<BudgetSectionProps> = ({ categories, budgets, onSe
               </div>
             </CardHeader>
             <CardContent>
-                <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+                <div className="space-y-4 max-h-[60vh] overflow-y-auto">
                     {Object.keys(categoryGroups).sort().map(groupName => (
                         <div key={groupName}>
                             <h4 className="font-semibold text-indigo-600 dark:text-indigo-400 mb-2">{groupName}</h4>
@@ -308,7 +308,7 @@ const PlanningPage: React.FC<PlanningPageProps> = ({ categories, budgets, setBud
     };
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start w-full">
+        <div className="grid grid-cols-1 gap-6">
             <BudgetSection 
               categories={categories} 
               budgets={budgets} 
