@@ -1,9 +1,22 @@
+/**
+ * Storage Service - UI Preferences Only
+ * 
+ * IMPORTANT: This service is now only used for storing UI preferences (theme, onboarding status).
+ * All application data (transactions, accounts, etc.) is now stored in Supabase backend.
+ * 
+ * Migration completed: Data moved from localStorage to Supabase with realtime sync.
+ */
+
 import { AppState } from '../types';
 
 const STORAGE_KEY = 'finai_dashboard_data_v2';
 const ONBOARDING_KEY = 'gestorama_onboarding_completed';
 
 
+/**
+ * @deprecated - Use only for loading legacy theme preference
+ * All data is now loaded from Supabase via useSupabaseData hook
+ */
 export const loadState = (): Partial<AppState> => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -21,30 +34,15 @@ export const loadState = (): Partial<AppState> => {
   return {};
 };
 
+/**
+ * Saves UI preferences only (theme)
+ * Data is automatically synced to Supabase via realtime
+ */
 export const saveState = (state: Partial<AppState>) => {
   try {
-    // FIX: Explicitly list all keys to be saved from AppState.
+    // Only save UI preferences to localStorage
     const stateToSave: Partial<AppState> = {
-      accounts: state.accounts,
-      cards: state.cards,
-      transactions: state.transactions,
-      transfers: state.transfers,
-      recurring: state.recurring,
-      categories: state.categories,
-      budgets: state.budgets,
-      goals: state.goals,
-      reminders: state.reminders,
       themePreference: state.themePreference,
-      users: state.users,
-      subscription: state.subscription,
-      notifiedGoalIds: state.notifiedGoalIds,
-      notifiedBudgetKeys: state.notifiedBudgetKeys,
-      notifiedInvoiceKeys: state.notifiedInvoiceKeys,
-      notifiedReminderIds: state.notifiedReminderIds,
-      gamification: state.gamification,
-      notifiedTxReminderKeys: state.notifiedTxReminderKeys,
-      notifiedAnomalyKeys: state.notifiedAnomalyKeys,
-      yaraUsage: state.yaraUsage,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
   } catch (e) {
