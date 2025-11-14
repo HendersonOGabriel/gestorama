@@ -94,7 +94,7 @@ const BudgetSection: React.FC<BudgetSectionProps> = ({ categories, budgets, onSe
                                                 </div>
                                             ) : (
                                                 <div>
-                                                    <div className="flex justify-between items-center mb-1"><span className="font-medium text-sm">{cat.name}</span><Button size="sm" variant="ghost" onClick={() => { setEditingCatId(cat.id); setTempBudgetValue(budgets[cat.id]?.toString() || ''); }}><Edit3 className="w-3 h-3 mr-1" /> Editar</Button></div>
+                                                    <div className="flex justify-between items-center mb-1"><span className="font-medium text-sm truncate">{cat.name}</span><Button size="sm" variant="ghost" onClick={() => { setEditingCatId(cat.id); setTempBudgetValue(budgets[cat.id]?.toString() || ''); }}><Edit3 className="w-3 h-3 mr-1" /> Editar</Button></div>
                                                     <div className="flex justify-between items-center text-sm mb-1"><span className={isOverBudget ? "font-bold text-red-500" : ""}>{toCurrency(spent)}</span><span className="text-sm text-slate-500">/ {toCurrency(budget)}</span></div>
                                                     <div className="w-full bg-slate-200 rounded-full h-2 dark:bg-slate-700"><div className={cn("h-2 rounded-full", isOverBudget ? "bg-red-500" : "bg-indigo-600")} style={{ width: `${Math.min(100, progress)}%` }}></div></div>
                                                 </div>
@@ -178,7 +178,7 @@ const GoalsSection: React.FC<GoalsSectionProps> = ({ goals, accounts, onAddGoal,
                 ) : goals.map(goal => (
                     <div key={goal.id} className="p-4 border rounded-lg mb-4">
                         <div className="flex justify-between items-start mb-3">
-                            <div><h4 className="font-semibold">{goal.name}</h4><span className="text-sm text-slate-500">Alvo: {toCurrency(goal.targetAmount)}</span></div>
+                            <div className="flex-1 min-w-0"><h4 className="font-semibold truncate">{goal.name}</h4><span className="text-sm text-slate-500">Alvo: {toCurrency(goal.targetAmount)}</span></div>
                             <div className="flex gap-2">
                                 <Button size="sm" variant="outline" onClick={() => { setSelectedGoal(goal); setFundsAmount(''); setModalOpen('funds'); }}><DollarSign className="w-4 h-4"/></Button>
                                 <Button size="sm" variant="outline" onClick={() => { setSelectedGoal(goal); setFundsAmount(''); setModalOpen('withdraw'); }}><Landmark className="w-4 h-4"/></Button>
