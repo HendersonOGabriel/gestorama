@@ -501,7 +501,7 @@ const App: React.FC = () => {
                         isMobileMenuOpen={isMobileMenuOpen}
                         gamification={gamification}
                     />
-                    <div className="mt-4 pb-32 w-full">
+                    <div className="mt-4 pb-32 w-full overflow-x-hidden">
                         {pageContent()}
                     </div>
                 </main>
