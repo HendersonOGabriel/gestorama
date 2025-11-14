@@ -122,16 +122,11 @@ interface GoalsSectionProps {
     onWithdrawFunds: (goalId: string, amount: number, accountId: string) => void;
     addToast: (message: string, type?: 'error' | 'success') => void;
     isLoading: boolean;
-    onOpenModal: (modal: 'add' | 'edit' | 'funds' | 'withdraw', goal?: Goal) => void;
-    onCloseModal: () => void;
-    modalOpen: 'add' | 'edit' | 'funds' | 'withdraw' | null;
-    selectedGoal: Goal | null;
 }
 
-const GoalsSection: React.FC<GoalsSectionProps> = ({
-    goals, accounts, onAddGoal, onUpdateGoal, onRemoveGoal, onAddFunds, onWithdrawFunds,
-    addToast, isLoading, onOpenModal, onCloseModal, modalOpen, selectedGoal
-}) => {
+const GoalsSection: React.FC<GoalsSectionProps> = ({ goals, accounts, onAddGoal, onUpdateGoal, onRemoveGoal, onAddFunds, onWithdrawFunds, addToast, isLoading }) => {
+    const [modalOpen, setModalOpen] = useState<'add' | 'edit' | 'funds' | 'withdraw' | null>(null);
+    const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
     const [form, setForm] = useState({ name: '', targetAmount: '' });
     const [fundsAmount, setFundsAmount] = useState('');
     const [fundsAccount, setFundsAccount] = useState(accounts[0]?.id || '');
@@ -153,7 +148,7 @@ const GoalsSection: React.FC<GoalsSectionProps> = ({
             };
             onUpdateGoal(selectedGoal.id, goalData);
         }
-        onCloseModal();
+        setModalOpen(null);
     };
     
     const handleFundsSubmit = (e: React.FormEvent, isWithdraw: boolean) => {
@@ -162,12 +157,12 @@ const GoalsSection: React.FC<GoalsSectionProps> = ({
         const amount = parseFloat(fundsAmount);
         if(isWithdraw) onWithdrawFunds(selectedGoal.id, amount, fundsAccount);
         else onAddFunds(selectedGoal.id, amount, fundsAccount);
-        onCloseModal();
+        setModalOpen(null);
     };
 
     return (
         <Card className="h-fit">
-            <CardHeader className="flex justify-between items-center"><CardTitle>Metas de Poupança</CardTitle><Button size="sm" onClick={() => { setForm({name: '', targetAmount: ''}); onOpenModal('add'); }}><Plus className="w-4 h-4 mr-1"/> Nova Meta</Button></CardHeader>
+            <CardHeader className="flex justify-between items-center"><CardTitle>Metas de Poupança</CardTitle><Button size="sm" onClick={() => { setForm({name: '', targetAmount: ''}); setModalOpen('add'); }}><Plus className="w-4 h-4 mr-1"/> Nova Meta</Button></CardHeader>
             <CardContent>
                 {goals.length === 0 ? (
                   <div className="text-center py-16 border-2 border-dashed rounded-lg">
@@ -175,7 +170,7 @@ const GoalsSection: React.FC<GoalsSectionProps> = ({
                       <Target className="w-12 h-12" />
                       <h3 className="font-semibold text-lg text-slate-700 dark:text-slate-200 mt-2">Crie sua primeira meta</h3>
                       <p className="text-sm max-w-xs mx-auto">Defina objetivos financeiros como uma viagem, um novo carro ou sua reserva de emergência.</p>
-                      <Button onClick={() => { setForm({name: '', targetAmount: ''}); onOpenModal('add'); }} size="sm" className="mt-4">
+                      <Button onClick={() => { setForm({name: '', targetAmount: ''}); setModalOpen('add'); }} size="sm" className="mt-4">
                         <Plus className="w-4 h-4 mr-1.5" /> Criar Primeira Meta
                       </Button>
                     </div>
@@ -185,9 +180,9 @@ const GoalsSection: React.FC<GoalsSectionProps> = ({
                         <div className="flex justify-between items-start mb-3">
                             <div className="flex-1 min-w-0"><h4 className="font-semibold truncate">{goal.name}</h4><span className="text-sm text-slate-500">Alvo: {toCurrency(goal.targetAmount)}</span></div>
                             <div className="flex gap-2">
-                                <Button size="sm" variant="outline" onClick={() => { onOpenModal('funds', goal); setFundsAmount(''); }}><DollarSign className="w-4 h-4"/></Button>
-                                <Button size="sm" variant="outline" onClick={() => { onOpenModal('withdraw', goal); setFundsAmount(''); }}><Landmark className="w-4 h-4"/></Button>
-                                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => { onOpenModal('edit', goal); setForm({ name: goal.name, targetAmount: goal.targetAmount.toString() }); }}><Edit3 className="w-4 h-4"/></Button>
+                                <Button size="sm" variant="outline" onClick={() => { setSelectedGoal(goal); setFundsAmount(''); setModalOpen('funds'); }}><DollarSign className="w-4 h-4"/></Button>
+                                <Button size="sm" variant="outline" onClick={() => { setSelectedGoal(goal); setFundsAmount(''); setModalOpen('withdraw'); }}><Landmark className="w-4 h-4"/></Button>
+                                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => { setSelectedGoal(goal); setForm({ name: goal.name, targetAmount: goal.targetAmount.toString() }); setModalOpen('edit'); }}><Edit3 className="w-4 h-4"/></Button>
                                 <Button size="icon" variant="ghost" className="h-8 w-8 text-red-500" onClick={() => onRemoveGoal(goal.id)}><Trash2 className="w-4 h-4"/></Button>
                             </div>
                         </div>
@@ -197,7 +192,7 @@ const GoalsSection: React.FC<GoalsSectionProps> = ({
                 ))}
             </CardContent>
             
-            <Dialog open={modalOpen === 'add' || modalOpen === 'edit'} onOpenChange={onCloseModal}><DialogContent>
+            <Dialog open={modalOpen === 'add' || modalOpen === 'edit'} onOpenChange={() => setModalOpen(null)}><DialogContent>
                 <DialogHeader><DialogTitle>{modalOpen === 'add' ? 'Nova Meta' : 'Editar Meta'}</DialogTitle></DialogHeader>
                 <form onSubmit={handleGoalSubmit} className="space-y-4">
                     <Label>Nome</Label><Input value={form.name} onChange={e=>setForm(f=>({...f, name: e.target.value}))}/>
@@ -205,7 +200,7 @@ const GoalsSection: React.FC<GoalsSectionProps> = ({
                     <Button type="submit" loading={isLoading}>Salvar</Button>
                 </form>
             </DialogContent></Dialog>
-            <Dialog open={modalOpen === 'funds' || modalOpen === 'withdraw'} onOpenChange={onCloseModal}><DialogContent>
+            <Dialog open={modalOpen === 'funds' || modalOpen === 'withdraw'} onOpenChange={() => setModalOpen(null)}><DialogContent>
                 <DialogHeader><DialogTitle>{modalOpen === 'funds' ? 'Adicionar Fundos' : 'Resgatar Fundos'}</DialogTitle></DialogHeader>
                 <form onSubmit={(e) => handleFundsSubmit(e, modalOpen === 'withdraw')} className="space-y-4">
                     <div>
@@ -237,7 +232,7 @@ const GoalsSection: React.FC<GoalsSectionProps> = ({
                         </select>
                     </div>
                     <div className="flex justify-end gap-2 pt-4">
-                        <Button type="button" variant="ghost" onClick={onCloseModal}>Cancelar</Button>
+                        <Button type="button" variant="ghost" onClick={() => setModalOpen(null)}>Cancelar</Button>
                         <Button type="submit" loading={isLoading}>Confirmar</Button>
                     </div>
                 </form>
@@ -259,17 +254,9 @@ interface PlanningPageProps {
   transactions: Transaction[]; // Added transactions prop
   isLoading: boolean;
   addXp: (amount: number, reason: string) => void;
-  onOpenGoalModal: (modal: 'add' | 'edit' | 'funds' | 'withdraw', goal?: Goal) => void;
-  onCloseGoalModal: () => void;
-  goalModalOpen: 'add' | 'edit' | 'funds' | 'withdraw' | null;
-  selectedGoal: Goal | null;
 }
 
-const PlanningPage: React.FC<PlanningPageProps> = ({
-    categories, budgets, setBudgets, goals, setGoals, accounts, adjustAccountBalance,
-    setTransactions, addToast, transactions, isLoading, addXp,
-    onOpenGoalModal, onCloseGoalModal, goalModalOpen, selectedGoal
-}) => {
+const PlanningPage: React.FC<PlanningPageProps> = ({ categories, budgets, setBudgets, goals, setGoals, accounts, adjustAccountBalance, setTransactions, addToast, transactions, isLoading, addXp }) => {
     
     const [viewingMonth, setViewingMonth] = useState(new Date());
 
@@ -330,13 +317,7 @@ const PlanningPage: React.FC<PlanningPageProps> = ({
               viewingMonth={viewingMonth}
               onMonthChange={setViewingMonth}
             />
-            <GoalsSection
-                isLoading={isLoading} goals={goals} accounts={accounts}
-                onAddGoal={handleAddGoal} onUpdateGoal={handleUpdateGoal} onRemoveGoal={handleRemoveGoal}
-                onAddFunds={handleAddFunds} onWithdrawFunds={handleWithdrawFunds} addToast={addToast}
-                onOpenModal={onOpenGoalModal} onCloseModal={onCloseGoalModal}
-                modalOpen={goalModalOpen} selectedGoal={selectedGoal}
-            />
+            <GoalsSection isLoading={isLoading} goals={goals} accounts={accounts} onAddGoal={handleAddGoal} onUpdateGoal={handleUpdateGoal} onRemoveGoal={handleRemoveGoal} onAddFunds={handleAddFunds} onWithdrawFunds={handleWithdrawFunds} addToast={addToast} />
         </div>
     );
 };
