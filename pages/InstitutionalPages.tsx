@@ -100,7 +100,7 @@ export function ContatoSuportePage() {
           <CardTitle>📞 Fale Conosco</CardTitle>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Tem alguma dúvida ou sugestão? Nossa equipe está pronta para ajudar.</p>
         </CardHeader>
-        <CardContent className="grid md:grid-cols-2 gap-8 items-start">
+        <CardContent className="flex flex-col md:grid md:grid-cols-2 gap-8">
             <div className="space-y-4">
               <h3 className="font-semibold text-lg">Envie sua mensagem</h3>
               <form className="space-y-3" onSubmit={(e) => e.preventDefault()}>
@@ -114,7 +114,7 @@ export function ContatoSuportePage() {
                 <div>
                     <h3 className="font-semibold text-lg flex items-center gap-2 mb-2"><Mail className="w-5 h-5 text-indigo-500"/> Outros canais</h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400">
-                        <strong>E-mail:</strong> <a href="mailto:suporte@gestorama.com" className="text-indigo-500 hover:underline">suporte@gestorama.com</a><br/>
+                        <strong>E-mail:</strong> <a href="mailto:suporte@gestorama.com" className="text-indigo-500 hover:underline" style={{overflowWrap: 'anywhere'}}>suporte@gestorama.com</a><br/>
                         Nosso suporte responde em até 24 horas úteis.
                     </p>
                 </div>
