@@ -4,6 +4,7 @@ import {
   Transaction, Account, Card, Transfer, RecurringItem, Category, 
   Goal, Reminder, Subscription, GamificationState, YaraUsage 
 } from '../types';
+import { DEFAULT_CATEGORIES } from '../data/initialData';
 
 interface SupabaseDataState {
   transactions: Transaction[];
@@ -307,11 +308,35 @@ export const useSupabaseData = (userId: string | null) => {
         fetchYaraUsage()
       ]);
 
+      let finalCategories = categories;
+      if (categories.length === 0 && userId) {
+        const categoriesToInsert = DEFAULT_CATEGORIES.map(cat => ({
+            name: cat.name,
+            group_name: cat.group,
+            user_id: userId
+        }));
+
+        const { data: newCategoriesData, error: insertError } = await supabase
+            .from('categories')
+            .insert(categoriesToInsert)
+            .select();
+
+        if (insertError) {
+            console.error('Error inserting default categories:', insertError);
+        } else if (newCategoriesData) {
+            finalCategories = newCategoriesData.map(cat => ({
+                id: cat.id,
+                name: cat.name,
+                group: cat.group_name
+            }));
+        }
+      }
+
       setState({
         accounts,
         cards,
         transactions,
-        categories,
+        categories: finalCategories,
         recurring,
         budgets,
         goals,
