@@ -87,7 +87,7 @@ const AccountList: React.FC<AccountListProps> = ({ accounts, setAccounts, adjust
                 </span>
                 <div className="text-sm">{toCurrency(a.balance)}</div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2 justify-end">
                 <Button size="sm" variant="outline" onClick={() => {setEditAccount(a); setEditName(a.name); setEditBalance(a.balance.toString())}}>Editar</Button>
                 <Button size="sm" variant="ghost" disabled={a.isDefault} onClick={() => handleSetDefault(a.id)}>Padrão</Button>
                 <Button 
