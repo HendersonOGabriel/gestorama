@@ -70,7 +70,7 @@ const BudgetSection: React.FC<BudgetSectionProps> = ({ categories, budgets, onSe
               </div>
             </CardHeader>
             <CardContent>
-                <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+                <div className="space-y-4 max-h-[60vh] overflow-y-auto">
                     {Object.keys(categoryGroups).sort().map(groupName => (
                         <div key={groupName}>
                             <h4 className="font-semibold text-indigo-600 dark:text-indigo-400 mb-2">{groupName}</h4>
