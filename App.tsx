@@ -101,8 +101,8 @@ const CategoryManager: React.FC<{
   };
 
   return (
-    <div className="space-y-6 max-h-[70vh] flex flex-col">
-      <div className="flex-1 overflow-y-auto pr-2 space-y-4">
+    <div className="space-y-6 flex flex-col flex-1">
+      <div className="flex-1 overflow-y-auto pr-2 space-y-4 min-h-0">
         {Object.keys(categoryGroups).sort().map(groupName => (
           <div key={groupName}>
             <h4 className="font-semibold text-indigo-600 dark:text-indigo-400 mb-2">{groupName}</h4>
@@ -133,7 +133,7 @@ const CategoryManager: React.FC<{
           </div>
         ))}
       </div>
-      <div className="mt-4 p-4 border-t bg-white dark:bg-slate-950 sticky bottom-0">
+      <div className="flex-shrink-0 mt-4 p-4 border-t bg-white dark:bg-slate-950">
         <form onSubmit={handleAdd} className="space-y-3">
           <h4 className="font-semibold">Adicionar Nova Categoria</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -511,7 +511,7 @@ const App: React.FC = () => {
             <Dialog open={modal === 'addTransfer' || modal === 'editTransfer'} onOpenChange={() => {setModal(null); setSelectedTransfer(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editTransfer' ? 'Editar' : 'Nova'} Transferência</DialogTitle></DialogHeader><TransferForm accounts={accounts} transfer={selectedTransfer} onTransfer={onAddTransfer} onUpdate={(t) => {setTransfers(p=>p.map(tr=>tr.id===t.id?t:tr)); setModal(null)}} onDismiss={() => setModal(null)} onError={addToast} isLoading={isLoading}/></DialogContent></Dialog>
             <Dialog open={modal === 'accounts'} onOpenChange={() => setModal(null)}><DialogContent><DialogHeader><DialogTitle>Contas</DialogTitle></DialogHeader><AccountList accounts={accounts} setAccounts={setAccounts} adjustAccountBalance={adjustAccountBalance} setTransactions={setTransactions} addToast={addToast} onConfirmDelete={(acc) => {}} /><AccountForm setAccounts={setAccounts} setTransactions={setTransactions} /></DialogContent></Dialog>
             <Dialog open={modal === 'cards'} onOpenChange={() => setModal(null)}><DialogContent><DialogHeader><DialogTitle>Cartões</DialogTitle></DialogHeader><CardList cards={cards} setCards={setCards} transactions={transactions} addToast={addToast} onConfirmDelete={(c) => {}} accounts={accounts}/><CardForm setCards={setCards} accounts={accounts} addToast={addToast}/></DialogContent></Dialog>
-            <Dialog open={modal === 'categories'} onOpenChange={() => setModal(null)}><DialogContent className="max-h-[90vh] flex flex-col"><DialogHeader><DialogTitle>Categorias</DialogTitle></DialogHeader><CategoryManager categories={categories} setCategories={setCategories} transactions={transactions} recurring={recurring} /></DialogContent></Dialog>
+            <Dialog open={modal === 'categories'} onOpenChange={() => setModal(null)}><DialogContent className="h-[90vh] flex flex-col"><DialogHeader><DialogTitle>Categorias</DialogTitle></DialogHeader><CategoryManager categories={categories} setCategories={setCategories} transactions={transactions} recurring={recurring} /></DialogContent></Dialog>
             <ImportTransactionsModal isOpen={modal === 'import'} onClose={() => setModal(null)} accounts={accounts} onConfirmImport={(txs) => {}} addToast={addToast} isLoading={isLoading} />
 
             {/* Global UI */}
