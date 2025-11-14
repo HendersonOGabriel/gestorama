@@ -102,7 +102,7 @@ const CategoryManager: React.FC<{
 
   return (
     <div className="space-y-6 flex flex-col flex-1">
-      <div className="flex-1 overflow-y-auto pr-2 space-y-4">
+      <div className="flex-1 overflow-y-auto pr-2 space-y-4 min-h-0">
         {Object.keys(categoryGroups).sort().map(groupName => (
           <div key={groupName}>
             <h4 className="font-semibold text-indigo-600 dark:text-indigo-400 mb-2">{groupName}</h4>
@@ -133,7 +133,7 @@ const CategoryManager: React.FC<{
           </div>
         ))}
       </div>
-      <div className="mt-4 p-4 border-t bg-white dark:bg-slate-950 sticky bottom-0">
+      <div className="flex-shrink-0 mt-4 p-4 border-t bg-white dark:bg-slate-950">
         <form onSubmit={handleAdd} className="space-y-3">
           <h4 className="font-semibold">Adicionar Nova Categoria</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
