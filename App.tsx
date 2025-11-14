@@ -377,6 +377,11 @@ const App: React.FC = () => {
         }
     }, [themePreference, authLoading, supabaseData.loading]);
 
+    // Effect to scroll to top on page change
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [currentPage]);
+
     useEffect(() => {
         if (isLoading) return; // Prevent running on initial load before state is settled
         
@@ -487,7 +492,7 @@ const App: React.FC = () => {
                   }}
                   subscription={subscription}
                 />
-                <main className={cn("flex-1 p-4 sm:p-6 transition-all duration-300 ease-in-out overflow-hidden", isSidebarMinimized ? "md:ml-20" : "md:ml-64")}>
+                <main className={cn("flex-1 p-4 sm:p-6 transition-all duration-300 ease-in-out", isSidebarMinimized ? "md:ml-20" : "md:ml-64")}>
                     <GlobalHeader 
                         currentPage={currentPage}
                         notifications={notifications}
