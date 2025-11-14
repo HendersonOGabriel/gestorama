@@ -72,11 +72,7 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ currentPage, notifications,
 
   return (
     <>
-      <header className={cn(
-        "sticky top-0 z-50 bg-slate-100/80 dark:bg-slate-950/80 backdrop-blur-sm transition-transform duration-300",
-        "py-4 sm:py-6 flex items-center justify-between overflow-hidden",
-        isVisible ? "translate-y-0" : "-translate-y-full"
-      )}>
+      <header className="sticky top-0 z-20 bg-slate-100/80 dark:bg-slate-950/80 backdrop-blur-sm py-4 sm:py-6 flex items-center justify-between overflow-hidden">
         <div className="flex items-center gap-2 flex-shrink min-w-0">
           <Button 
             variant="ghost" 
