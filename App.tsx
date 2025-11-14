@@ -475,7 +475,7 @@ const App: React.FC = () => {
 
     return (
         <div className={cn("bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-50", themePreference === 'system' ? '' : themePreference)}>
-            <div className="flex min-h-screen overflow-hidden">
+            <div className="flex min-h-screen">
                 <Sidebar 
                   currentPage={currentPage} setCurrentPage={setCurrentPage} 
                   onOpenAccounts={() => setModal('accounts')} onOpenCards={() => setModal('cards')} onOpenCategories={() => setModal('categories')}
@@ -487,7 +487,7 @@ const App: React.FC = () => {
                   }}
                   subscription={subscription}
                 />
-                <main className={cn("flex-1 p-4 sm:p-6 transition-all duration-300 ease-in-out overflow-hidden", isSidebarMinimized ? "md:ml-20" : "md:ml-64")}>
+                <main className={cn("flex-1 p-4 sm:p-6 transition-all duration-300 ease-in-out", isSidebarMinimized ? "md:ml-20" : "md:ml-64")}>
                     <GlobalHeader 
                         currentPage={currentPage}
                         notifications={notifications}
