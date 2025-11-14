@@ -17,11 +17,12 @@ interface YaraChatProps {
     yaraUsage: YaraUsage;
     incrementYaraUsage: () => void;
     onUpgradeClick: () => void;
+    onTransactionAdded?: () => Promise<void>;
 }
 
 const YARA_FREE_LIMIT = 5;
 
-const YaraChat: React.FC<YaraChatProps> = ({ subscription, yaraUsage, incrementYaraUsage, onUpgradeClick }) => {
+const YaraChat: React.FC<YaraChatProps> = ({ subscription, yaraUsage, incrementYaraUsage, onUpgradeClick, onTransactionAdded }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<Message[]>([
         { text: "Olá! Sou a Yara, sua assistente financeira. Como posso te ajudar hoje?", sender: 'yara' }
@@ -98,6 +99,11 @@ const YaraChat: React.FC<YaraChatProps> = ({ subscription, yaraUsage, incrementY
                 sender: 'yara' 
             };
             setMessages(prev => [...prev, yaraResponse]);
+
+            // Check if transaction was added successfully
+            if (data.message?.includes('✅ Transação adicionada com sucesso') && onTransactionAdded) {
+                await onTransactionAdded();
+            }
         } catch (error) {
             console.error('Error in handleSendMessage:', error);
             // Remove typing indicator
