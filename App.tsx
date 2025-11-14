@@ -199,6 +199,10 @@ const App: React.FC = () => {
     const [selectedRecurring, setSelectedRecurring] = useState<RecurringItem | null>(null);
     const [selectedTransfer, setSelectedTransfer] = useState<Transfer | null>(null);
     const [filters, setFilters] = useState({ description: '', categoryId: '', accountId: '', cardId: '', status: 'all', startDate: '', endDate: '' });
+    const [goalModalOpen, setGoalModalOpen] = useState<'add' | 'edit' | 'funds' | 'withdraw' | null>(null);
+    const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
+    const [isReminderModalOpen, setReminderModalOpen] = useState(false);
+    const [editingReminder, setEditingReminder] = useState<Reminder | null>(null);
 
     // Feature State
     const [showOnboarding, setShowOnboarding] = useState(false);
@@ -210,7 +214,7 @@ const App: React.FC = () => {
     // Effect to handle body scroll lock
     useEffect(() => {
         const body = document.body;
-        if (modal || isMobileMenuOpen) {
+        if (modal || isMobileMenuOpen || goalModalOpen || isReminderModalOpen) {
             body.style.overflow = 'hidden';
         } else {
             body.style.overflow = 'auto';
@@ -219,7 +223,7 @@ const App: React.FC = () => {
         return () => {
             body.style.overflow = 'auto';
         };
-    }, [modal, isMobileMenuOpen]);
+    }, [modal, isMobileMenuOpen, goalModalOpen, isReminderModalOpen]);
 
     // -- Handlers --
     const addToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
@@ -458,9 +462,20 @@ const App: React.FC = () => {
                 categories={categories} budgets={budgets} setBudgets={setBudgets} goals={goals} setGoals={setGoals} 
                 accounts={accounts} adjustAccountBalance={adjustAccountBalance} setTransactions={setTransactions} 
                 addToast={addToast} transactions={transactions} isLoading={isLoading} addXp={addXp}
+                onOpenGoalModal={(modal, goal) => { setGoalModalOpen(modal); if(goal) setSelectedGoal(goal); }}
+                onCloseGoalModal={() => { setGoalModalOpen(null); setSelectedGoal(null); }}
+                goalModalOpen={goalModalOpen}
+                selectedGoal={selectedGoal}
             />;
             case 'reports': return <ReportsPage transactions={transactions} accounts={accounts} cards={cards} categories={categories} getCategoryName={getCategoryName} />;
-            case 'calendar': return <CalendarPage transactions={transactions} reminders={reminders} setReminders={setReminders} getInstallmentDueDate={getInstallmentDueDate} getCategoryName={getCategoryName}/>;
+            case 'calendar': return <CalendarPage
+                transactions={transactions} reminders={reminders} setReminders={setReminders}
+                getInstallmentDueDate={getInstallmentDueDate} getCategoryName={getCategoryName}
+                onOpenReminderModal={(reminder) => { setReminderModalOpen(true); if(reminder) setEditingReminder(reminder); }}
+                onCloseReminderModal={() => { setReminderModalOpen(false); setEditingReminder(null); }}
+                isReminderModalOpen={isReminderModalOpen}
+                editingReminder={editingReminder}
+            />;
             case 'profile': return <ProfilePage 
                 ownerProfile={ownerProfile} users={users} subscription={subscription}
                 onUpdateUser={(user) => setUsers(prev => prev.map(u => u.id === user.id ? user : u))}
