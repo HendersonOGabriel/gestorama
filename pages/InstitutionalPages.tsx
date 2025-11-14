@@ -100,7 +100,7 @@ export function ContatoSuportePage() {
           <CardTitle>📞 Fale Conosco</CardTitle>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Tem alguma dúvida ou sugestão? Nossa equipe está pronta para ajudar.</p>
         </CardHeader>
-        <CardContent className="grid md:grid-cols-2 gap-8 items-start">
+        <CardContent className="flex flex-col md:grid md:grid-cols-2 gap-8">
             <div className="space-y-4">
               <h3 className="font-semibold text-lg">Envie sua mensagem</h3>
               <form className="space-y-3" onSubmit={(e) => e.preventDefault()}>
