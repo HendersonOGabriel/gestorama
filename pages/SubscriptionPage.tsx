@@ -95,7 +95,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ addToast, onUpgrade
         <p className="text-slate-500 dark:text-slate-400 mt-2">Transforme suas finanças hoje. Cancele quando quiser.</p>
       </div>
       
-      <div className="flex justify-center items-center gap-4">
+      <div className="flex flex-wrap justify-center items-center gap-4">
         <span className={cn("font-medium", billingCycle === 'monthly' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500')}>Mensal</span>
         <label className="relative inline-flex items-center cursor-pointer">
           <input type="checkbox" checked={billingCycle === 'annual'} onChange={() => setBillingCycle(p => p === 'monthly' ? 'annual' : 'monthly')} className="sr-only peer" />
@@ -104,7 +104,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ addToast, onUpgrade
         <span className={cn("font-medium transition-colors", billingCycle === 'annual' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500')}>
           Anual
           {billingCycle === 'annual' && (
-            <span className="ml-2 text-xs bg-emerald-100 text-emerald-800 font-bold px-2 py-1 rounded-full dark:bg-emerald-900/50 dark:text-emerald-300 animate-fade-in">
+            <span className="ml-2 text-xs whitespace-nowrap bg-emerald-100 text-emerald-800 font-bold px-2 py-1 rounded-full dark:bg-emerald-900/50 dark:text-emerald-300 animate-fade-in">
               Economize 25%
             </span>
           )}
