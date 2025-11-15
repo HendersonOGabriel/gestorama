@@ -4,6 +4,8 @@ import { supabase } from '../src/integrations/supabase/client';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
+import { loadState } from '../services/storageService';
+import { cn } from '../utils/helpers';
 
 interface AuthPageProps {
   onAuthSuccess: () => void;
@@ -17,6 +19,33 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const [themePreference, setThemePreference] = useState<'light' | 'dark' | 'system'>('system');
+
+  useEffect(() => {
+    const stored = loadState();
+    setThemePreference(stored.themePreference || 'system');
+  }, []);
+
+  useEffect(() => {
+    const applyTheme = (theme: 'light' | 'dark') => {
+        if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    };
+
+    if (themePreference === 'system') {
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        applyTheme(mediaQuery.matches ? 'dark' : 'light');
+
+        const handler = (e: MediaQueryListEvent) => applyTheme(e.matches ? 'dark' : 'light');
+        mediaQuery.addEventListener('change', handler);
+        return () => mediaQuery.removeEventListener('change', handler);
+    } else {
+        applyTheme(themePreference);
+    }
+  }, [themePreference]);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -90,11 +119,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
       <div className="w-full max-w-md">
-        <div className="bg-card rounded-2xl shadow-xl p-8 border border-border">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-8 border border-slate-200 dark:border-slate-800">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-50 mb-2">
               {isLogin ? 'Bem-vindo de volta!' : 'Criar conta'}
             </h1>
             <p className="text-muted-foreground">
@@ -165,10 +194,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border"></div>
+              <div className="w-full border-t border-slate-200 dark:border-slate-800"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-card text-muted-foreground">
+              <span className="px-2 bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400">
                 ou continue com
               </span>
             </div>
