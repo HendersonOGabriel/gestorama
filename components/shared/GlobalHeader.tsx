@@ -28,7 +28,7 @@ const GamificationWidget: React.FC<{ gamification: GamificationState }> = ({ gam
           style={{ width: `${progress}%` }}
         ></div>
       </div>
-      <div className="hidden sm:block text-xs text-slate-400">{gamification.xp}/{gamification.xpToNextLevel}</div>
+      <div className="hidden xs:block text-xs text-slate-400">{gamification.xp}/{gamification.xpToNextLevel}</div>
     </div>
   );
 };
