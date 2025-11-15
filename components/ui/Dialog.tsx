@@ -74,7 +74,7 @@ export const Dialog: React.FC<DialogProps> = ({ open, onOpenChange, children, cl
       <div
         ref={dialogRef}
         className={cn(
-          "relative grid w-full max-w-lg gap-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-6 shadow-lg rounded-lg",
+          "relative flex flex-col w-full max-w-lg max-h-[90vh] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-6 shadow-lg rounded-lg",
           className
         )}
         onClick={(e) => e.stopPropagation()}
@@ -98,8 +98,8 @@ export const Dialog: React.FC<DialogProps> = ({ open, onOpenChange, children, cl
   );
 };
 
-export const DialogContent: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ children, ...props }) => (
-  <div {...props}>{children}</div>
+export const DialogContent: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className, children, ...props }) => (
+  <div className={cn("flex-1 overflow-y-auto min-h-0", className)} {...props}>{children}</div>
 );
 
 export const DialogHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ children, ...props }) => (

@@ -90,7 +90,7 @@ const AccountList: React.FC<AccountListProps> = ({ accounts, setAccounts, adjust
               <div className="flex flex-wrap gap-2 justify-end">
                 <Button size="sm" variant="outline" onClick={() => {setEditAccount(a); setEditName(a.name); setEditBalance(a.balance.toString())}}>Editar</Button>
                 <Button size="sm" variant="ghost" disabled={a.isDefault} onClick={() => handleSetDefault(a.id)}>Padrão</Button>
-                <Button 
+                <Button
                   size="sm" 
                   variant="destructive" 
                   onClick={() => {

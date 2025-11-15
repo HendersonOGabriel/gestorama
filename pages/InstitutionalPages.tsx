@@ -21,13 +21,13 @@ const Section: React.FC<{ icon: React.ReactNode, title: string, children: React.
 
 export function TermosDeUsoPage() {
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto px-4 sm:px-0">
       <Card>
-        <CardHeader>
+        <CardHeader className="px-4 sm:px-6">
           <CardTitle>📄 Termos de Uso</CardTitle>
           <p className="text-sm text-slate-500 dark:text-slate-400">Última atualização: 23 de Julho de 2024</p>
         </CardHeader>
-        <CardContent className="space-y-6 text-sm text-slate-600 dark:text-slate-300">
+        <CardContent className="space-y-6 text-sm text-slate-600 dark:text-slate-300 px-4 sm:px-6">
           <div className="p-4 rounded-lg bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
              <h3 className="font-semibold text-base mb-2">Resumo dos Termos</h3>
              <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -55,13 +55,13 @@ export function TermosDeUsoPage() {
 
 export function PoliticaPrivacidadePage() {
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto px-4 sm:px-0">
       <Card>
-        <CardHeader>
+        <CardHeader className="px-4 sm:px-6">
           <CardTitle>🔒 Política de Privacidade</CardTitle>
           <p className="text-sm text-slate-500 dark:text-slate-400">Última atualização: 23 de Julho de 2024</p>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 px-4 sm:px-6">
             <div className="p-4 rounded-lg bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
                <h3 className="font-semibold text-base mb-2">Nosso Compromisso</h3>
                <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -94,13 +94,13 @@ export function PoliticaPrivacidadePage() {
 
 export function ContatoSuportePage() {
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto px-4 sm:px-0">
       <Card>
-        <CardHeader className="text-center">
+        <CardHeader className="text-center px-4 sm:px-6">
           <CardTitle>📞 Fale Conosco</CardTitle>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Tem alguma dúvida ou sugestão? Nossa equipe está pronta para ajudar.</p>
         </CardHeader>
-        <CardContent className="grid md:grid-cols-2 gap-8 items-start">
+        <CardContent className="flex flex-col md:grid md:grid-cols-2 gap-8 px-4 sm:px-6">
             <div className="space-y-4">
               <h3 className="font-semibold text-lg">Envie sua mensagem</h3>
               <form className="space-y-3" onSubmit={(e) => e.preventDefault()}>
@@ -133,13 +133,13 @@ export function ContatoSuportePage() {
 
 export function SobrePage() {
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto px-4 sm:px-0">
       <Card>
-        <CardHeader className="text-center">
+        <CardHeader className="text-center px-4 sm:px-6">
           <CardTitle>Simplificando a Relação com o seu Dinheiro</CardTitle>
           <p className="text-sm text-slate-500 dark:text-slate-400 max-w-2xl mx-auto mt-1">O Gestorama nasceu da crença de que o controle financeiro não precisa ser complicado. Nossa missão é oferecer uma ferramenta poderosa, intuitiva e segura para todos.</p>
         </CardHeader>
-        <CardContent className="space-y-8">
+        <CardContent className="space-y-8 px-4 sm:px-6">
             <div className="grid md:grid-cols-2 gap-8 text-center">
                 <div className="p-6 bg-slate-100 dark:bg-slate-800/50 rounded-lg">
                     <Target className="w-10 h-10 mx-auto text-indigo-500 mb-3" />
@@ -197,13 +197,13 @@ const FAQItem: React.FC<{question: string, answer: string}> = ({question, answer
 
 export function FAQPage() {
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto px-4 sm:px-0">
       <Card>
-        <CardHeader className="text-center">
+        <CardHeader className="text-center px-4 sm:px-6">
           <CardTitle>💡 Perguntas Frequentes (FAQ)</CardTitle>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Encontre respostas para as dúvidas mais comuns sobre o Gestorama.</p>
         </CardHeader>
-        <CardContent className="text-sm text-slate-700 dark:text-slate-200">
+        <CardContent className="text-sm text-slate-700 dark:text-slate-200 px-4 sm:px-6">
             <FAQCategory title="Geral">
                 <FAQItem question="Como a IA Yara funciona?" answer="Você informa seus gastos por texto ou voz (via WhatsApp) e a Yara, nossa IA, interpreta, categoriza e registra a transação automaticamente para você. Ela aprende com seus hábitos para se tornar cada vez mais precisa." />
                 <FAQItem question="Posso usar o Gestorama offline?" answer="As funcionalidades principais do dashboard, como visualização de dados já sincronizados, funcionam offline. No entanto, para registrar novas transações via IA e sincronizar seus dados, é necessária uma conexão com a internet." />

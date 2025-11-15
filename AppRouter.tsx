@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { supabase } from '@/src/integrations/supabase/client';
+import { supabase } from './src/integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
-import App from '@/App';
-import { AuthPage } from '@/pages/AuthPage';
-import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
-import { UpdatePasswordPage } from '@/pages/UpdatePasswordPage';
-import LandingPage from '@/pages/LandingPage';
-import { ToastContainer, ToastProps } from '@/components/ui/Toast';
+import App from './App';
+import { AuthPage } from './pages/AuthPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
+import { UpdatePasswordPage } from './pages/UpdatePasswordPage';
+import LandingPage from './pages/LandingPage';
+import { ToastContainer, ToastProps } from './components/ui/Toast';
 
 export const AppRouter: React.FC = () => {
   const [session, setSession] = useState<Session | null>(null);
