@@ -23,7 +23,7 @@ export function TermosDeUsoPage() {
   return (
     <div className="max-w-4xl mx-auto">
       <Card>
-        <CardHeader>
+        <CardHeader className="px-4 sm:px-6">
           <CardTitle>📄 Termos de Uso</CardTitle>
           <p className="text-sm text-slate-500 dark:text-slate-400">Última atualização: 23 de Julho de 2024</p>
         </CardHeader>
@@ -57,7 +57,7 @@ export function PoliticaPrivacidadePage() {
   return (
     <div className="max-w-4xl mx-auto">
       <Card>
-        <CardHeader>
+        <CardHeader className="px-4 sm:px-6">
           <CardTitle>🔒 Política de Privacidade</CardTitle>
           <p className="text-sm text-slate-500 dark:text-slate-400">Última atualização: 23 de Julho de 2024</p>
         </CardHeader>
@@ -96,7 +96,7 @@ export function ContatoSuportePage() {
   return (
     <div className="max-w-4xl mx-auto">
       <Card>
-        <CardHeader className="text-center">
+        <CardHeader className="text-center px-4 sm:px-6">
           <CardTitle>📞 Fale Conosco</CardTitle>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Tem alguma dúvida ou sugestão? Nossa equipe está pronta para ajudar.</p>
         </CardHeader>
@@ -135,7 +135,7 @@ export function SobrePage() {
   return (
     <div className="max-w-4xl mx-auto">
       <Card>
-        <CardHeader className="text-center">
+        <CardHeader className="text-center px-4 sm:px-6">
           <CardTitle>Simplificando a Relação com o seu Dinheiro</CardTitle>
           <p className="text-sm text-slate-500 dark:text-slate-400 max-w-2xl mx-auto mt-1">O Gestorama nasceu da crença de que o controle financeiro não precisa ser complicado. Nossa missão é oferecer uma ferramenta poderosa, intuitiva e segura para todos.</p>
         </CardHeader>
@@ -199,7 +199,7 @@ export function FAQPage() {
   return (
     <div className="max-w-4xl mx-auto">
       <Card>
-        <CardHeader className="text-center">
+        <CardHeader className="text-center px-4 sm:px-6">
           <CardTitle>💡 Perguntas Frequentes (FAQ)</CardTitle>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Encontre respostas para as dúvidas mais comuns sobre o Gestorama.</p>
         </CardHeader>
