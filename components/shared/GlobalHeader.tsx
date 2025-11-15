@@ -22,13 +22,13 @@ const GamificationWidget: React.FC<{ gamification: GamificationState }> = ({ gam
     <div className="flex items-center gap-2 text-sm" title={`Nível ${gamification.level} - ${gamification.xp} / ${gamification.xpToNextLevel} XP`}>
       <Star className="w-5 h-5 text-amber-400 flex-shrink-0" />
       <div className="font-semibold text-indigo-400">{gamification.level}</div>
-      <div className="w-16 sm:w-24 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+      <div className="w-12 sm:w-20 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
         <div 
           className="h-full bg-amber-400 transition-all duration-500"
           style={{ width: `${progress}%` }}
         ></div>
       </div>
-      <div className="hidden sm:block text-xs text-slate-400">{gamification.xp}/{gamification.xpToNextLevel}</div>
+      <div className="hidden xs:block text-xs text-slate-400">{gamification.xp}/{gamification.xpToNextLevel}</div>
     </div>
   );
 };
