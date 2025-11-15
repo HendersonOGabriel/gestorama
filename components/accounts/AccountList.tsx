@@ -6,6 +6,7 @@ import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { buildInstallments } from '../../utils/helpers';
 import { PiggyBank } from 'lucide-react';
+import { supabase } from '@/src/integrations/supabase/client';
 
 interface AccountListProps {
   accounts: Account[];
@@ -14,46 +15,91 @@ interface AccountListProps {
   setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
   addToast: (message: string, type?: 'error' | 'success') => void;
   onConfirmDelete: (account: Account) => void;
+  userId: string;
 }
 
-const AccountList: React.FC<AccountListProps> = ({ accounts, setAccounts, adjustAccountBalance, setTransactions, addToast, onConfirmDelete }) => {
+const AccountList: React.FC<AccountListProps> = ({ accounts, setAccounts, adjustAccountBalance, setTransactions, addToast, onConfirmDelete, userId }) => {
   const [editAccount, setEditAccount] = useState<Account | null>(null);
   const [editName, setEditName] = useState('');
   const [editBalance, setEditBalance] = useState('');
 
-  const handleSaveEdit = (accountId: string) => {
+  const handleSaveEdit = async (accountId: string) => {
     const account = accounts.find(a => a.id === accountId);
     if (!account) return;
     
     const newBalance = parseFloat(editBalance);
     const delta = newBalance - account.balance;
 
-    if (delta !== 0) {
-      const dateStr = new Date().toISOString().slice(0, 10);
-      const adjustmentTx: Omit<Transaction, 'id'> = {
-        desc: `Ajuste de Saldo (${editName || account.name})`,
-        amount: Math.abs(delta),
-        date: dateStr,
-        installments: 1,
-        type: 'cash',
-        isIncome: delta > 0,
-        person: 'Ajuste Interno',
-        account: accountId,
-        card: null,
-        categoryId: null,
-        installmentsSchedule: [{...buildInstallments(dateStr, Math.abs(delta), 1)[0], paid: true, paymentDate: dateStr, paidAmount: Math.abs(delta)}],
-        paid: true
-      };
-      setTransactions(prev => [{...adjustmentTx, id: Date.now().toString()}, ...prev]);
-      adjustAccountBalance(accountId, delta);
+    try {
+      // Update account name in Supabase
+      const { error: updateError } = await supabase
+        .from('accounts')
+        .update({ name: editName })
+        .eq('id', accountId);
+
+      if (updateError) throw updateError;
+
+      // Create balance adjustment transaction if needed
+      if (delta !== 0) {
+        const dateStr = new Date().toISOString().slice(0, 10);
+        
+        const { error: txError } = await supabase
+          .from('transactions')
+          .insert({
+            description: `Ajuste de Saldo (${editName || account.name})`,
+            amount: Math.abs(delta),
+            date: dateStr,
+            installments: 1,
+            type: 'cash',
+            is_income: delta > 0,
+            person: 'Ajuste Interno',
+            account_id: accountId,
+            card_id: null,
+            category_id: null,
+            paid: true,
+            user_id: userId
+          });
+
+        if (txError) throw txError;
+
+        // Update account balance
+        const { error: balanceError } = await supabase
+          .from('accounts')
+          .update({ balance: newBalance })
+          .eq('id', accountId);
+
+        if (balanceError) throw balanceError;
+      }
+
+      addToast('Conta atualizada com sucesso!', 'success');
+      setEditAccount(null);
+    } catch (error) {
+      console.error('Erro ao editar conta:', error);
+      addToast('Erro ao atualizar conta. Tente novamente.', 'error');
     }
-    
-    setAccounts(prev => prev.map(a => a.id === accountId ? {...a, name: editName } : a));
-    setEditAccount(null);
   };
 
-  const handleSetDefault = (id: string) => {
-    setAccounts(prev => prev.map(acc => ({ ...acc, isDefault: acc.id === id })));
+  const handleSetDefault = async (id: string) => {
+    try {
+      // Unset all defaults first
+      await supabase
+        .from('accounts')
+        .update({ is_default: false })
+        .eq('user_id', userId);
+
+      // Set new default
+      const { error } = await supabase
+        .from('accounts')
+        .update({ is_default: true })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      addToast('Conta padrão atualizada!', 'success');
+    } catch (error) {
+      console.error('Erro ao definir conta padrão:', error);
+      addToast('Erro ao definir conta padrão.', 'error');
+    }
   };
 
   if (accounts.length === 0) {

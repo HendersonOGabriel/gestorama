@@ -5,6 +5,7 @@ import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { toCurrency, cn } from '../../utils/helpers';
 import { CreditCard } from 'lucide-react';
+import { supabase } from '@/src/integrations/supabase/client';
 
 interface CardListProps {
   cards: Card[];
@@ -13,19 +14,58 @@ interface CardListProps {
   addToast: (message: string, type?: 'error' | 'success') => void;
   onConfirmDelete: (card: Card) => void;
   accounts: Account[];
+  userId: string;
 }
 
-const CardList: React.FC<CardListProps> = ({ cards, setCards, transactions, addToast, onConfirmDelete, accounts }) => {
+const CardList: React.FC<CardListProps> = ({ cards, setCards, transactions, addToast, onConfirmDelete, accounts, userId }) => {
   const [editCard, setEditCard] = useState<Card | null>(null);
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (!editCard) return;
-    setCards(prev => prev.map(c => c.id === editCard.id ? editCard : c));
-    setEditCard(null);
+
+    try {
+      const { error } = await supabase
+        .from('cards')
+        .update({
+          name: editCard.name,
+          closing_day: editCard.closingDay,
+          due_day: editCard.dueDay,
+          limit_amount: editCard.limit,
+          account_id: editCard.accountId
+        })
+        .eq('id', editCard.id);
+
+      if (error) throw error;
+
+      addToast('Cartão atualizado com sucesso!', 'success');
+      setEditCard(null);
+    } catch (error) {
+      console.error('Erro ao atualizar cartão:', error);
+      addToast('Erro ao atualizar cartão. Tente novamente.', 'error');
+    }
   };
   
-  const handleSetDefault = (id: string) => {
-    setCards(prev => prev.map(card => ({ ...card, isDefault: card.id === id })));
+  const handleSetDefault = async (id: string) => {
+    try {
+      // Unset all defaults first
+      await supabase
+        .from('cards')
+        .update({ is_default: false })
+        .eq('user_id', userId);
+
+      // Set new default
+      const { error } = await supabase
+        .from('cards')
+        .update({ is_default: true })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      addToast('Cartão padrão atualizado!', 'success');
+    } catch (error) {
+      console.error('Erro ao definir cartão padrão:', error);
+      addToast('Erro ao definir cartão padrão.', 'error');
+    }
   };
 
   const handleDeleteClick = (cardToDelete: Card) => {
