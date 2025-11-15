@@ -3,6 +3,7 @@ import { Button } from "../components/ui/Button";
 import { Card, CardContent } from "../components/ui/Card";
 import { CheckCircle, Smartphone, Wallet, TrendingUp, LogIn, Quote, MessageCircle, Sliders, Shield, Mail, User, Users, Home, Plus, Minus, Menu, X, BarChart3, Target, BrainCircuit } from "lucide-react";
 import { cn } from '../utils/helpers';
+import { PricingCarousel } from '../components/pricing/PricingCarousel';
 
 interface LandingPageProps {
   onEnter: (page?: string) => void;
@@ -13,8 +14,6 @@ export default function LandingPage({ onEnter }: LandingPageProps) {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [familyMembers, setFamilyMembers] = useState(2);
   const [highlightedSection, setHighlightedSection] = useState<string | null>(null);
-  const [currentPlan, setCurrentPlan] = useState(1); // For mobile carousel
-  const [touchStartX, setTouchStartX] = useState<number | null>(null); // For swipe gesture
 
   const features = [
     { icon: <BarChart3 className="h-10 w-10 text-indigo-400" />, title: "Dashboard Intuitivo", desc: "Acompanhe contas, cartões, orçamentos e metas em um só lugar com gráficos claros e fáceis de entender." },
@@ -109,25 +108,6 @@ export default function LandingPage({ onEnter }: LandingPageProps) {
       },
     ];
   }, [billingCycle, familyMembers]);
-  
-  const nextPlan = () => setCurrentPlan(prev => (prev + 1) % plans.length);
-  const prevPlan = () => setCurrentPlan(prev => (prev - 1 + plans.length) % plans.length);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStartX(e.touches[0].clientX);
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX === null) return;
-    const touchEndX = e.changedTouches[0].clientX;
-    const diff = touchStartX - touchEndX;
-    if (diff > 50) { // Swiped left
-      nextPlan();
-    } else if (diff < -50) { // Swiped right
-      prevPlan();
-    }
-    setTouchStartX(null);
-  };
 
 
   return (
@@ -325,22 +305,18 @@ export default function LandingPage({ onEnter }: LandingPageProps) {
             </div>
 
             {/* Mobile Carousel */}
-            <div 
-              className="md:hidden"
-              onTouchStart={handleTouchStart}
-              onTouchEnd={handleTouchEnd}
-            >
-              {(() => {
-                const plan = plans[currentPlan];
-                return (
-                   <Card className={cn("bg-slate-800/50 border rounded-2xl flex flex-col", plan.recommended ? "border-2 border-indigo-500 relative" : "border-slate-700")}>
-                    {plan.recommended && <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-full z-10">RECOMENDADO</div>}
-                    <CardContent className={cn("p-8 text-center flex flex-col flex-grow", plan.recommended && "pt-12")}>
-                      <div className="flex-grow">
-                        <h3 className="text-xl font-bold text-slate-100 mb-4">{plan.name}</h3>
-                        <div className="my-8 flex flex-col justify-center items-center min-h-[100px]">
+            <div className="md:hidden">
+                <PricingCarousel initialSlide={1}>
+                  {plans.map((plan, i) => (
+                    <Card key={i} className={cn("bg-slate-800/50 border rounded-2xl flex flex-col h-full", plan.recommended ? "border-2 border-indigo-500 relative" : "border-slate-700")}>
+                      {plan.recommended && <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-full z-10">RECOMENDADO</div>}
+                      <CardContent className={cn("p-8 text-center flex flex-col flex-grow", plan.recommended && "pt-12")}>
+                        <div className="flex-grow">
+                          <h3 className="text-xl font-bold text-slate-100 mb-4">{plan.name}</h3>
+
+                          <div className="my-8 flex flex-col justify-center items-center min-h-[100px]">
                             <div>
-                                <span className="text-4xl font-extrabold text-indigo-200">{plan.price > 0 ? `R$ ${plan.price.toFixed(2).replace('.', ',')}` : 'Grátis'}</span>
+                                <span className="text-4xl font-extrabold text-indigo-200">{plan.price > 0 ? `R$ ${plan.price.toFixed(2).replace('.', ',')}`: 'Grátis'}</span>
                                 {plan.price > 0 && <span className="text-slate-400">/mês</span>}
                                 {billingCycle === 'annual' && plan.originalPrice > plan.price && (
                                     <s className="text-2xl text-slate-500 ml-2">
@@ -349,60 +325,45 @@ export default function LandingPage({ onEnter }: LandingPageProps) {
                                 )}
                             </div>
                             {billingCycle === 'annual' && plan.price > 0 && <p className="text-xs text-slate-400 mt-1">{plan.annualBillingText}</p>}
-                        </div>
-
-                        {plan.name === 'Família' && (
-                          <div className="my-8 text-center">
-                              <p className="font-semibold mb-2 text-slate-200">Número de Contas</p>
-                              <div className="flex items-center justify-center gap-2">
-                                <Button size="icon" variant="outline" className="h-8 w-8 rounded-full border-slate-600" onClick={() => handleFamilyMembersChange(-1)} disabled={familyMembers <= 2}>
-                                    <Minus className="w-4 h-4" />
-                                </Button>
-                                <span className="text-lg font-bold w-10 text-center text-slate-100">{familyMembers}</span>
-                                <Button size="icon" variant="outline" className="h-8 w-8 rounded-full border-slate-600" onClick={() => handleFamilyMembersChange(1)} disabled={familyMembers >= 10}>
-                                    <Plus className="w-4 h-4" />
-                                </Button>
-                              </div>
                           </div>
-                        )}
-                        
-                        <ul className="text-slate-300 mb-6 space-y-4">
-                          {plan.features.map((feat, idx) => (
-                            <li key={idx} className="flex items-start gap-3 text-left">
-                              <CheckCircle className="w-5 h-5 text-indigo-400 flex-shrink-0 mt-1" />
-                              <span>{feat}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      <Button 
-                          className={cn(
-                              "w-full mt-auto rounded-full px-6 py-3",
-                              plan.recommended ? "bg-indigo-600 hover:bg-indigo-700" : "bg-slate-700 hover:bg-slate-600"
+
+                          {plan.name === 'Família' && (
+                            <div className="my-8 text-center">
+                                <p className="font-semibold mb-2 text-slate-200">Número de Contas</p>
+                                <div className="flex items-center justify-center gap-2">
+                                  <Button size="icon" variant="outline" className="h-8 w-8 rounded-full border-slate-600" onClick={() => handleFamilyMembersChange(-1)} disabled={familyMembers <= 2}>
+                                      <Minus className="w-4 h-4" />
+                                  </Button>
+                                  <span className="text-lg font-bold w-10 text-center text-slate-100">{familyMembers}</span>
+                                  <Button size="icon" variant="outline" className="h-8 w-8 rounded-full border-slate-600" onClick={() => handleFamilyMembersChange(1)} disabled={familyMembers >= 10}>
+                                      <Plus className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                            </div>
                           )}
-                          onClick={() => onEnter(plan.price > 0 ? 'subscription' : undefined)}
-                      >
-                           {plan.price > 0 ? 'Escolher plano' : 'Começar Agora'}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                )
-              })()}
-            </div>
-            
-            {/* Dots for Mobile Carousel */}
-            <div className="md:hidden flex justify-center items-center gap-2 pt-8">
-              {plans.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentPlan(index)}
-                  className={cn(
-                    "h-2 rounded-full transition-all",
-                    currentPlan === index ? "w-6 bg-indigo-500" : "w-2 bg-slate-600"
-                  )}
-                  aria-label={`Ir para o plano ${index + 1}`}
-                />
-              ))}
+
+                          <ul className="text-slate-300 mb-6 space-y-4">
+                            {plan.features.map((feat, idx) => (
+                              <li key={idx} className="flex items-start gap-3 text-left">
+                                <CheckCircle className="w-5 h-5 text-indigo-400 flex-shrink-0 mt-1" />
+                                <span>{feat}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        <Button
+                            className={cn(
+                                "w-full mt-auto rounded-full px-6 py-3",
+                                plan.recommended ? "bg-indigo-600 hover:bg-indigo-700" : "bg-slate-700 hover:bg-slate-600"
+                            )}
+                            onClick={() => onEnter(plan.price > 0 ? 'subscription' : undefined)}
+                        >
+                            {plan.price > 0 ? 'Escolher plano' : 'Começar Agora'}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </PricingCarousel>
             </div>
         </div>
       </section>

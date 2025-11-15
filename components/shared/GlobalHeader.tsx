@@ -19,10 +19,10 @@ const GamificationWidget: React.FC<{ gamification: GamificationState }> = ({ gam
   const progress = (gamification.xp / gamification.xpToNextLevel) * 100;
 
   return (
-    <div className="flex items-center gap-2 text-sm" title={`Nível ${gamification.level} - ${gamification.xp} / ${gamification.xpToNextLevel} XP`}>
+    <div className="hidden sm:flex items-center gap-2 text-sm" title={`Nível ${gamification.level} - ${gamification.xp} / ${gamification.xpToNextLevel} XP`}>
       <Star className="w-5 h-5 text-amber-400 flex-shrink-0" />
       <div className="font-semibold text-indigo-400">{gamification.level}</div>
-      <div className="w-16 sm:w-24 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+      <div className="w-12 sm:w-20 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
         <div 
           className="h-full bg-amber-400 transition-all duration-500"
           style={{ width: `${progress}%` }}
@@ -40,20 +40,20 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ currentPage, notifications,
       case 'reports': return 'Relatórios';
       case 'planning': return 'Planejamento';
       case 'calendar': return 'Calendário';
-      case 'profile': return 'Perfil de Usuário';
-      case 'subscription': return 'Planos e Assinatura';
-      case 'about': return 'Sobre o Gestorama';
-      case 'faq': return 'Perguntas Frequentes (FAQ)';
-      case 'contact': return 'Contato e Suporte';
+      case 'profile': return 'Perfil';
+      case 'subscription': return 'Assinatura';
+      case 'about': return 'Sobre';
+      case 'faq': return 'FAQ';
+      case 'contact': return 'Contato';
       case 'terms': return 'Termos de Uso';
-      case 'privacy': return 'Política de Privacidade';
+      case 'privacy': return 'Privacidade';
       default: return 'Gestorama';
     }
   };
 
   return (
     <>
-      <header className="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 py-4 sm:py-6 flex items-center justify-between">
+      <header className="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 py-4 sm:py-6 flex items-center justify-between gap-4">
         <div className="flex items-center gap-2 flex-shrink min-w-0">
           <Button 
             variant="ghost" 
@@ -66,9 +66,9 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ currentPage, notifications,
           >
             <Menu className="w-6 h-6" />
           </Button>
-          <h1 className="truncate text-xl font-semibold sm:text-2xl">{getTitle()}</h1>
+          <h1 className="flex-shrink min-w-0 truncate text-xl font-semibold sm:text-2xl">{getTitle()}</h1>
         </div>
-        <div className="flex flex-shrink-0 items-center gap-4">
+        <div className="flex flex-shrink items-center gap-2 sm:gap-4">
             <GamificationWidget gamification={gamification} />
             <div className="relative z-50">
                <NotificationBell notifications={notifications} onClear={onClearNotifications} />
