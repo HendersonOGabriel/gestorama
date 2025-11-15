@@ -19,7 +19,7 @@ const GamificationWidget: React.FC<{ gamification: GamificationState }> = ({ gam
   const progress = (gamification.xp / gamification.xpToNextLevel) * 100;
 
   return (
-    <div className="flex items-center gap-2 text-sm" title={`Nível ${gamification.level} - ${gamification.xp} / ${gamification.xpToNextLevel} XP`}>
+    <div className="hidden sm:flex items-center gap-2 text-sm" title={`Nível ${gamification.level} - ${gamification.xp} / ${gamification.xpToNextLevel} XP`}>
       <Star className="w-5 h-5 text-amber-400 flex-shrink-0" />
       <div className="font-semibold text-indigo-400">{gamification.level}</div>
       <div className="w-12 sm:w-20 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
