@@ -88,10 +88,10 @@ const CardList: React.FC<CardListProps> = ({ cards, setCards, transactions, addT
                   </div>
                   <div className="text-xs text-slate-500">Fecha: {c.closingDay} | Vence: {c.dueDay} | Limite: {toCurrency(c.limit)}</div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2 justify-end">
                 <Button size="sm" variant="outline" onClick={() => setEditCard(c)}>Editar</Button>
                 <Button size="sm" variant="ghost" disabled={c.isDefault} onClick={() => handleSetDefault(c.id)}>Padrão</Button>
-                <Button 
+                <Button
                     size="sm" 
                     variant="destructive"
                     onClick={() => handleDeleteClick(c)}
