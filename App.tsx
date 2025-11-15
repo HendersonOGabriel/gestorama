@@ -44,6 +44,24 @@ import { Label } from './components/ui/Label';
 import { Plus, Edit3, Trash2 } from 'lucide-react';
 import GroupForm from './components/categories/GroupForm';
 
+const getNextGroupName = (existingGroups: string[]): string => {
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const usedLetters = new Set(
+    existingGroups
+      .map(g => g.match(/^\[([A-Z])\]$/))
+      .filter(Boolean)
+      .map(match => match![1])
+  );
+
+  for (const letter of letters) {
+    if (!usedLetters.has(letter)) {
+      return `[${letter}]`;
+    }
+  }
+
+  return "[A]"; // Fallback, though unlikely with 26 letters
+};
+
 const CategoryManager: React.FC<{
   categories: Category[];
   setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
@@ -53,6 +71,8 @@ const CategoryManager: React.FC<{
   const [name, setName] = useState('');
   const [group, setGroup] = useState('');
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [editingGroup, setEditingGroup] = useState<string | null>(null);
+  const [newGroupName, setNewGroupName] = useState('');
   const [groups, setGroups] = useState<string[]>([]);
 
   useEffect(() => {
@@ -95,6 +115,28 @@ const CategoryManager: React.FC<{
     }
   };
 
+  const handleUpdateGroup = (oldName: string) => {
+    if (!newGroupName || newGroupName === oldName) {
+      setEditingGroup(null);
+      return;
+    }
+    // Update categories
+    setCategories(prev => prev.map(c => c.group === oldName ? { ...c, group: newGroupName } : c));
+    // Update groups list
+    setGroups(prev => [...prev.filter(g => g !== oldName), newGroupName].sort());
+    setEditingGroup(null);
+    setNewGroupName('');
+  };
+
+  const handleDeleteGroup = (groupName: string) => {
+    const isGroupInUse = categories.some(c => c.group === groupName);
+    if (isGroupInUse) {
+      alert("Não é possível excluir. O grupo está em uso por uma ou mais categorias.");
+    } else {
+      setGroups(prev => prev.filter(g => g !== groupName));
+    }
+  };
+
   const handleGroupAdded = (newGroup: string) => {
     setGroups(prev => [...prev, newGroup].sort());
     setGroup(newGroup);
@@ -105,14 +147,41 @@ const CategoryManager: React.FC<{
       <div className="flex-1 overflow-y-auto pr-2 space-y-4 min-h-0 mb-4">
         {Object.keys(categoryGroups).sort().map(groupName => (
           <div key={groupName}>
-            <h4 className="font-semibold text-indigo-600 dark:text-indigo-400 mb-2">{groupName}</h4>
+            {editingGroup === groupName ? (
+              <div className="flex items-center gap-2 mb-2">
+                <Input value={newGroupName} onChange={e => setNewGroupName(e.target.value)} className="flex-grow"/>
+                <Button size="sm" onClick={() => handleUpdateGroup(groupName)}>Salvar</Button>
+                <Button size="sm" variant="ghost" onClick={() => setEditingGroup(null)}>Cancelar</Button>
+              </div>
+            ) : (
+              <div className="flex justify-between items-center mb-2">
+                <h4 className="font-semibold text-indigo-600 dark:text-indigo-400">{groupName}</h4>
+                {groupName !== 'Sem Grupo' && (
+                  <div className="flex items-center gap-1">
+                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditingGroup(groupName); setNewGroupName(groupName); }}>
+                      <Edit3 className="w-4 h-4" />
+                    </Button>
+                    <Button size="icon" variant="ghost" className="h-7 w-7 text-red-500" onClick={() => handleDeleteGroup(groupName)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
             <div className="space-y-2">
               {categoryGroups[groupName].map(cat => (
                 <div key={cat.id} className="p-3 border rounded-lg dark:border-slate-700">
                   {editingCategory?.id === cat.id ? (
                     <div className="space-y-2">
                       <Input value={editingCategory.name} onChange={e => setEditingCategory({ ...editingCategory, name: e.target.value })} placeholder="Nome da Categoria"/>
-                      <Input value={editingCategory.group || ''} onChange={e => setEditingCategory({ ...editingCategory, group: e.target.value })} placeholder="Nome do Grupo"/>
+                      <select
+                        value={editingCategory.group || ''}
+                        onChange={e => setEditingCategory({ ...editingCategory, group: e.target.value })}
+                        className="w-full p-2 h-10 border rounded-md bg-white dark:bg-slate-800 dark:border-slate-700"
+                      >
+                        <option value="">Selecione um grupo</option>
+                        {groups.map(g => <option key={g} value={g}>{g}</option>)}
+                      </select>
                       <div className="flex gap-2 justify-end">
                         <Button variant="ghost" onClick={() => setEditingCategory(null)}>Cancelar</Button>
                         <Button onClick={handleUpdate}>Salvar</Button>
@@ -153,7 +222,7 @@ const CategoryManager: React.FC<{
           </div>
           <Button type="submit" className="w-full"><Plus className="w-4 h-4 mr-2"/>Adicionar Categoria</Button>
         </form>
-        <GroupForm existingGroups={groups} onGroupAdded={handleGroupAdded} />
+        <GroupForm existingGroups={groups} onGroupAdded={handleGroupAdded} getNextGroupName={getNextGroupName} />
       </div>
     </div>
   );
