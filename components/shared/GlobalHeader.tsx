@@ -53,10 +53,10 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ currentPage, notifications,
 
   return (
     <>
-      <header className="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 py-4 sm:py-6 flex items-center justify-between gap-4">
+      <header className="sticky top-0 z-20 bg-slate-100 dark:bg-slate-950 px-4 sm:px-6 py-4 sm:py-6 flex items-center justify-between gap-4">
         <div className="flex items-center gap-2 flex-shrink min-w-0">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="icon" 
             className="md:hidden -ml-2" 
             onClick={onToggleMobileMenu}

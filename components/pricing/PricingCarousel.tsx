@@ -49,8 +49,11 @@ export const PricingCarousel: React.FC<PricingCarouselProps> = ({ children, init
       <div className="overflow-hidden">
         {/* Slides container */}
         <div
-          className="flex transition-transform duration-300 ease-in-out"
-          style={{ transform: `translateX(${offset})` }}
+          className="flex"
+          style={{
+            transform: `translateX(${offset})`,
+            transition: 'transform 300ms ease-in-out'
+          }}
         >
           {Children.map(children, (child, index) => {
             if (isValidElement(child)) {

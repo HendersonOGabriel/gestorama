@@ -21,7 +21,7 @@ const Section: React.FC<{ icon: React.ReactNode, title: string, children: React.
 
 export function TermosDeUsoPage() {
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto px-4 sm:px-0">
       <Card>
         <CardHeader className="px-4 sm:px-6">
           <CardTitle>📄 Termos de Uso</CardTitle>
@@ -55,7 +55,7 @@ export function TermosDeUsoPage() {
 
 export function PoliticaPrivacidadePage() {
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto px-4 sm:px-0">
       <Card>
         <CardHeader className="px-4 sm:px-6">
           <CardTitle>🔒 Política de Privacidade</CardTitle>
@@ -94,7 +94,7 @@ export function PoliticaPrivacidadePage() {
 
 export function ContatoSuportePage() {
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto px-4 sm:px-0">
       <Card>
         <CardHeader className="text-center px-4 sm:px-6">
           <CardTitle>📞 Fale Conosco</CardTitle>
@@ -133,7 +133,7 @@ export function ContatoSuportePage() {
 
 export function SobrePage() {
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto px-4 sm:px-0">
       <Card>
         <CardHeader className="text-center px-4 sm:px-6">
           <CardTitle>Simplificando a Relação com o seu Dinheiro</CardTitle>
@@ -197,7 +197,7 @@ const FAQItem: React.FC<{question: string, answer: string}> = ({question, answer
 
 export function FAQPage() {
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto px-4 sm:px-0">
       <Card>
         <CardHeader className="text-center px-4 sm:px-6">
           <CardTitle>💡 Perguntas Frequentes (FAQ)</CardTitle>
