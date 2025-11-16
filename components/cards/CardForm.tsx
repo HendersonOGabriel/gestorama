@@ -4,6 +4,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { supabase } from '@/src/integrations/supabase/client';
+import { cardSchema } from '../../utils/validation';
 
 interface CardFormProps {
   setCards: React.Dispatch<React.SetStateAction<Card[]>>;
@@ -22,11 +23,29 @@ const CardForm: React.FC<CardFormProps> = ({ setCards, accounts, addToast, userI
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !closingDay || !dueDay || !accountId) {
-      addToast('Por favor, preencha todos os campos, incluindo a conta vinculada.', 'error');
+    if (isSubmitting) return;
+    
+    const limitAmount = parseFloat(limit) || 0;
+    const closingDayNum = parseInt(closingDay);
+    const dueDayNum = parseInt(dueDay);
+
+    // Validate input
+    const validation = cardSchema.safeParse({
+      name,
+      limitAmount,
+      closingDay: closingDayNum,
+      dueDay: dueDayNum
+    });
+    if (!validation.success) {
+      const firstError = validation.error.issues[0];
+      addToast(firstError.message, 'error');
       return;
     }
-    if (isSubmitting) return;
+    
+    if (!accountId) {
+      addToast('Por favor, selecione uma conta vinculada.', 'error');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -42,9 +61,9 @@ const CardForm: React.FC<CardFormProps> = ({ setCards, accounts, addToast, userI
         .from('cards')
         .insert({
           name,
-          closing_day: parseInt(closingDay),
-          due_day: parseInt(dueDay),
-          limit_amount: parseFloat(limit) || 0,
+          closing_day: closingDayNum,
+          due_day: dueDayNum,
+          limit_amount: limitAmount,
           account_id: accountId,
           is_default: isFirstCard,
           user_id: userId

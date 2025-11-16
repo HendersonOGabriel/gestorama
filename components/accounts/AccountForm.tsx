@@ -5,6 +5,7 @@ import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { buildInstallments } from '../../utils/helpers';
 import { supabase } from '@/src/integrations/supabase/client';
+import { accountSchema } from '../../utils/validation';
 
 interface AccountFormProps {
   setAccounts: React.Dispatch<React.SetStateAction<Account[]>>;
@@ -20,11 +21,19 @@ const AccountForm: React.FC<AccountFormProps> = ({ setAccounts, setTransactions,
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name) return;
     if (isSubmitting) return;
     
-    setIsSubmitting(true);
     const initialBalance = parseFloat(balance) || 0;
+
+    // Validate input
+    const validation = accountSchema.safeParse({ name, balance: initialBalance });
+    if (!validation.success) {
+      const firstError = validation.error.issues[0];
+      addToast(firstError.message, 'error');
+      return;
+    }
+    
+    setIsSubmitting(true);
 
     try {
       // Check if this will be the first account
