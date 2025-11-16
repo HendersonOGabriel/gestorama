@@ -385,6 +385,11 @@ export const useSupabaseData = (userId: string | null) => {
       )
       .on(
         'postgres_changes',
+        { event: '*', schema: 'public', table: 'installments' },
+        () => fetchTransactions().then(data => setState(prev => ({ ...prev, transactions: data })))
+      )
+      .on(
+        'postgres_changes',
         { event: '*', schema: 'public', table: 'accounts', filter: `user_id=eq.${userId}` },
         () => fetchAccounts().then(data => setState(prev => ({ ...prev, accounts: data })))
       )
