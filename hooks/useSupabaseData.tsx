@@ -84,7 +84,7 @@ export const useSupabaseData = (userId: string | null) => {
     if (!userId) return [];
     const { data, error } = await supabase
       .from('transactions')
-      .select('*, installments_data:installments(*)')
+      .select('*, installments(*)')
       .eq('user_id', userId)
       .order('date', { ascending: false });
     
@@ -105,8 +105,8 @@ export const useSupabaseData = (userId: string | null) => {
       reminderDaysBefore: tx.reminder_days_before,
       recurringSourceId: tx.recurring_source_id,
       userId: tx.user_id,
-      installmentsSchedule: Array.isArray(tx.installments_data) ? tx.installments_data.map((inst: any) => ({
-        id: inst.installment_number,
+      installmentsSchedule: tx.installments ? tx.installments.map((inst: any) => ({
+        id: inst.id,
         amount: Number(inst.amount),
         paid: inst.paid,
         postingDate: inst.posting_date,

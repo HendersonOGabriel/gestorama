@@ -2,7 +2,7 @@ import React from 'react';
 import { Transaction, Installment, PayingInstallment, Account, Card as CardType, Category } from '../../types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/Dialog';
 import { Button } from '../ui/Button';
-import { toCurrency, displayDate, cn } from '../../utils/helpers';
+import { toCurrency, displayDate, cn, getInvoiceMonthKey } from '../../utils/helpers';
 import { Edit3, Trash2, CheckCircle2, Clock, DollarSign, Calendar, Tag, CreditCard, PiggyBank, User } from 'lucide-react';
 
 interface TransactionDetailModalProps {
@@ -16,6 +16,7 @@ interface TransactionDetailModalProps {
   getCategoryName: (id: string | null) => string;
   accounts: Account[];
   cards: CardType[];
+  onFocusInvoice: (cardId: string, month: string) => void;
 }
 
 const DetailItem: React.FC<{ icon: React.ReactNode, label: string, value: string | React.ReactNode }> = ({ icon, label, value }) => (
@@ -112,7 +113,15 @@ const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
                           {inst.paid && inst.paymentDate && <div className="text-xs text-green-600">Pago em: {displayDate(inst.paymentDate)}</div>}
                         </div>
                         {isCardTx ? (
-                          <Button size="sm" variant="outline" disabled>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                                if (!cardData) return;
+                                const month = getInvoiceMonthKey(inst.postingDate, cardData.closingDay);
+                                onFocusInvoice(cardData.id, month);
+                            }}
+                          >
                             Fatura
                           </Button>
                         ) : (

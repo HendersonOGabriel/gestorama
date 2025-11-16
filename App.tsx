@@ -343,6 +343,7 @@ const App: React.FC = () => {
 
     // Feature State
     const [showOnboarding, setShowOnboarding] = useState(false);
+    const [focusedInvoice, setFocusedInvoice] = useState<{ cardId: string, month: string } | null>(null);
 
     // -- Derived State --
     const isLoading = authLoading || supabaseData.loading;
@@ -742,6 +743,56 @@ const App: React.FC = () => {
             addToast('Erro ao processar pagamento. Tente novamente.', 'error');
         }
     };
+
+    const handlePayInstallment = async (txId: string, instId: number, paidAmount: number) => {
+        const tx = transactions.find(t => t.id === txId);
+        if (!tx) {
+            addToast('Transação não encontrada.', 'error');
+            return;
+        }
+
+        try {
+            // 1. Update the installment
+            const { error: instError } = await supabase
+                .from('installments')
+                .update({
+                    paid: true,
+                    paid_amount: paidAmount,
+                    payment_date: new Date().toISOString().slice(0, 10)
+                })
+                .eq('transaction_id', txId)
+                .eq('id', instId);
+
+            if (instError) throw instError;
+
+            // 2. Adjust account balance
+            const account = accounts.find(a => a.id === tx.account);
+            if (account) {
+                const { error: accError } = await supabase
+                    .from('accounts')
+                    .update({ balance: account.balance - paidAmount })
+                    .eq('id', account.id);
+                if (accError) throw accError;
+            }
+
+            // 3. Check if all installments are paid and update the transaction if so
+            const allPaid = tx.installmentsSchedule.every(inst => (inst.id === instId) || inst.paid);
+            if (allPaid) {
+                const { error: txError } = await supabase
+                    .from('transactions')
+                    .update({ paid: true })
+                    .eq('id', txId);
+                if (txError) throw txError;
+            }
+
+            addToast('Parcela paga com sucesso!', 'success');
+            supabaseData.refetch(); // Refetch all data to ensure UI consistency
+
+        } catch (error) {
+            console.error("Error paying installment:", error);
+            addToast('Erro ao processar pagamento. Tente novamente.', 'error');
+        }
+    };
     
     const handleUnpayInstallment = async (txId: string, instId: number) => {
         const tx = transactions.find(t => t.id === txId);
@@ -764,7 +815,7 @@ const App: React.FC = () => {
                     payment_date: null
                 })
                 .eq('transaction_id', txId)
-                .eq('installment_number', instId);
+                .eq('id', instId);
 
             if (instError) throw instError;
 
@@ -796,7 +847,14 @@ const App: React.FC = () => {
         }
     };
 
-    const handleUnpayInvoice = async (details: UnpayInvoiceDetails) => {
+    const handleFocusInvoice = (cardId: string, month: string) => {
+        setFocusedInvoice({ cardId, month });
+        setCurrentPage('dashboard');
+        // Close the transaction detail modal as we navigate away
+        setSelectedTransaction(null);
+    };
+
+    const handleUnpayInvoice = (details: UnpayInvoiceDetails) => {
       if (details.cardId && details.total > 0 && details.accountId) {
         try {
             const card = cards.find(c => c.id === details.cardId);
@@ -1038,7 +1096,8 @@ const App: React.FC = () => {
                 onAddTransfer={() => {setSelectedTransfer(null); setModal('addTransfer')}} onEditTransfer={(t) => {setSelectedTransfer(t); setModal('editTransfer')}}
                 onDeleteTransfer={(id) => setTransfers(p => p.filter(t => t.id !== id))} onOpenFilter={() => setModal('filters')}
                 ownerProfile={ownerProfile} isLoading={isLoading}
-             /> : <div className="flex items-center justify-center h-full"><p>Carregando dashboard...</p></div>;
+                focusedInvoice={focusedInvoice} setFocusedInvoice={setFocusedInvoice}
+             />;
             case 'familyDashboard': return <FamilyDashboardPage 
                 transactions={transactions} users={users} goals={goals} categories={categories}
                 getCategoryName={getCategoryName} subscription={subscription}
@@ -1110,7 +1169,7 @@ const App: React.FC = () => {
             
             {/* Modals */}
             <TransactionForm isOpen={modal === 'addTransaction' || modal === 'editTransaction'} onClose={() => {setModal(null); setSelectedTransaction(null)}} onSubmit={handleTransactionSubmit} transaction={selectedTransaction} accounts={accounts} cards={cards} categories={categories} isLoading={isLoading} />
-            <TransactionDetailModal transaction={selectedTransaction} onClose={() => setSelectedTransaction(null)} onEdit={(tx) => {setSelectedTransaction(tx); setModal('editTransaction')}} onDelete={(id) => setTransactions(p => p.filter(t => t.id !== id))} onPay={(details) => setPayingInstallment(details)} onUnpay={handleUnpayInstallment} getInstallmentDueDate={getInstallmentDueDate} getCategoryName={getCategoryName} accounts={accounts} cards={cards} />
+            <TransactionDetailModal transaction={selectedTransaction} onClose={() => setSelectedTransaction(null)} onEdit={(tx) => {setSelectedTransaction(tx); setModal('editTransaction')}} onDelete={(id) => setTransactions(p => p.filter(t => t.id !== id))} onPay={(details) => setPayingInstallment(details)} onUnpay={handleUnpayInstallment} getInstallmentDueDate={getInstallmentDueDate} getCategoryName={getCategoryName} accounts={accounts} cards={cards} onFocusInvoice={handleFocusInvoice} />
             <PaymentModal payingInstallment={payingInstallment} onClose={() => setPayingInstallment(null)} onConfirm={handlePayInstallment} />
             <TransactionFilterModal isOpen={modal === 'filters'} onClose={() => setModal(null)} onApply={setFilters} onClear={() => setFilters({ description: '', categoryId: '', accountId: '', cardId: '', status: 'all', startDate: '', endDate: '' })} initialFilters={filters} accounts={accounts} cards={cards} categories={categories} />
             <Dialog open={modal === 'addRecurring' || modal === 'editRecurring'} onOpenChange={() => {setModal(null); setSelectedRecurring(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editRecurring' ? 'Editar' : 'Adicionar'} Recorrência</DialogTitle></DialogHeader><RecurringForm recurringItem={selectedRecurring} onAdd={handleRecurringAdd} onUpdate={handleRecurringUpdate} accounts={accounts} cards={cards} categories={categories} onClose={() => setModal(null)} isLoading={isLoading}/></DialogContent></Dialog>

@@ -16,8 +16,9 @@ interface DashboardPageProps {
   transactions: Transaction[];
   filters: { description: string; categoryId: string; accountId: string; cardId: string; status: string; startDate: string; endDate: string; };
   accounts: Account[];
-  // FIX: Updated cards prop to use aliased CardType.
   cards: CardType[];
+  focusedInvoice: { cardId: string, month: string } | null;
+  setFocusedInvoice: (focus: { cardId: string, month: string } | null) => void;
   transfers: Transfer[];
   recurring: RecurringItem[];
   categories: Category[];
@@ -64,7 +65,8 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
         onViewTransaction, onAddRecurring, onEditRecurring, onUpdateRecurring,
         onRemoveRecurring, onAddTransfer, onEditTransfer, onDeleteTransfer, onOpenFilter,
         ownerProfile,
-        isLoading
+        isLoading,
+        focusedInvoice, setFocusedInvoice
     } = props;
 
   const [mainTab, setMainTab] = useState('transactions');
@@ -79,6 +81,27 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
   const [summaryChartType, setSummaryChartType] = useState<'bar' | 'line' | 'pie' | 'stacked'>('bar');
   const [trendsChartType, setTrendsChartType] = useState<'bar' | 'line' | 'area'>('bar');
   const [projectionsChartType, setProjectionsChartType] = useState<'area' | 'line' | 'bar'>('area');
+
+  useEffect(() => {
+    if (focusedInvoice) {
+        setMainTab('invoices');
+        setInvoiceMonth(new Date(focusedInvoice.month + '-02T12:00:00Z'));
+
+        // Timeout to allow the tab to render before scrolling
+        setTimeout(() => {
+            const elementId = `invoice-${focusedInvoice.cardId}-${focusedInvoice.month}`;
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                element.classList.add('highlight-invoice');
+                setTimeout(() => {
+                    element.classList.remove('highlight-invoice');
+                }, 2000); // Highlight for 2 seconds
+            }
+            setFocusedInvoice(null); // Reset focus
+        }, 100);
+    }
+  }, [focusedInvoice, setFocusedInvoice]);
 
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
@@ -701,7 +724,7 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
                         const invoiceForMonth = groupedInvoices[selectedMonthKey];
                         const isCardDeleted = !!card.deleted;
 
-                        return (<div key={card.id} className="mb-6">
+                        return (<div key={card.id} id={`invoice-${card.id}-${selectedMonthKey}`} className="mb-6 rounded-lg transition-all duration-500">
                             <h4 className="font-semibold text-lg mb-2">{card.name}{isCardDeleted ? ' (Excluído)' : ''}</h4>
                             {!invoiceForMonth || invoiceForMonth.items.length === 0 ? (
                                 <div className="text-sm text-slate-500 text-center py-8 border rounded-md mt-2 bg-slate-50 dark:bg-slate-800/50">
