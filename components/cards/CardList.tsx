@@ -5,6 +5,8 @@ import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { toCurrency, cn } from '../../utils/helpers';
 import { CreditCard } from 'lucide-react';
+import { supabase } from '@/src/integrations/supabase/client';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/Dialog';
 
 interface CardListProps {
   cards: Card[];
@@ -13,32 +15,105 @@ interface CardListProps {
   addToast: (message: string, type?: 'error' | 'success') => void;
   onConfirmDelete: (card: Card) => void;
   accounts: Account[];
+  userId: string;
 }
 
-const CardList: React.FC<CardListProps> = ({ cards, setCards, transactions, addToast, onConfirmDelete, accounts }) => {
+const CardList: React.FC<CardListProps> = ({ cards, setCards, transactions, addToast, onConfirmDelete, accounts, userId }) => {
   const [editCard, setEditCard] = useState<Card | null>(null);
+  const [cardToDelete, setCardToDelete] = useState<Card | null>(null);
+  const [newCardId, setNewCardId] = useState<string>('none');
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (!editCard) return;
-    setCards(prev => prev.map(c => c.id === editCard.id ? editCard : c));
-    setEditCard(null);
+
+    try {
+      const { error } = await supabase
+        .from('cards')
+        .update({
+          name: editCard.name,
+          closing_day: editCard.closingDay,
+          due_day: editCard.dueDay,
+          limit_amount: editCard.limit,
+          account_id: editCard.accountId
+        })
+        .eq('id', editCard.id);
+
+      if (error) throw error;
+
+      addToast('Cartão atualizado com sucesso!', 'success');
+      setEditCard(null);
+    } catch (error) {
+      console.error('Erro ao atualizar cartão:', error);
+      addToast('Erro ao atualizar cartão. Tente novamente.', 'error');
+    }
   };
   
-  const handleSetDefault = (id: string) => {
-    setCards(prev => prev.map(card => ({ ...card, isDefault: card.id === id })));
+  const handleSetDefault = async (id: string) => {
+    try {
+      // Unset all defaults first
+      await supabase
+        .from('cards')
+        .update({ is_default: false })
+        .eq('user_id', userId);
+
+      // Set new default
+      const { error } = await supabase
+        .from('cards')
+        .update({ is_default: true })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      addToast('Cartão padrão atualizado!', 'success');
+    } catch (error) {
+      console.error('Erro ao definir cartão padrão:', error);
+      addToast('Erro ao definir cartão padrão.', 'error');
+    }
   };
 
-  const handleDeleteClick = (cardToDelete: Card) => {
-    const hasUnpaidInvoices = transactions.some(tx => {
-        if (tx.card !== cardToDelete.id || tx.isIncome) return false;
-        // Check if any installment for this card transaction is unpaid
-        return tx.installmentsSchedule.some(inst => !inst.paid);
-    });
-
-    if (hasUnpaidInvoices) {
-        addToast("Pague todas as faturas pendentes deste cartão antes de excluí-lo.", 'error');
+  const handleDeleteClick = (card: Card) => {
+    const hasTransactions = transactions.some(tx => tx.card === card.id);
+    if (hasTransactions) {
+      setCardToDelete(card);
+      setNewCardId('none');
     } else {
-        onConfirmDelete(cardToDelete);
+      handleConfirmDelete(card.id, 'none');
+    }
+  };
+
+  const handleConfirmDelete = async (cardId: string, newCId: string) => {
+    try {
+      if (newCId !== 'none') {
+        // Re-associate transactions to new card
+        const { error: updateError } = await supabase
+          .from('transactions')
+          .update({ card_id: newCId })
+          .eq('card_id', cardId);
+
+        if (updateError) throw updateError;
+      } else {
+        // Remove card association (set to null)
+        const { error: updateError } = await supabase
+          .from('transactions')
+          .update({ card_id: null, type: 'cash' })
+          .eq('card_id', cardId);
+
+        if (updateError) throw updateError;
+      }
+
+      // Mark card as deleted (soft delete)
+      const { error: deleteError } = await supabase
+        .from('cards')
+        .update({ deleted: true })
+        .eq('id', cardId);
+
+      if (deleteError) throw deleteError;
+
+      addToast('Cartão excluído com sucesso!', 'success');
+      setCardToDelete(null);
+    } catch (error) {
+      console.error('Erro ao excluir cartão:', error);
+      addToast('Erro ao excluir cartão. Tente novamente.', 'error');
     }
   };
 
@@ -56,8 +131,9 @@ const CardList: React.FC<CardListProps> = ({ cards, setCards, transactions, addT
   }
 
   return (
-    <div className="space-y-3">
-      {cards.map(c => (
+    <>
+      <div className="space-y-3">
+        {cards.map(c => (
         <div key={c.id} className="p-3 rounded border dark:border-slate-700">
           {editCard?.id === c.id ? (
             <div className="space-y-3">
@@ -103,7 +179,43 @@ const CardList: React.FC<CardListProps> = ({ cards, setCards, transactions, addT
           )}
         </div>
       ))}
-    </div>
+      </div>
+
+      {/* Modal de Re-associação de Transações */}
+      {cardToDelete && (
+        <Dialog open={!!cardToDelete} onOpenChange={() => setCardToDelete(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Excluir Cartão</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p>O cartão "{cardToDelete.name}" possui transações associadas.</p>
+              <p>Selecione uma opção:</p>
+              <Label>Nova Configuração</Label>
+              <select 
+                value={newCardId} 
+                onChange={(e) => setNewCardId(e.target.value)}
+                className="w-full p-2 h-10 border rounded-md bg-white dark:bg-slate-800 dark:border-slate-700"
+              >
+                <option value="none">Remover cartão (converter para à vista)</option>
+                {cards.filter(c => c.id !== cardToDelete.id).map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              <div className="flex gap-2 justify-end">
+                <Button variant="ghost" onClick={() => setCardToDelete(null)}>Cancelar</Button>
+                <Button 
+                  variant="destructive" 
+                  onClick={() => handleConfirmDelete(cardToDelete.id, newCardId)}
+                >
+                  Confirmar Exclusão
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
   );
 };
 

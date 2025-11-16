@@ -67,7 +67,9 @@ const CategoryManager: React.FC<{
   setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
   transactions: Transaction[];
   recurring: RecurringItem[];
-}> = ({ categories, setCategories, transactions, recurring }) => {
+  userId: string;
+  addToast: (message: string, type?: 'error' | 'success') => void;
+}> = ({ categories, setCategories, transactions, recurring, userId, addToast }) => {
   const [name, setName] = useState('');
   const [group, setGroup] = useState('');
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -82,10 +84,10 @@ const CategoryManager: React.FC<{
 
   const categoryGroups = useMemo(() => {
     return categories.reduce((acc, cat) => {
-        const groupName = cat.group || 'Sem Grupo';
-        if (!acc[groupName]) acc[groupName] = [];
-        acc[groupName].push(cat);
-        return acc;
+      const groupName = cat.group || 'Sem Grupo';
+      if (!acc[groupName]) acc[groupName] = [];
+      acc[groupName].push(cat);
+      return acc;
     }, {} as Record<string, Category[]>);
   }, [categories]);
 
@@ -93,47 +95,117 @@ const CategoryManager: React.FC<{
     return !transactions.some(t => t.categoryId === id) && !recurring.some(r => r.categoryId === id);
   };
 
-  const handleAdd = (e: React.FormEvent) => {
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name) return;
-    setCategories(prev => [...prev, { id: Date.now().toString(), name, group: group || null }]);
-    setName(''); setGroup('');
-  };
 
-  const handleUpdate = () => {
-    if (!editingCategory) return;
-    setCategories(prev => prev.map(c => c.id === editingCategory.id ? editingCategory : c));
-    setEditingCategory(null);
-  };
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .insert({
+          name,
+          group_name: group || null,
+          user_id: userId
+        });
 
-  const handleDelete = (id: string) => {
-    if (canDelete(id)) {
-      setCategories(p => p.filter(cat => cat.id !== id));
-    } else {
-      // In a real app, we'd use the addToast prop here. For simplicity, an alert is used.
-      alert("Não é possível excluir. Categoria em uso por transações ou recorrências.");
+      if (error) throw error;
+
+      addToast('Categoria adicionada com sucesso!', 'success');
+      setName('');
+      setGroup('');
+    } catch (error) {
+      console.error('Erro ao criar categoria:', error);
+      addToast('Erro ao adicionar categoria. Tente novamente.', 'error');
     }
   };
 
-  const handleUpdateGroup = (oldName: string) => {
-    if (!newGroupName || newGroupName === oldName) {
+  const handleUpdate = async () => {
+    if (!editingCategory) return;
+
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .update({
+          name: editingCategory.name,
+          group_name: editingCategory.group
+        })
+        .eq('id', editingCategory.id);
+
+      if (error) throw error;
+
+      addToast('Categoria atualizada com sucesso!', 'success');
+      setEditingCategory(null);
+    } catch (error) {
+      console.error('Erro ao atualizar categoria:', error);
+      addToast('Erro ao atualizar categoria. Tente novamente.', 'error');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!canDelete(id)) {
+      addToast('Categoria em uso por transações ou recorrências.', 'error');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      addToast('Categoria excluída com sucesso!', 'success');
+    } catch (error) {
+      console.error('Erro ao excluir categoria:', error);
+      addToast('Erro ao excluir categoria. Tente novamente.', 'error');
+    }
+  };
+
+  const handleUpdateGroup = async (oldGroupName: string, newGroupName: string) => {
+    if (!newGroupName || oldGroupName === newGroupName) {
       setEditingGroup(null);
       return;
     }
-    // Update categories
-    setCategories(prev => prev.map(c => c.group === oldName ? { ...c, group: newGroupName } : c));
-    // Update groups list
-    setGroups(prev => [...prev.filter(g => g !== oldName), newGroupName].sort());
-    setEditingGroup(null);
-    setNewGroupName('');
+
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .update({ group_name: newGroupName })
+        .eq('group_name', oldGroupName)
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      addToast('Grupo atualizado com sucesso!', 'success');
+      setEditingGroup(null);
+    } catch (error) {
+      console.error('Erro ao atualizar grupo:', error);
+      addToast('Erro ao atualizar grupo. Tente novamente.', 'error');
+    }
   };
 
-  const handleDeleteGroup = (groupName: string) => {
-    const isGroupInUse = categories.some(c => c.group === groupName);
-    if (isGroupInUse) {
-      alert("Não é possível excluir. O grupo está em uso por uma ou mais categorias.");
-    } else {
-      setGroups(prev => prev.filter(g => g !== groupName));
+  const handleDeleteGroup = async (groupName: string) => {
+    const categoriesInGroup = categories.filter(c => c.group === groupName);
+    if (categoriesInGroup.some(c => !canDelete(c.id))) {
+      addToast('Não é possível excluir. Há categorias do grupo em uso.', 'error');
+      return;
+    }
+
+    try {
+      // Delete all categories in the group
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('group_name', groupName)
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      addToast('Grupo excluído com sucesso!', 'success');
+    } catch (error) {
+      console.error('Erro ao excluir grupo:', error);
+      addToast('Erro ao excluir grupo. Tente novamente.', 'error');
     }
   };
 
@@ -150,7 +222,7 @@ const CategoryManager: React.FC<{
             {editingGroup === groupName ? (
               <div className="flex items-center gap-2 mb-2">
                 <Input value={newGroupName} onChange={e => setNewGroupName(e.target.value)} className="flex-grow"/>
-                <Button size="sm" onClick={() => handleUpdateGroup(groupName)}>Salvar</Button>
+                <Button size="sm" onClick={() => handleUpdateGroup(groupName, newGroupName)}>Salvar</Button>
                 <Button size="sm" variant="ghost" onClick={() => setEditingGroup(null)}>Cancelar</Button>
               </div>
             ) : (
@@ -275,7 +347,7 @@ const App: React.FC = () => {
 
     // -- Derived State --
     const isLoading = authLoading || supabaseData.loading;
-    const ownerProfile = useMemo(() => users.find(u => u.role === 'owner')!, [users]);
+    const ownerProfile = useMemo(() => users.find(u => u.role === 'owner'), [users]);
 
     // -- Handlers --
     const addToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
@@ -315,7 +387,7 @@ const App: React.FC = () => {
         setAccounts(prev => prev.map(acc => acc.id === accountId ? { ...acc, balance: acc.balance + delta } : acc));
     }, []);
 
-    const handleTransactionSubmit = (tx: Transaction) => {
+    const handleTransactionSubmit = async (tx: Transaction) => {
       const existing = transactions.find(t => t.id === tx.id);
       if (existing) {
         // TODO: Handle balance adjustment for edited transactions
@@ -333,32 +405,246 @@ const App: React.FC = () => {
         addToast('Transação adicionada com sucesso!', 'success');
         addXp(10, 'Transação adicionada');
       }
-      setModal(null);
     };
 
-    const handlePayInvoice = (cardId: string, month: string) => {
+    const handleRecurringAdd = async (item: RecurringItem) => {
+      try {
+        const { error } = await supabase
+          .from('recurring_items')
+          .insert({
+            description: item.desc,
+            amount: item.amount,
+            day: item.day,
+            type: item.type,
+            is_income: item.isIncome,
+            account_id: item.account,
+            card_id: item.card,
+            category_id: item.categoryId,
+            enabled: item.enabled,
+            next_run: item.nextRun,
+            user_id: user!.id
+          });
+
+        if (error) throw error;
+
+        addToast('Recorrência adicionada com sucesso!', 'success');
+        setModal(null);
+      } catch (error) {
+        console.error('Erro ao adicionar recorrência:', error);
+        addToast('Erro ao adicionar recorrência. Tente novamente.', 'error');
+      }
+    };
+
+    const handleRecurringUpdate = async (item: RecurringItem) => {
+      try {
+        const { error } = await supabase
+          .from('recurring_items')
+          .update({
+            description: item.desc,
+            amount: item.amount,
+            day: item.day,
+            type: item.type,
+            is_income: item.isIncome,
+            account_id: item.account,
+            card_id: item.card,
+            category_id: item.categoryId,
+            enabled: item.enabled,
+            next_run: item.nextRun
+          })
+          .eq('id', item.id);
+
+        if (error) throw error;
+
+        addToast('Recorrência atualizada com sucesso!', 'success');
+        setModal(null);
+      } catch (error) {
+        console.error('Erro ao atualizar recorrência:', error);
+        addToast('Erro ao atualizar recorrência. Tente novamente.', 'error');
+      }
+    };
+
+    const handleTransferUpdate = async (transfer: Transfer) => {
+      try {
+        const { error } = await supabase
+          .from('transfers')
+          .update({
+            amount: transfer.amount,
+            date: transfer.date,
+            from_account: transfer.fromAccount,
+            to_account: transfer.toAccount
+          })
+          .eq('id', transfer.id);
+
+        if (error) throw error;
+
+        addToast('Transferência atualizada com sucesso!', 'success');
+        setModal(null);
+      } catch (error) {
+        console.error('Erro ao atualizar transferência:', error);
+        addToast('Erro ao atualizar transferência. Tente novamente.', 'error');
+      }
+    };
+
+    const handleImportTransactions = async (txs: Transaction[]) => {
+      try {
+        // Insert all transactions
+        for (const tx of txs) {
+          const { data: newTx, error: txError } = await supabase
+            .from('transactions')
+            .insert({
+              description: tx.desc,
+              amount: tx.amount,
+              date: tx.date,
+              installments: tx.installments,
+              type: tx.type,
+              is_income: tx.isIncome,
+              person: tx.person,
+              account_id: tx.account,
+              card_id: tx.card,
+              category_id: tx.categoryId,
+              paid: tx.paid,
+              reminder_days_before: tx.reminderDaysBefore,
+              user_id: user!.id
+            })
+            .select()
+            .single();
+
+          if (txError) throw txError;
+
+          if (newTx) {
+            // Create installments
+            const installmentsData = tx.installmentsSchedule.map(inst => ({
+              transaction_id: newTx.id,
+              installment_number: inst.id,
+              amount: inst.amount,
+              posting_date: inst.postingDate,
+              paid: inst.paid,
+              payment_date: inst.paymentDate,
+              paid_amount: inst.paidAmount
+            }));
+
+            const { error: instError } = await supabase
+              .from('installments')
+              .insert(installmentsData);
+
+            if (instError) throw instError;
+          }
+        }
+
+        addToast(`${txs.length} transações importadas com sucesso!`, 'success');
+        setModal(null);
+      } catch (error) {
+        console.error('Erro ao importar transações:', error);
+        addToast('Erro ao importar transações. Tente novamente.', 'error');
+      }
+    };
+
+    const handlePayInvoice = async (cardId: string, month: string) => {
         let totalPaid = 0;
         let accountId: string | null = null;
         const card = cards.find(c => c.id === cardId);
         if (!card) return;
 
-        setTransactions(prev => prev.map(tx => {
-            if (tx.card !== cardId) return tx;
-            const newSchedule = tx.installmentsSchedule.map(s => {
+        const installmentsToUpdate: any[] = [];
+
+        transactions.forEach(tx => {
+            if (tx.card !== cardId) return;
+            tx.installmentsSchedule.forEach(s => {
                 const invoiceM = getInvoiceMonthKey(s.postingDate, card.closingDay);
                 if (invoiceM === month && !s.paid) {
                     totalPaid += s.amount;
                     accountId = tx.account;
-                    return { ...s, paid: true, paymentDate: new Date().toISOString().slice(0, 10), paidAmount: s.amount };
+                    installmentsToUpdate.push({
+                        transaction_id: tx.id,
+                        installment_number: s.id,
+                        paid: true,
+                        payment_date: new Date().toISOString().slice(0, 10),
+                        paid_amount: s.amount
+                    });
                 }
-                return s;
             });
-            return { ...tx, installmentsSchedule: newSchedule, paid: newSchedule.every(s => s.paid) };
-        }));
+        });
 
-        if (accountId && totalPaid > 0) {
-            adjustAccountBalance(accountId, -totalPaid);
-            addToast(`Fatura de ${toCurrency(totalPaid)} paga!`, 'success');
+        if (accountId && totalPaid > 0 && installmentsToUpdate.length > 0) {
+            try {
+                // Update installments in Supabase
+                for (const inst of installmentsToUpdate) {
+                    const { error } = await supabase
+                        .from('installments')
+                        .update({ 
+                            paid: inst.paid, 
+                            payment_date: inst.payment_date, 
+                            paid_amount: inst.paid_amount 
+                        })
+                        .eq('transaction_id', inst.transaction_id)
+                        .eq('installment_number', inst.installment_number);
+
+                    if (error) throw error;
+                }
+
+                // Update account balance
+                const { error: balanceError } = await supabase
+                    .from('accounts')
+                    .update({ balance: accounts.find(a => a.id === accountId)!.balance - totalPaid })
+                    .eq('id', accountId);
+
+                if (balanceError) throw balanceError;
+
+                addToast(`Fatura de ${toCurrency(totalPaid)} paga!`, 'success');
+            } catch (error) {
+                console.error('Erro ao pagar fatura:', error);
+                addToast('Erro ao pagar fatura. Tente novamente.', 'error');
+            }
+        }
+    };
+
+    const handlePayInstallment = async (txId: string, instId: string, paidAmount: number) => {
+        const tx = transactions.find(t => t.id === txId);
+        if (!tx) {
+            addToast('Transação não encontrada.', 'error');
+            return;
+        }
+
+        try {
+            // 1. Update the installment
+            const { error: instError } = await supabase
+                .from('installments')
+                .update({
+                    paid: true,
+                    paid_amount: paidAmount,
+                    payment_date: new Date().toISOString().slice(0, 10)
+                })
+                .eq('transaction_id', txId)
+                .eq('id', instId);
+
+            if (instError) throw instError;
+
+            // 2. Adjust account balance
+            const account = accounts.find(a => a.id === tx.account);
+            if (account) {
+                const { error: accError } = await supabase
+                    .from('accounts')
+                    .update({ balance: account.balance - paidAmount })
+                    .eq('id', account.id);
+                if (accError) throw accError;
+            }
+
+            // 3. Check if all installments are paid and update the transaction if so
+            const allPaid = tx.installmentsSchedule.every(inst => (inst.id === instId) || inst.paid);
+            if (allPaid) {
+                const { error: txError } = await supabase
+                    .from('transactions')
+                    .update({ paid: true })
+                    .eq('id', txId);
+                if (txError) throw txError;
+            }
+
+            addToast('Parcela paga com sucesso!', 'success');
+            supabaseData.refetch(); // Refetch all data to ensure UI consistency
+
+        } catch (error) {
+            console.error("Error paying installment:", error);
+            addToast('Erro ao processar pagamento. Tente novamente.', 'error');
         }
     };
 
@@ -474,17 +760,90 @@ const App: React.FC = () => {
 
     const handleUnpayInvoice = (details: UnpayInvoiceDetails) => {
       if (details.cardId && details.total > 0 && details.accountId) {
-        adjustAccountBalance(details.accountId, details.total);
-        addToast('Estorno da fatura realizado.', 'success');
+        try {
+            const card = cards.find(c => c.id === details.cardId);
+            if (!card) return;
+
+            // Find all installments to unpay
+            const installmentsToUpdate: any[] = [];
+            transactions.forEach(tx => {
+                if (tx.card !== details.cardId) return;
+                tx.installmentsSchedule.forEach(s => {
+                    const invoiceM = getInvoiceMonthKey(s.postingDate, card.closingDay);
+                    if (invoiceM === details.month && s.paid) {
+                        installmentsToUpdate.push({
+                            transaction_id: tx.id,
+                            installment_id: s.id
+                        });
+                    }
+                });
+            });
+
+            // Update installments in Supabase
+            for (const inst of installmentsToUpdate) {
+                const { error } = await supabase
+                    .from('installments')
+                    .update({ paid: false, payment_date: null, paid_amount: null })
+                    .eq('transaction_id', inst.transaction_id)
+                    .eq('id', inst.installment_id);
+
+                if (error) throw error;
+            }
+
+            // Update account balance
+            const { error: balanceError } = await supabase
+                .from('accounts')
+                .update({ balance: accounts.find(a => a.id === details.accountId)!.balance + details.total })
+                .eq('id', details.accountId);
+
+            if (balanceError) throw balanceError;
+
+            addToast('Estorno da fatura realizado.', 'success');
+        } catch (error) {
+            console.error('Erro ao estornar fatura:', error);
+            addToast('Erro ao estornar fatura. Tente novamente.', 'error');
+        }
       }
     }
 
-    const onAddTransfer = (transfer: Transfer) => {
-        setTransfers(prev => [transfer, ...prev]);
-        adjustAccountBalance(transfer.fromAccount, -transfer.amount);
-        adjustAccountBalance(transfer.toAccount, transfer.amount);
-        addToast('Transferência realizada!', 'success');
-        setModal(null);
+    const onAddTransfer = async (transfer: Transfer) => {
+        try {
+            const { error } = await supabase
+                .from('transfers')
+                .insert({
+                    amount: transfer.amount,
+                    date: transfer.date,
+                    from_account: transfer.fromAccount,
+                    to_account: transfer.toAccount,
+                    user_id: user!.id
+                });
+
+            if (error) throw error;
+
+            // Update account balances
+            const fromAccount = accounts.find(a => a.id === transfer.fromAccount);
+            const toAccount = accounts.find(a => a.id === transfer.toAccount);
+
+            if (fromAccount) {
+                await supabase
+                    .from('accounts')
+                    .update({ balance: fromAccount.balance - transfer.amount })
+                    .eq('id', transfer.fromAccount);
+            }
+
+            if (toAccount) {
+                await supabase
+                    .from('accounts')
+                    .update({ balance: toAccount.balance + transfer.amount })
+                    .eq('id', transfer.toAccount);
+            }
+
+            addToast('Transferência realizada!', 'success');
+            setModal(null);
+        } catch (error) {
+            console.error('Erro ao criar transferência:', error);
+            addToast('Erro ao criar transferência. Tente novamente.', 'error');
+        }
     }
     
     const handleEnterApp = (page?: string) => {
@@ -534,21 +893,35 @@ const App: React.FC = () => {
                 return;
             }
 
-            const { data, error } = await supabase
+            // Fetch profile data
+            const { data: profileData, error: profileError } = await supabase
                 .from('profiles')
                 .select('*')
                 .eq('user_id', user.id)
                 .maybeSingle();
 
-            if (data && !error) {
-                setUsers([{
-                    id: data.user_id,
-                    name: data.name,
-                    email: data.email,
-                    avatar: data.avatar,
-                    role: data.role as 'owner' | 'member'
-                }]);
+            if (profileError || !profileData) {
+                console.error('Error loading profile:', profileError);
+                return;
             }
+
+            // Fetch user role from user_roles table (secure)
+            const { data: roleData } = await supabase
+                .from('user_roles')
+                .select('role')
+                .eq('user_id', user.id)
+                .maybeSingle();
+
+            // Use role from user_roles table or fallback to 'member'
+            const userRole = roleData?.role === 'owner' ? 'owner' : 'member';
+
+            setUsers([{
+                id: profileData.user_id,
+                name: profileData.name,
+                email: profileData.email,
+                avatar: profileData.avatar,
+                role: userRole
+            }]);
         };
 
         loadProfile();
@@ -616,7 +989,7 @@ const App: React.FC = () => {
     const pageContent = () => {
         if (isLoading) return <div>Loading...</div>;
         switch (currentPage) {
-            case 'dashboard': return <DashboardPage
+            case 'dashboard': return ownerProfile ? <DashboardPage
                 transactions={transactions} filters={filters} accounts={accounts} cards={cards} transfers={transfers}
                 recurring={recurring} categories={categories} getCategoryName={getCategoryName}
                 getInstallmentDueDate={getInstallmentDueDate} addToast={addToast} onPayInvoice={handlePayInvoice}
@@ -641,7 +1014,7 @@ const App: React.FC = () => {
             />;
             case 'reports': return <ReportsPage transactions={transactions} accounts={accounts} cards={cards} categories={categories} getCategoryName={getCategoryName} />;
             case 'calendar': return <CalendarPage transactions={transactions} reminders={reminders} setReminders={setReminders} getInstallmentDueDate={getInstallmentDueDate} getCategoryName={getCategoryName}/>;
-            case 'profile': return <ProfilePage 
+            case 'profile': return ownerProfile ? <ProfilePage 
                 ownerProfile={ownerProfile} users={users} subscription={subscription}
                 onUpdateUser={(user) => setUsers(prev => prev.map(u => u.id === user.id ? user : u))}
                 onAddUser={(name, email) => setUsers(prev => [...prev, { id: Date.now().toString(), name, email, avatar: null, role: 'member' }])}
@@ -653,7 +1026,7 @@ const App: React.FC = () => {
                 appState={stateToExport}
                 gamification={gamification}
                 onLogout={handleLogout}
-            />;
+            /> : <div className="flex items-center justify-center h-full"><p>Carregando perfil...</p></div>;
             case 'subscription': return <SubscriptionPage 
                 currentSubscription={subscription} isLoading={isLoading} addToast={addToast}
                 onUpgradePlan={(plan, slots) => { setSubscription({ plan, memberSlots: slots, expires: null }); addToast('Plano atualizado com sucesso!'); setCurrentPage('profile');}}
@@ -703,12 +1076,12 @@ const App: React.FC = () => {
             <TransactionDetailModal transaction={selectedTransaction} onClose={() => setSelectedTransaction(null)} onEdit={(tx) => {setSelectedTransaction(tx); setModal('editTransaction')}} onDelete={(id) => setTransactions(p => p.filter(t => t.id !== id))} onPay={(details) => setPayingInstallment(details)} onUnpay={handleUnpayInstallment} getInstallmentDueDate={getInstallmentDueDate} getCategoryName={getCategoryName} accounts={accounts} cards={cards} onFocusInvoice={handleFocusInvoice} />
             <PaymentModal payingInstallment={payingInstallment} onClose={() => setPayingInstallment(null)} onConfirm={handlePayInstallment} />
             <TransactionFilterModal isOpen={modal === 'filters'} onClose={() => setModal(null)} onApply={setFilters} onClear={() => setFilters({ description: '', categoryId: '', accountId: '', cardId: '', status: 'all', startDate: '', endDate: '' })} initialFilters={filters} accounts={accounts} cards={cards} categories={categories} />
-            <Dialog open={modal === 'addRecurring' || modal === 'editRecurring'} onOpenChange={() => {setModal(null); setSelectedRecurring(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editRecurring' ? 'Editar' : 'Adicionar'} Recorrência</DialogTitle></DialogHeader><RecurringForm recurringItem={selectedRecurring} onAdd={(item) => {setRecurring(p=>[...p, {...item, id: Date.now().toString()}]); setModal(null);}} onUpdate={(item) => {setRecurring(p=>p.map(r=>r.id===item.id?item:r)); setModal(null);}} accounts={accounts} cards={cards} categories={categories} onClose={() => setModal(null)} isLoading={isLoading}/></DialogContent></Dialog>
-            <Dialog open={modal === 'addTransfer' || modal === 'editTransfer'} onOpenChange={() => {setModal(null); setSelectedTransfer(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editTransfer' ? 'Editar' : 'Nova'} Transferência</DialogTitle></DialogHeader><TransferForm accounts={accounts} transfer={selectedTransfer} onTransfer={onAddTransfer} onUpdate={(t) => {setTransfers(p=>p.map(tr=>tr.id===t.id?t:tr)); setModal(null)}} onDismiss={() => setModal(null)} onError={addToast} isLoading={isLoading}/></DialogContent></Dialog>
-            <Dialog open={modal === 'accounts'} onOpenChange={() => setModal(null)}><DialogContent className="w-full"><DialogHeader><DialogTitle>Contas</DialogTitle></DialogHeader><AccountList accounts={accounts} setAccounts={setAccounts} adjustAccountBalance={adjustAccountBalance} setTransactions={setTransactions} addToast={addToast} onConfirmDelete={(acc) => {}} /><AccountForm setAccounts={setAccounts} setTransactions={setTransactions} /></DialogContent></Dialog>
-            <Dialog open={modal === 'cards'} onOpenChange={() => setModal(null)}><DialogContent className="w-full"><DialogHeader><DialogTitle>Cartões</DialogTitle></DialogHeader><CardList cards={cards} setCards={setCards} transactions={transactions} addToast={addToast} onConfirmDelete={(c) => {}} accounts={accounts}/><CardForm setCards={setCards} accounts={accounts} addToast={addToast}/></DialogContent></Dialog>
-            <Dialog open={modal === 'categories'} onOpenChange={() => setModal(null)}><DialogContent className="flex flex-col"><DialogHeader><DialogTitle>Categorias</DialogTitle></DialogHeader><CategoryManager categories={categories} setCategories={setCategories} transactions={transactions} recurring={recurring} /></DialogContent></Dialog>
-            <ImportTransactionsModal isOpen={modal === 'import'} onClose={() => setModal(null)} accounts={accounts} onConfirmImport={(txs) => {}} addToast={addToast} isLoading={isLoading} />
+            <Dialog open={modal === 'addRecurring' || modal === 'editRecurring'} onOpenChange={() => {setModal(null); setSelectedRecurring(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editRecurring' ? 'Editar' : 'Adicionar'} Recorrência</DialogTitle></DialogHeader><RecurringForm recurringItem={selectedRecurring} onAdd={handleRecurringAdd} onUpdate={handleRecurringUpdate} accounts={accounts} cards={cards} categories={categories} onClose={() => setModal(null)} isLoading={isLoading}/></DialogContent></Dialog>
+            <Dialog open={modal === 'addTransfer' || modal === 'editTransfer'} onOpenChange={() => {setModal(null); setSelectedTransfer(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editTransfer' ? 'Editar' : 'Nova'} Transferência</DialogTitle></DialogHeader><TransferForm accounts={accounts} transfer={selectedTransfer} onTransfer={onAddTransfer} onUpdate={handleTransferUpdate} onDismiss={() => setModal(null)} onError={addToast} isLoading={isLoading}/></DialogContent></Dialog>
+            <Dialog open={modal === 'accounts'} onOpenChange={() => setModal(null)}><DialogContent className="w-full"><DialogHeader><DialogTitle>Contas</DialogTitle></DialogHeader><AccountList accounts={accounts} setAccounts={setAccounts} adjustAccountBalance={adjustAccountBalance} setTransactions={setTransactions} addToast={addToast} onConfirmDelete={(acc) => {}} userId={user?.id || ''} transactions={transactions} /><AccountForm setAccounts={setAccounts} setTransactions={setTransactions} userId={user?.id || ''} addToast={addToast} /></DialogContent></Dialog>
+            <Dialog open={modal === 'cards'} onOpenChange={() => setModal(null)}><DialogContent className="w-full"><DialogHeader><DialogTitle>Cartões</DialogTitle></DialogHeader><CardList cards={cards} setCards={setCards} transactions={transactions} addToast={addToast} onConfirmDelete={(c) => {}} accounts={accounts} userId={user?.id || ''} /><CardForm setCards={setCards} accounts={accounts} addToast={addToast} userId={user?.id || ''} /></DialogContent></Dialog>
+            <Dialog open={modal === 'categories'} onOpenChange={() => setModal(null)}><DialogContent className="flex flex-col"><DialogHeader><DialogTitle>Categorias</DialogTitle></DialogHeader><CategoryManager categories={categories} setCategories={setCategories} transactions={transactions} recurring={recurring} userId={user?.id || ''} addToast={addToast} /></DialogContent></Dialog>
+            <ImportTransactionsModal isOpen={modal === 'import'} onClose={() => setModal(null)} accounts={accounts} onConfirmImport={handleImportTransactions} addToast={addToast} isLoading={isLoading} />
 
             {/* Global UI */}
             {ownerProfile && <YaraChat 

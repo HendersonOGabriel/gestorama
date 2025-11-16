@@ -3,30 +3,85 @@ import { Account, Card } from '../../types';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
+import { supabase } from '@/src/integrations/supabase/client';
+import { cardSchema } from '../../utils/validation';
 
 interface CardFormProps {
   setCards: React.Dispatch<React.SetStateAction<Card[]>>;
   accounts: Account[];
   addToast: (message: string, type?: 'error' | 'success') => void;
+  userId: string;
 }
 
-const CardForm: React.FC<CardFormProps> = ({ setCards, accounts, addToast }) => {
+const CardForm: React.FC<CardFormProps> = ({ setCards, accounts, addToast, userId }) => {
   const [name, setName] = useState('');
   const [closingDay, setClosingDay] = useState('');
   const [dueDay, setDueDay] = useState('');
   const [limit, setLimit] = useState('');
   const [accountId, setAccountId] = useState(accounts.find(a => a.isDefault)?.id || (accounts.length > 0 ? accounts[0].id : ''));
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !closingDay || !dueDay || !accountId) {
-      addToast('Por favor, preencha todos os campos, incluindo a conta vinculada.', 'error');
+    if (isSubmitting) return;
+    
+    const limitAmount = parseFloat(limit) || 0;
+    const closingDayNum = parseInt(closingDay);
+    const dueDayNum = parseInt(dueDay);
+
+    // Validate input
+    const validation = cardSchema.safeParse({
+      name,
+      limitAmount,
+      closingDay: closingDayNum,
+      dueDay: dueDayNum
+    });
+    if (!validation.success) {
+      const firstError = validation.error.issues[0];
+      addToast(firstError.message, 'error');
       return;
     }
-    const newCard: Omit<Card, 'id' | 'isDefault'> = { name, closingDay: parseInt(closingDay), dueDay: parseInt(dueDay), limit: parseFloat(limit) || 0, accountId };
-    setCards(prev => [...prev, { ...newCard, id: Date.now().toString(), isDefault: prev.length === 0 }]);
-    setName(''); setClosingDay(''); setDueDay(''); setLimit('');
+    
+    if (!accountId) {
+      addToast('Por favor, selecione uma conta vinculada.', 'error');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      // Check if this will be the first card
+      const { data: existingCards } = await supabase
+        .from('cards')
+        .select('id')
+        .eq('user_id', userId);
+      
+      const isFirstCard = !existingCards || existingCards.length === 0;
+
+      const { error } = await supabase
+        .from('cards')
+        .insert({
+          name,
+          closing_day: closingDayNum,
+          due_day: dueDayNum,
+          limit_amount: limitAmount,
+          account_id: accountId,
+          is_default: isFirstCard,
+          user_id: userId
+        });
+
+      if (error) throw error;
+
+      addToast('Cartão adicionado com sucesso!', 'success');
+      setName('');
+      setClosingDay('');
+      setDueDay('');
+      setLimit('');
+    } catch (error) {
+      console.error('Erro ao criar cartão:', error);
+      addToast('Erro ao adicionar cartão. Tente novamente.', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -51,7 +106,9 @@ const CardForm: React.FC<CardFormProps> = ({ setCards, accounts, addToast }) => 
         <div><Label>Dia Venc.</Label><Input type="number" min="1" max="31" value={dueDay} onChange={e => setDueDay(e.target.value)} /></div>
         <div><Label>Limite</Label><Input type="number" min="0" value={limit} onChange={e => setLimit(e.target.value)} /></div>
       </div>
-      <Button type="submit" className="w-full">Adicionar</Button>
+      <Button type="submit" className="w-full" disabled={isSubmitting}>
+        {isSubmitting ? 'Adicionando...' : 'Adicionar'}
+      </Button>
     </form>
   );
 };
