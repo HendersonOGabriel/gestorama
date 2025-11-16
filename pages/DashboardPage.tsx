@@ -737,7 +737,16 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
                                 const m = getInvoiceMonthKey(s.postingDate, card.closingDay);
                                 acc[m] = acc[m] || { total: 0, items: [], accountId: tx.account };
                                 if(!s.paid) acc[m].total += s.amount;
-                                acc[m].items.push({ ...s, tx });
+                                // Only include the fields we need to avoid rendering raw DB objects
+                                acc[m].items.push({ 
+                                    id: s.id,
+                                    amount: s.amount,
+                                    paid: s.paid,
+                                    postingDate: s.postingDate,
+                                    paymentDate: s.paymentDate,
+                                    paidAmount: s.paidAmount,
+                                    tx 
+                                });
                             });
                             return acc;
                         }, {} as Record<string, { total: number; items: any[]; accountId: string; }>);
