@@ -97,6 +97,43 @@ serve(async (req) => {
     // Create service role client for database operations
     const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
 
+    // Check rate limiting based on subscription plan
+    const { data: yaraUsage, error: usageError } = await supabase
+      .from('yara_usage')
+      .select('count')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (usageError) {
+      console.error('Error fetching yara usage:', usageError);
+    }
+
+    const { data: subscription, error: subError } = await supabase
+      .from('subscriptions')
+      .select('plan')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (subError) {
+      console.error('Error fetching subscription:', subError);
+    }
+
+    const plan = subscription?.plan || 'free';
+    const currentCount = yaraUsage?.count || 0;
+
+    // Enforce rate limits: free = 5, premium/family = unlimited
+    if (plan === 'free' && currentCount >= 5) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Limite de mensagens gratuitas atingido. Faça upgrade para continuar usando a Yara.' 
+        }), 
+        {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
     // Define tools for OpenAI function calling
     const tools = [
       {
@@ -322,6 +359,19 @@ serve(async (req) => {
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
+    }
+
+    // Update usage count in database after successful response
+    const { error: updateError } = await supabase
+      .from('yara_usage')
+      .update({ 
+        count: currentCount + 1,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', user.id);
+
+    if (updateError) {
+      console.error('Error updating yara usage:', updateError);
     }
 
     // Return regular message if no function call

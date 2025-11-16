@@ -43,6 +43,7 @@ import { Input } from './components/ui/Input';
 import { Label } from './components/ui/Label';
 import { Plus, Edit3, Trash2 } from 'lucide-react';
 import GroupForm from './components/categories/GroupForm';
+import { transactionSchema, transferSchema, recurringSchema } from './utils/validation';
 
 const getNextGroupName = (existingGroups: string[]): string => {
   const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -370,6 +371,28 @@ const App: React.FC = () => {
         });
     };
 
+    const incrementYaraUsage = useCallback(async () => {
+        if (!user) return;
+        
+        try {
+            // Update in database
+            const { error } = await supabase
+                .from('yara_usage')
+                .update({ 
+                    count: yaraUsage.count + 1,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('user_id', user.id);
+
+            if (error) throw error;
+
+            // Update local state
+            setYaraUsage(p => ({...p, count: p.count + 1}));
+        } catch (error) {
+            console.error('Error updating Yara usage:', error);
+        }
+    }, [user, yaraUsage.count]);
+
     const getCategoryName = useCallback((id: string | null) => {
         return categories.find(c => c.id === id)?.name || 'Sem Categoria';
     }, [categories]);
@@ -388,27 +411,125 @@ const App: React.FC = () => {
     }, []);
 
     const handleTransactionSubmit = async (tx: Transaction) => {
-      const existing = transactions.find(t => t.id === tx.id);
-      if (existing) {
-        // TODO: Handle balance adjustment for edited transactions
-        setTransactions(prev => prev.map(t => t.id === tx.id ? tx : t));
-        addToast('Transação atualizada com sucesso!', 'success');
-      } else {
-        setTransactions(prev => [tx, ...prev]);
+      try {
+        // Validate transaction data
+        const validationResult = transactionSchema.safeParse({
+          description: tx.desc,
+          amount: tx.amount,
+          date: tx.date,
+          person: tx.person
+        });
 
-        // Adjust account balance only for new, non-card transactions
-        if (tx.type !== 'card') {
-            const amountToAdjust = tx.isIncome ? tx.amount : -tx.amount;
-            adjustAccountBalance(tx.account, amountToAdjust);
+        if (!validationResult.success) {
+          const firstError = validationResult.error.errors[0];
+          addToast(firstError.message, 'error');
+          return;
         }
 
-        addToast('Transação adicionada com sucesso!', 'success');
-        addXp(10, 'Transação adicionada');
+        const existing = transactions.find(t => t.id === tx.id);
+        if (existing) {
+          // Update existing transaction
+          const { error: txError } = await supabase
+            .from('transactions')
+            .update({
+              description: tx.desc,
+              amount: tx.amount,
+              date: tx.date,
+              type: tx.type,
+              is_income: tx.isIncome,
+              person: tx.person,
+              account_id: tx.account,
+              card_id: tx.card,
+              category_id: tx.categoryId,
+              paid: tx.paid,
+              reminder_days_before: tx.reminderDaysBefore,
+              installments: tx.installments
+            })
+            .eq('id', tx.id);
+
+          if (txError) throw txError;
+          addToast('Transação atualizada com sucesso!', 'success');
+          setModal(null);
+        } else {
+          // Insert new transaction
+          const { data: newTx, error: txError } = await supabase
+            .from('transactions')
+            .insert({
+              description: tx.desc,
+              amount: tx.amount,
+              date: tx.date,
+              installments: tx.installments,
+              type: tx.type,
+              is_income: tx.isIncome,
+              person: tx.person,
+              account_id: tx.account,
+              card_id: tx.card,
+              category_id: tx.categoryId,
+              paid: tx.paid,
+              reminder_days_before: tx.reminderDaysBefore,
+              user_id: user!.id
+            })
+            .select()
+            .single();
+
+          if (txError) throw txError;
+
+          // Create installments
+          if (newTx && tx.installmentsSchedule.length > 0) {
+            const installmentsData = tx.installmentsSchedule.map(inst => ({
+              transaction_id: newTx.id,
+              installment_number: inst.id,
+              amount: inst.amount,
+              posting_date: inst.postingDate,
+              paid: inst.paid,
+              payment_date: inst.paymentDate,
+              paid_amount: inst.paidAmount
+            }));
+
+            const { error: instError } = await supabase
+              .from('installments')
+              .insert(installmentsData);
+
+            if (instError) throw instError;
+          }
+
+          // Adjust account balance for non-card transactions
+          if (tx.type === 'cash' || (tx.type === 'prazo' && tx.paid)) {
+            const account = accounts.find(a => a.id === tx.account);
+            if (account) {
+              const amountToAdjust = tx.isIncome ? tx.amount : -tx.amount;
+              await supabase
+                .from('accounts')
+                .update({ balance: account.balance + amountToAdjust })
+                .eq('id', tx.account);
+            }
+          }
+
+          addToast('Transação adicionada com sucesso!', 'success');
+          addXp(10, 'Transação adicionada');
+          setModal(null);
+        }
+      } catch (error) {
+        console.error('Erro ao salvar transação:', error);
+        addToast('Erro ao salvar transação. Tente novamente.', 'error');
       }
     };
 
     const handleRecurringAdd = async (item: RecurringItem) => {
       try {
+        // Validate recurring item data
+        const validationResult = recurringSchema.safeParse({
+          desc: item.desc,
+          amount: item.amount,
+          day: item.day
+        });
+
+        if (!validationResult.success) {
+          const firstError = validationResult.error.errors[0];
+          addToast(firstError.message, 'error');
+          return;
+        }
+
         const { error } = await supabase
           .from('recurring_items')
           .insert({
@@ -437,6 +558,19 @@ const App: React.FC = () => {
 
     const handleRecurringUpdate = async (item: RecurringItem) => {
       try {
+        // Validate recurring item data
+        const validationResult = recurringSchema.safeParse({
+          desc: item.desc,
+          amount: item.amount,
+          day: item.day
+        });
+
+        if (!validationResult.success) {
+          const firstError = validationResult.error.errors[0];
+          addToast(firstError.message, 'error');
+          return;
+        }
+
         const { error } = await supabase
           .from('recurring_items')
           .update({
@@ -465,6 +599,20 @@ const App: React.FC = () => {
 
     const handleTransferUpdate = async (transfer: Transfer) => {
       try {
+        // Validate transfer data
+        const validationResult = transferSchema.safeParse({
+            amount: transfer.amount,
+            date: transfer.date,
+            fromAccount: transfer.fromAccount,
+            toAccount: transfer.toAccount
+        });
+
+        if (!validationResult.success) {
+            const firstError = validationResult.error.errors[0];
+            addToast(firstError.message, 'error');
+            return;
+        }
+
         const { error } = await supabase
           .from('transfers')
           .update({
@@ -808,6 +956,20 @@ const App: React.FC = () => {
 
     const onAddTransfer = async (transfer: Transfer) => {
         try {
+            // Validate transfer data
+            const validationResult = transferSchema.safeParse({
+                amount: transfer.amount,
+                date: transfer.date,
+                fromAccount: transfer.fromAccount,
+                toAccount: transfer.toAccount
+            });
+
+            if (!validationResult.success) {
+                const firstError = validationResult.error.errors[0];
+                addToast(firstError.message, 'error');
+                return;
+            }
+
             const { error } = await supabase
                 .from('transfers')
                 .insert({
@@ -1000,9 +1162,11 @@ const App: React.FC = () => {
                 onAddTransfer={() => {setSelectedTransfer(null); setModal('addTransfer')}} onEditTransfer={(t) => {setSelectedTransfer(t); setModal('editTransfer')}}
                 onDeleteTransfer={(id) => setTransfers(p => p.filter(t => t.id !== id))} onOpenFilter={() => setModal('filters')}
                 ownerProfile={ownerProfile} isLoading={isLoading}
+                onDeleteTransfer={(id) => setTransfers(p => p.filter(t => t.id !== id))} onOpenFilter={() => setModal('filters')}
+                ownerProfile={ownerProfile} isLoading={isLoading}
                 focusedInvoice={focusedInvoice} setFocusedInvoice={setFocusedInvoice}
              />;
-            case 'familyDashboard': return <FamilyDashboardPage 
+            case 'familyDashboard': return <FamilyDashboardPage
                 transactions={transactions} users={users} goals={goals} categories={categories}
                 getCategoryName={getCategoryName} subscription={subscription}
                 onGoToSubscription={() => setCurrentPage('subscription')}
@@ -1087,7 +1251,7 @@ const App: React.FC = () => {
             {ownerProfile && <YaraChat 
                 subscription={subscription} 
                 yaraUsage={yaraUsage} 
-                incrementYaraUsage={() => setYaraUsage(p => ({...p, count: p.count+1}))}
+                incrementYaraUsage={incrementYaraUsage}
                 onUpgradeClick={() => setCurrentPage('subscription')}
                 onTransactionAdded={refreshTransactions}
             />}
