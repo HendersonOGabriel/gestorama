@@ -96,7 +96,7 @@ export const useSupabaseData = (userId: string | null) => {
       date: tx.date,
       isIncome: tx.is_income,
       type: tx.type as 'card' | 'cash' | 'prazo',
-      installments: tx.installments,
+      installments: Math.max(1, tx.installments ? tx.installments.length : 0),
       account: tx.account_id,
       card: tx.card_id,
       categoryId: tx.category_id,
