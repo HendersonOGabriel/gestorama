@@ -654,7 +654,7 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
                                 </tr>
                               ))}
                             </React.Fragment>
-                          ))
+                          )})
                         )}
                       </tbody>
                   </table></div>
