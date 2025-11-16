@@ -31,7 +31,7 @@ const DetailItem: React.FC<{ icon: React.ReactNode, label: string, value: string
 );
 
 const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
-  transaction, onClose, onEdit, onDelete, onPay, onUnpay, getInstallmentDueDate, getCategoryName, accounts, cards
+  transaction, onClose, onEdit, onDelete, onPay, onUnpay, getInstallmentDueDate, getCategoryName, accounts, cards, onFocusInvoice
 }) => {
   if (!transaction) return null;
 
