@@ -97,7 +97,7 @@ const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
                 {transaction.installments > 1 ? 'Parcelamento' : 'Pagamento'}
               </h4>
               <div className="space-y-2 border border-slate-200 dark:border-slate-700 rounded-lg p-3">
-                {transaction.installmentsSchedule.map(inst => {
+                {transaction.installmentsSchedule.map((inst, index) => {
                     const isAmountDifferent = inst.paid && inst.paidAmount !== null && inst.paidAmount !== inst.amount;
                     const isCardTx = transaction.type === 'card';
 
@@ -114,7 +114,7 @@ const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
                       <div key={inst.id} className="flex justify-between items-center py-2 border-b border-slate-200 dark:border-slate-700 last:border-b-0">
                         <div>
                           <div className="font-medium">
-                            {transaction.installments > 1 ? `Parcela ${inst.id}/${transaction.installments} - ` : ''}
+                            {transaction.installments > 1 ? `Parcela ${index + 1}/${transaction.installments} - ` : ''}
                             {amountDisplay}
                           </div>
                           <div className="text-xs text-slate-500">Vencimento: {displayDate(getInstallmentDueDate(transaction, inst))}</div>
