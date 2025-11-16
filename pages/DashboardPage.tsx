@@ -543,7 +543,14 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
         {mainTab === 'transactions' && (
              <Card data-tour-id="transactions-list">
                 <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                  <CardTitle>Transações</CardTitle>
+                  <div className="flex items-center gap-3">
+                    <CardTitle>Transações</CardTitle>
+                    {filters.startDate && filters.endDate && monthKey(new Date(filters.startDate + 'T12:00:00Z')) === monthKey(new Date()) && monthKey(new Date(filters.endDate + 'T12:00:00Z')) === monthKey(new Date()) && (
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-200 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300">
+                        Este Mês
+                      </span>
+                    )}
+                  </div>
                   <div className="flex gap-2 w-full sm:w-auto">
                     <Button onClick={onOpenFilter} size="sm" variant="outline" className="relative w-full sm:w-auto"><Filter className="w-4 h-4 mr-1.5" />Filtrar</Button>
                     <div data-tour-id="add-transaction-button">

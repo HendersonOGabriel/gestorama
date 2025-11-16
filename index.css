@@ -89,4 +89,15 @@ body {
   .animate-fade-in-up {
     animation: fade-in-up both;
   }
+
+  .highlight-invoice {
+      animation: highlight-animation 2s ease-in-out;
+  }
+
+  @keyframes highlight-animation {
+      0% { background-color: transparent; }
+      25% { background-color: theme('colors.indigo.200 / 50%'); }
+      75% { background-color: theme('colors.indigo.200 / 50%'); }
+      100% { background-color: transparent; }
+  }
 }
