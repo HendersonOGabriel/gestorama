@@ -4,6 +4,7 @@ import { supabase } from '@/src/integrations/supabase/client';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
+import { passwordSchema } from '@/utils/validation';
 
 interface UpdatePasswordPageProps {
   addToast: (message: string, type: 'success' | 'error' | 'info') => void;
@@ -18,13 +19,11 @@ export const UpdatePasswordPage: React.FC<UpdatePasswordPageProps> = ({ addToast
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (password !== confirmPassword) {
-      addToast('As senhas não coincidem', 'error');
-      return;
-    }
-
-    if (password.length < 6) {
-      addToast('A senha deve ter no mínimo 6 caracteres', 'error');
+    // Validate password with Zod schema
+    const validation = passwordSchema.safeParse({ password, confirmPassword });
+    if (!validation.success) {
+      const firstError = validation.error.issues[0];
+      addToast(firstError.message, 'error');
       return;
     }
 
@@ -73,7 +72,7 @@ export const UpdatePasswordPage: React.FC<UpdatePasswordPageProps> = ({ addToast
                 minLength={6}
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Mínimo de 6 caracteres
+                Mínimo 8 caracteres com letras maiúsculas, minúsculas, números e caracteres especiais
               </p>
             </div>
 
