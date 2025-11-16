@@ -59,6 +59,37 @@ export const categorySchema = z.object({
     .optional()
 });
 
+// Transfer validation schema
+export const transferSchema = z.object({
+  amount: z.number()
+    .positive('Valor deve ser positivo')
+    .max(1000000000, 'Valor muito alto'),
+  date: z.string()
+    .min(1, 'Data é obrigatória'),
+  fromAccount: z.string()
+    .min(1, 'Conta de origem é obrigatória'),
+  toAccount: z.string()
+    .min(1, 'Conta de destino é obrigatória')
+}).refine((data) => data.fromAccount !== data.toAccount, {
+  message: 'Contas de origem e destino devem ser diferentes',
+  path: ['toAccount']
+});
+
+// Recurring item validation schema
+export const recurringSchema = z.object({
+  desc: z.string()
+    .trim()
+    .min(1, 'Descrição é obrigatória')
+    .max(500, 'Descrição deve ter no máximo 500 caracteres'),
+  amount: z.number()
+    .positive('Valor deve ser positivo')
+    .max(1000000000, 'Valor muito alto'),
+  day: z.number()
+    .int('Dia deve ser um número inteiro')
+    .min(1, 'Dia deve ser entre 1 e 31')
+    .max(31, 'Dia deve ser entre 1 e 31')
+});
+
 // Password validation schema
 export const passwordSchema = z.object({
   password: z.string()
