@@ -1010,7 +1010,7 @@ const App: React.FC = () => {
                 onDeleteTransfer={(id) => setTransfers(p => p.filter(t => t.id !== id))} onOpenFilter={() => setModal('filters')}
                 ownerProfile={ownerProfile} isLoading={isLoading}
                 focusedInvoice={focusedInvoice} setFocusedInvoice={setFocusedInvoice}
-             />;
+             /> : null;
             case 'familyDashboard': return <FamilyDashboardPage 
                 transactions={transactions} users={users} goals={goals} categories={categories}
                 getCategoryName={getCategoryName} subscription={subscription}
