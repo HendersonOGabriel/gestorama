@@ -63,6 +63,24 @@ const getNextGroupName = (existingGroups: string[]): string => {
   return "[A]"; // Fallback, though unlikely with 26 letters
 };
 
+const getNextGroupName = (existingGroups: string[]): string => {
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const usedLetters = new Set(
+    existingGroups
+      .map(g => g.match(/^\[([A-Z])\]$/))
+      .filter(Boolean)
+      .map(match => match![1])
+  );
+
+  for (const letter of letters) {
+    if (!usedLetters.has(letter)) {
+      return `[${letter}]`;
+    }
+  }
+
+  return "[A]"; // Fallback, though unlikely with 26 letters
+};
+
 const CategoryManager: React.FC<{
   categories: Category[];
   setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
@@ -210,6 +228,28 @@ const CategoryManager: React.FC<{
     }
   };
 
+  const handleUpdateGroup = (oldName: string) => {
+    if (!newGroupName || newGroupName === oldName) {
+      setEditingGroup(null);
+      return;
+    }
+    // Update categories
+    setCategories(prev => prev.map(c => c.group === oldName ? { ...c, group: newGroupName } : c));
+    // Update groups list
+    setGroups(prev => [...prev.filter(g => g !== oldName), newGroupName].sort());
+    setEditingGroup(null);
+    setNewGroupName('');
+  };
+
+  const handleDeleteGroup = (groupName: string) => {
+    const isGroupInUse = categories.some(c => c.group === groupName);
+    if (isGroupInUse) {
+      alert("Não é possível excluir. O grupo está em uso por uma ou mais categorias.");
+    } else {
+      setGroups(prev => prev.filter(g => g !== groupName));
+    }
+  };
+
   const handleGroupAdded = (newGroup: string) => {
     setGroups(prev => [...prev, newGroup].sort());
     setGroup(newGroup);
@@ -223,7 +263,7 @@ const CategoryManager: React.FC<{
             {editingGroup === groupName ? (
               <div className="flex items-center gap-2 mb-2">
                 <Input value={newGroupName} onChange={e => setNewGroupName(e.target.value)} className="flex-grow"/>
-                <Button size="sm" onClick={() => handleUpdateGroup(groupName, newGroupName)}>Salvar</Button>
+                <Button size="sm" onClick={() => handleUpdateGroup(groupName)}>Salvar</Button>
                 <Button size="sm" variant="ghost" onClick={() => setEditingGroup(null)}>Cancelar</Button>
               </div>
             ) : (
@@ -1202,12 +1242,12 @@ const App: React.FC = () => {
             <TransactionDetailModal transaction={selectedTransaction} onClose={() => setSelectedTransaction(null)} onEdit={(tx) => {setSelectedTransaction(tx); setModal('editTransaction')}} onDelete={(id) => setTransactions(p => p.filter(t => t.id !== id))} onPay={(details) => setPayingInstallment(details)} onUnpay={handleUnpayInstallment} getInstallmentDueDate={getInstallmentDueDate} getCategoryName={getCategoryName} accounts={accounts} cards={cards} onFocusInvoice={handleFocusInvoice} />
             <PaymentModal payingInstallment={payingInstallment} onClose={() => setPayingInstallment(null)} onConfirm={handlePayInstallment} />
             <TransactionFilterModal isOpen={modal === 'filters'} onClose={() => setModal(null)} onApply={setFilters} onClear={() => setFilters({ description: '', categoryId: '', accountId: '', cardId: '', status: 'all', startDate: '', endDate: '' })} initialFilters={filters} accounts={accounts} cards={cards} categories={categories} />
-            <Dialog open={modal === 'addRecurring' || modal === 'editRecurring'} onOpenChange={() => {setModal(null); setSelectedRecurring(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editRecurring' ? 'Editar' : 'Adicionar'} Recorrência</DialogTitle></DialogHeader><RecurringForm recurringItem={selectedRecurring} onAdd={handleRecurringAdd} onUpdate={handleRecurringUpdate} accounts={accounts} cards={cards} categories={categories} onClose={() => setModal(null)} isLoading={isLoading}/></DialogContent></Dialog>
-            <Dialog open={modal === 'addTransfer' || modal === 'editTransfer'} onOpenChange={() => {setModal(null); setSelectedTransfer(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editTransfer' ? 'Editar' : 'Nova'} Transferência</DialogTitle></DialogHeader><TransferForm accounts={accounts} transfer={selectedTransfer} onTransfer={onAddTransfer} onUpdate={handleTransferUpdate} onDismiss={() => setModal(null)} onError={addToast} isLoading={isLoading}/></DialogContent></Dialog>
-            <Dialog open={modal === 'accounts'} onOpenChange={() => setModal(null)}><DialogContent className="w-full"><DialogHeader><DialogTitle>Contas</DialogTitle></DialogHeader><AccountList accounts={accounts} setAccounts={setAccounts} adjustAccountBalance={adjustAccountBalance} setTransactions={setTransactions} addToast={addToast} onConfirmDelete={(acc) => {}} userId={user?.id || ''} transactions={transactions} /><AccountForm setAccounts={setAccounts} setTransactions={setTransactions} userId={user?.id || ''} addToast={addToast} /></DialogContent></Dialog>
-            <Dialog open={modal === 'cards'} onOpenChange={() => setModal(null)}><DialogContent className="w-full"><DialogHeader><DialogTitle>Cartões</DialogTitle></DialogHeader><CardList cards={cards} setCards={setCards} transactions={transactions} addToast={addToast} onConfirmDelete={(c) => {}} accounts={accounts} userId={user?.id || ''} /><CardForm setCards={setCards} accounts={accounts} addToast={addToast} userId={user?.id || ''} /></DialogContent></Dialog>
-            <Dialog open={modal === 'categories'} onOpenChange={() => setModal(null)}><DialogContent className="flex flex-col"><DialogHeader><DialogTitle>Categorias</DialogTitle></DialogHeader><CategoryManager categories={categories} setCategories={setCategories} transactions={transactions} recurring={recurring} userId={user?.id || ''} addToast={addToast} /></DialogContent></Dialog>
-            <ImportTransactionsModal isOpen={modal === 'import'} onClose={() => setModal(null)} accounts={accounts} onConfirmImport={handleImportTransactions} addToast={addToast} isLoading={isLoading} />
+            <Dialog open={modal === 'addRecurring' || modal === 'editRecurring'} onOpenChange={() => {setModal(null); setSelectedRecurring(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editRecurring' ? 'Editar' : 'Adicionar'} Recorrência</DialogTitle></DialogHeader><RecurringForm recurringItem={selectedRecurring} onAdd={(item) => {setRecurring(p=>[...p, {...item, id: Date.now().toString()}]); setModal(null);}} onUpdate={(item) => {setRecurring(p=>p.map(r=>r.id===item.id?item:r)); setModal(null);}} accounts={accounts} cards={cards} categories={categories} onClose={() => setModal(null)} isLoading={isLoading}/></DialogContent></Dialog>
+            <Dialog open={modal === 'addTransfer' || modal === 'editTransfer'} onOpenChange={() => {setModal(null); setSelectedTransfer(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editTransfer' ? 'Editar' : 'Nova'} Transferência</DialogTitle></DialogHeader><TransferForm accounts={accounts} transfer={selectedTransfer} onTransfer={onAddTransfer} onUpdate={(t) => {setTransfers(p=>p.map(tr=>tr.id===t.id?t:tr)); setModal(null)}} onDismiss={() => setModal(null)} onError={addToast} isLoading={isLoading}/></DialogContent></Dialog>
+            <Dialog open={modal === 'accounts'} onOpenChange={() => setModal(null)}><DialogContent className="w-full"><DialogHeader><DialogTitle>Contas</DialogTitle></DialogHeader><AccountList accounts={accounts} setAccounts={setAccounts} adjustAccountBalance={adjustAccountBalance} setTransactions={setTransactions} addToast={addToast} onConfirmDelete={(acc) => {}} /><AccountForm setAccounts={setAccounts} setTransactions={setTransactions} /></DialogContent></Dialog>
+            <Dialog open={modal === 'cards'} onOpenChange={() => setModal(null)}><DialogContent className="w-full"><DialogHeader><DialogTitle>Cartões</DialogTitle></DialogHeader><CardList cards={cards} setCards={setCards} transactions={transactions} addToast={addToast} onConfirmDelete={(c) => {}} accounts={accounts}/><CardForm setCards={setCards} accounts={accounts} addToast={addToast}/></DialogContent></Dialog>
+            <Dialog open={modal === 'categories'} onOpenChange={() => setModal(null)}><DialogContent className="flex flex-col"><DialogHeader><DialogTitle>Categorias</DialogTitle></DialogHeader><CategoryManager categories={categories} setCategories={setCategories} transactions={transactions} recurring={recurring} /></DialogContent></Dialog>
+            <ImportTransactionsModal isOpen={modal === 'import'} onClose={() => setModal(null)} accounts={accounts} onConfirmImport={(txs) => {}} addToast={addToast} isLoading={isLoading} />
 
             {/* Global UI */}
             {ownerProfile && <YaraChat 
