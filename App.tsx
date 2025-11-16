@@ -543,7 +543,7 @@ const App: React.FC = () => {
         }
     };
 
-    const handlePayInstallment = async (txId: string, instId: string, paidAmount: number) => {
+    const handlePayInstallment = async (txId: string, instId: number, paidAmount: number) => {
         const tx = transactions.find(t => t.id === txId);
         if (!tx) {
             addToast('Transação não encontrada.', 'error');
@@ -560,7 +560,7 @@ const App: React.FC = () => {
                     payment_date: new Date().toISOString().slice(0, 10)
                 })
                 .eq('transaction_id', txId)
-                .eq('id', instId);
+                .eq('id', instId.toString());
 
             if (instError) throw instError;
 
@@ -576,106 +576,6 @@ const App: React.FC = () => {
 
             // 3. Check if all installments are paid and update the transaction if so
             const allPaid = tx.installmentsSchedule.every(inst => (inst.id === Number(instId)) || inst.paid);
-            if (allPaid) {
-                const { error: txError } = await supabase
-                    .from('transactions')
-                    .update({ paid: true })
-                    .eq('id', txId);
-                if (txError) throw txError;
-            }
-
-            addToast('Parcela paga com sucesso!', 'success');
-            supabaseData.refetch(); // Refetch all data to ensure UI consistency
-
-        } catch (error) {
-            console.error("Error paying installment:", error);
-            addToast('Erro ao processar pagamento. Tente novamente.', 'error');
-        }
-    };
-
-    const handlePayInstallment = async (txId: string, instId: number, paidAmount: number) => {
-        const tx = transactions.find(t => t.id === txId);
-        if (!tx) {
-            addToast('Transação não encontrada.', 'error');
-            return;
-        }
-
-        try {
-            // 1. Update the installment
-            const { error: instError } = await supabase
-                .from('installments')
-                .update({
-                    paid: true,
-                    paid_amount: paidAmount,
-                    payment_date: new Date().toISOString().slice(0, 10)
-                })
-                .eq('transaction_id', txId)
-                .eq('id', instId);
-
-            if (instError) throw instError;
-
-            // 2. Adjust account balance
-            const account = accounts.find(a => a.id === tx.account);
-            if (account) {
-                const { error: accError } = await supabase
-                    .from('accounts')
-                    .update({ balance: account.balance - paidAmount })
-                    .eq('id', account.id);
-                if (accError) throw accError;
-            }
-
-            // 3. Check if all installments are paid and update the transaction if so
-            const allPaid = tx.installmentsSchedule.every(inst => (inst.id === instId) || inst.paid);
-            if (allPaid) {
-                const { error: txError } = await supabase
-                    .from('transactions')
-                    .update({ paid: true })
-                    .eq('id', txId);
-                if (txError) throw txError;
-            }
-
-            addToast('Parcela paga com sucesso!', 'success');
-            supabaseData.refetch(); // Refetch all data to ensure UI consistency
-
-        } catch (error) {
-            console.error("Error paying installment:", error);
-            addToast('Erro ao processar pagamento. Tente novamente.', 'error');
-        }
-    };
-
-    const handlePayInstallment = async (txId: string, instId: number, paidAmount: number) => {
-        const tx = transactions.find(t => t.id === txId);
-        if (!tx) {
-            addToast('Transação não encontrada.', 'error');
-            return;
-        }
-
-        try {
-            // 1. Update the installment
-            const { error: instError } = await supabase
-                .from('installments')
-                .update({
-                    paid: true,
-                    paid_amount: paidAmount,
-                    payment_date: new Date().toISOString().slice(0, 10)
-                })
-                .eq('transaction_id', txId)
-                .eq('id', instId);
-
-            if (instError) throw instError;
-
-            // 2. Adjust account balance
-            const account = accounts.find(a => a.id === tx.account);
-            if (account) {
-                const { error: accError } = await supabase
-                    .from('accounts')
-                    .update({ balance: account.balance - paidAmount })
-                    .eq('id', account.id);
-                if (accError) throw accError;
-            }
-
-            // 3. Check if all installments are paid and update the transaction if so
-            const allPaid = tx.installmentsSchedule.every(inst => (inst.id === instId) || inst.paid);
             if (allPaid) {
                 const { error: txError } = await supabase
                     .from('transactions')
@@ -714,7 +614,7 @@ const App: React.FC = () => {
                     payment_date: null
                 })
                 .eq('transaction_id', txId)
-                .eq('id', instId);
+                .eq('id', instId.toString());
 
             if (instError) throw instError;
 
@@ -753,7 +653,7 @@ const App: React.FC = () => {
         setSelectedTransaction(null);
     };
 
-    const handleUnpayInvoice = (details: UnpayInvoiceDetails) => {
+    const handleUnpayInvoice = async (details: UnpayInvoiceDetails) => {
       if (details.cardId && details.total > 0 && details.accountId) {
         try {
             const card = cards.find(c => c.id === details.cardId);
@@ -854,6 +754,173 @@ const App: React.FC = () => {
             addToast('Erro ao criar transferência. Tente novamente.', 'error');
         }
     }
+    
+    const handleRecurringAdd = async (item: Omit<RecurringItem, 'id'>) => {
+        try {
+            // Validate recurring data
+            const validationResult = recurringSchema.safeParse({
+                desc: item.desc,
+                amount: item.amount,
+                day: item.day
+            });
+
+            if (!validationResult.success) {
+                const firstError = validationResult.error.issues[0];
+                addToast(firstError.message, 'error');
+                return;
+            }
+
+            const { error } = await supabase
+                .from('recurring_items')
+                .insert({
+                    description: item.desc,
+                    amount: item.amount,
+                    day: item.day,
+                    type: item.type,
+                    is_income: item.isIncome,
+                    account_id: item.account,
+                    card_id: item.card,
+                    category_id: item.categoryId,
+                    enabled: item.enabled,
+                    last_run: item.lastRun,
+                    next_run: item.nextRun,
+                    user_id: user!.id
+                });
+
+            if (error) throw error;
+
+            addToast('Recorrência criada!', 'success');
+            setModal(null);
+        } catch (error) {
+            console.error('Erro ao criar recorrência:', error);
+            addToast('Erro ao criar recorrência. Tente novamente.', 'error');
+        }
+    };
+
+    const handleRecurringUpdate = async (item: RecurringItem) => {
+        try {
+            // Validate recurring data
+            const validationResult = recurringSchema.safeParse({
+                desc: item.desc,
+                amount: item.amount,
+                day: item.day
+            });
+
+            if (!validationResult.success) {
+                const firstError = validationResult.error.issues[0];
+                addToast(firstError.message, 'error');
+                return;
+            }
+
+            const { error } = await supabase
+                .from('recurring_items')
+                .update({
+                    description: item.desc,
+                    amount: item.amount,
+                    day: item.day,
+                    type: item.type,
+                    is_income: item.isIncome,
+                    account_id: item.account,
+                    card_id: item.card,
+                    category_id: item.categoryId,
+                    enabled: item.enabled,
+                    last_run: item.lastRun,
+                    next_run: item.nextRun
+                })
+                .eq('id', item.id);
+
+            if (error) throw error;
+
+            addToast('Recorrência atualizada!', 'success');
+            setModal(null);
+        } catch (error) {
+            console.error('Erro ao atualizar recorrência:', error);
+            addToast('Erro ao atualizar recorrência. Tente novamente.', 'error');
+        }
+    };
+
+    const handleTransferUpdate = async (transfer: Transfer) => {
+        try {
+            // Validate transfer data
+            const validationResult = transferSchema.safeParse({
+                amount: transfer.amount,
+                date: transfer.date,
+                fromAccount: transfer.fromAccount,
+                toAccount: transfer.toAccount
+            });
+
+            if (!validationResult.success) {
+                const firstError = validationResult.error.issues[0];
+                addToast(firstError.message, 'error');
+                return;
+            }
+
+            // Get old transfer data to revert balances
+            const { data: oldTransfer } = await supabase
+                .from('transfers')
+                .select('*')
+                .eq('id', transfer.id)
+                .single();
+
+            if (!oldTransfer) throw new Error('Transferência não encontrada');
+
+            // Update the transfer
+            const { error } = await supabase
+                .from('transfers')
+                .update({
+                    amount: transfer.amount,
+                    date: transfer.date,
+                    from_account: transfer.fromAccount,
+                    to_account: transfer.toAccount
+                })
+                .eq('id', transfer.id);
+
+            if (error) throw error;
+
+            // Revert old balances
+            const oldFromAccount = accounts.find(a => a.id === oldTransfer.from_account);
+            const oldToAccount = accounts.find(a => a.id === oldTransfer.to_account);
+
+            if (oldFromAccount) {
+                await supabase
+                    .from('accounts')
+                    .update({ balance: oldFromAccount.balance + Number(oldTransfer.amount) })
+                    .eq('id', oldTransfer.from_account);
+            }
+
+            if (oldToAccount) {
+                await supabase
+                    .from('accounts')
+                    .update({ balance: oldToAccount.balance - Number(oldTransfer.amount) })
+                    .eq('id', oldTransfer.to_account);
+            }
+
+            // Apply new balances
+            const newFromAccount = accounts.find(a => a.id === transfer.fromAccount);
+            const newToAccount = accounts.find(a => a.id === transfer.toAccount);
+
+            if (newFromAccount) {
+                await supabase
+                    .from('accounts')
+                    .update({ balance: newFromAccount.balance - transfer.amount })
+                    .eq('id', transfer.fromAccount);
+            }
+
+            if (newToAccount) {
+                await supabase
+                    .from('accounts')
+                    .update({ balance: newToAccount.balance + transfer.amount })
+                    .eq('id', transfer.toAccount);
+            }
+
+            addToast('Transferência atualizada!', 'success');
+            setModal(null);
+        } catch (error) {
+            console.error('Erro ao atualizar transferência:', error);
+            addToast('Erro ao atualizar transferência. Tente novamente.', 'error');
+        }
+    };
+    
     
     const handleEnterApp = (page?: string) => {
         setCurrentPage(page || 'dashboard');
