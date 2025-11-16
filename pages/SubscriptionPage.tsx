@@ -4,6 +4,7 @@ import { Card, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { cn } from '../utils/helpers';
 import { SubscriptionPlan, Subscription } from '../types';
+import { PricingCarousel } from '../components/pricing/PricingCarousel';
 
 interface SubscriptionPageProps {
   addToast: (message: string, type?: 'error' | 'success') => void;
@@ -95,7 +96,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ addToast, onUpgrade
         <p className="text-slate-500 dark:text-slate-400 mt-2">Transforme suas finanças hoje. Cancele quando quiser.</p>
       </div>
       
-      <div className="flex justify-center items-center gap-4">
+      <div className="flex flex-wrap justify-center items-center gap-4">
         <span className={cn("font-medium", billingCycle === 'monthly' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500')}>Mensal</span>
         <label className="relative inline-flex items-center cursor-pointer">
           <input type="checkbox" checked={billingCycle === 'annual'} onChange={() => setBillingCycle(p => p === 'monthly' ? 'annual' : 'monthly')} className="sr-only peer" />
@@ -104,20 +105,21 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ addToast, onUpgrade
         <span className={cn("font-medium transition-colors", billingCycle === 'annual' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500')}>
           Anual
           {billingCycle === 'annual' && (
-            <span className="ml-2 text-xs bg-emerald-100 text-emerald-800 font-bold px-2 py-1 rounded-full dark:bg-emerald-900/50 dark:text-emerald-300 animate-fade-in">
+            <span className="ml-2 text-xs whitespace-nowrap bg-emerald-100 text-emerald-800 font-bold px-2 py-1 rounded-full dark:bg-emerald-900/50 dark:text-emerald-300 animate-fade-in">
               Economize 25%
             </span>
           )}
         </span>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+      {/* Desktop Grid */}
+      <div className="hidden lg:grid grid-cols-3 gap-6 items-stretch">
         {plans.map((plan) => {
           const isCurrentPlan = currentSubscription.plan === plan.planType;
           return (
-            <Card key={plan.name} className={cn("flex flex-col", plan.recommended && !isCurrentPlan && "border-2 border-indigo-500 relative", isCurrentPlan && "border-2 border-green-500 bg-slate-50 dark:bg-slate-800/50 relative")}>
-               {plan.recommended && !isCurrentPlan && <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-full z-10">RECOMENDADO</div>}
-               {isCurrentPlan && <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full z-10">SEU PLANO ATUAL</div>}
+            <Card key={plan.name} className={cn("flex flex-col h-full", plan.recommended && !isCurrentPlan && "border-2 border-indigo-500 relative", isCurrentPlan && "border-2 border-green-500 bg-slate-50 dark:bg-slate-800/50 relative")}>
+              {plan.recommended && !isCurrentPlan && <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-full z-10">RECOMENDADO</div>}
+              {isCurrentPlan && <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full z-10">SEU PLANO ATUAL</div>}
               <CardContent className={cn("p-8 flex-grow flex flex-col", (plan.recommended || isCurrentPlan) && "pt-12")}>
                 <div className="flex-grow">
                   <div className="flex justify-center mb-4">{plan.icon}</div>
@@ -179,6 +181,79 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ addToast, onUpgrade
             </Card>
           )
         })}
+      </div>
+
+      {/* Mobile Carousel */}
+      <div className="lg:hidden">
+        <PricingCarousel initialSlide={1}>
+          {plans.map((plan) => {
+            const isCurrentPlan = currentSubscription.plan === plan.planType;
+            return (
+              <Card key={plan.name} className={cn("flex flex-col h-full", plan.recommended && !isCurrentPlan && "border-2 border-indigo-500 relative", isCurrentPlan && "border-2 border-green-500 bg-slate-50 dark:bg-slate-800/50 relative")}>
+                {plan.recommended && !isCurrentPlan && <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-full z-10">RECOMENDADO</div>}
+                {isCurrentPlan && <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full z-10">SEU PLANO ATUAL</div>}
+                <CardContent className={cn("p-8 flex-grow flex flex-col", (plan.recommended || isCurrentPlan) && "pt-12")}>
+                  <div className="flex-grow">
+                    <div className="flex justify-center mb-4">{plan.icon}</div>
+                    <h3 className="text-xl font-bold text-center">{plan.name}</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 text-center my-4 min-h-[40px]">{plan.description}</p>
+
+                    <div className="text-center my-8 flex flex-col justify-center items-center min-h-[100px]">
+                        <div>
+                            <span className="text-4xl font-extrabold">{plan.price > 0 ? `R$ ${plan.price.toFixed(2).replace('.', ',')}` : 'Grátis'}</span>
+                            {plan.price > 0 && <span className="text-slate-500">/mês</span>}
+                            {billingCycle === 'annual' && plan.originalPrice > plan.price && (
+                                <s className="text-2xl text-slate-500 dark:text-slate-400 ml-2">
+                                    R$ {plan.originalPrice.toFixed(2).replace('.', ',')}
+                                </s>
+                            )}
+                        </div>
+                        {billingCycle === 'annual' && plan.annualBillingText && (
+                            <p className="text-xs text-slate-400 mt-1">{plan.annualBillingText}</p>
+                        )}
+                    </div>
+
+                    {plan.name === 'Família' && (
+                      <div className="my-8 text-center">
+                          <p className="font-semibold mb-2">Número de Contas: {familyMembers}</p>
+                          <div className="flex items-center justify-center gap-2">
+                            <Button size="icon" variant="outline" className="h-8 w-8 rounded-full" onClick={() => handleFamilyMembersChange(-1)} disabled={familyMembers <= 2}>
+                                <Minus className="w-4 h-4" />
+                            </Button>
+                            <span className="text-lg font-bold w-10 text-center">{familyMembers}</span>
+                            <Button size="icon" variant="outline" className="h-8 w-8 rounded-full" onClick={() => handleFamilyMembersChange(1)} disabled={familyMembers >= 10}>
+                                <Plus className="w-4 h-4" />
+                            </Button>
+                          </div>
+                      </div>
+                    )}
+
+                    <ul className="space-y-4 text-sm mt-8 text-left">
+                      {plan.features.map(feature => {
+                        const isHeader = feature.endsWith(':');
+                        return (
+                          <li key={feature} className={cn("flex items-start gap-3", isHeader && "font-semibold text-slate-600 dark:text-slate-300 -mb-2")}>
+                            {!isHeader && <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />}
+                            <span className={cn("flex-1", isHeader && "ml-8")}>{feature}</span>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </div>
+                  <Button
+                    className="w-full mt-auto"
+                    variant={isCurrentPlan ? 'default' : (plan.recommended ? 'default' : 'outline')}
+                    onClick={() => onUpgradePlan(plan.planType, plan.slots)}
+                    loading={isLoading}
+                    disabled={isCurrentPlan}
+                  >
+                    {isCurrentPlan ? 'Plano Atual' : 'Assinar Plano'}
+                  </Button>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </PricingCarousel>
       </div>
     </div>
   );
