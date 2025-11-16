@@ -389,117 +389,21 @@ const App: React.FC = () => {
 
     const handleTransactionSubmit = async (tx: Transaction) => {
       const existing = transactions.find(t => t.id === tx.id);
-      
-      try {
-        if (existing) {
-          // Update existing transaction
-          const { error: txError } = await supabase
-            .from('transactions')
-            .update({
-              description: tx.desc,
-              amount: tx.amount,
-              date: tx.date,
-              installments: tx.installments,
-              type: tx.type,
-              is_income: tx.isIncome,
-              person: tx.person,
-              account_id: tx.account,
-              card_id: tx.card,
-              category_id: tx.categoryId,
-              paid: tx.paid,
-              reminder_days_before: tx.reminderDaysBefore
-            })
-            .eq('id', tx.id);
+      if (existing) {
+        // TODO: Handle balance adjustment for edited transactions
+        setTransactions(prev => prev.map(t => t.id === tx.id ? tx : t));
+        addToast('Transação atualizada com sucesso!', 'success');
+      } else {
+        setTransactions(prev => [tx, ...prev]);
 
-          if (txError) throw txError;
-
-          // Delete old installments and create new ones
-          await supabase.from('installments').delete().eq('transaction_id', tx.id);
-          
-          const installmentsData = tx.installmentsSchedule.map(inst => ({
-            transaction_id: tx.id,
-            installment_number: inst.id,
-            amount: inst.amount,
-            posting_date: inst.postingDate,
-            paid: inst.paid,
-            payment_date: inst.paymentDate,
-            paid_amount: inst.paidAmount
-          }));
-
-          const { error: instError } = await supabase.from('installments').insert(installmentsData);
-          if (instError) throw instError;
-
-          addToast('Transação atualizada com sucesso!', 'success');
-        } else {
-          // Create new transaction
-          const { data: newTx, error: txError } = await supabase
-            .from('transactions')
-            .insert({
-              description: tx.desc,
-              amount: tx.amount,
-              date: tx.date,
-              installments: tx.installments,
-              type: tx.type,
-              is_income: tx.isIncome,
-              person: tx.person,
-              account_id: tx.account,
-              card_id: tx.card,
-              category_id: tx.categoryId,
-              paid: tx.paid,
-              reminder_days_before: tx.reminderDaysBefore,
-              user_id: user!.id
-            })
-            .select()
-            .single();
-
-          if (txError) throw txError;
-
-          // Create installments
-          const installmentsData = tx.installmentsSchedule.map(inst => ({
-            transaction_id: newTx.id,
-            installment_number: inst.id,
-            amount: inst.amount,
-            posting_date: inst.postingDate,
-            paid: inst.paid,
-            payment_date: inst.paymentDate,
-            paid_amount: inst.paidAmount
-          }));
-
-          const { error: instError } = await supabase.from('installments').insert(installmentsData);
-          if (instError) throw instError;
-
-          addToast('Transação adicionada com sucesso!', 'success');
-          addXp(10, 'Transação adicionada');
+        // Adjust account balance only for new, non-card transactions
+        if (tx.type !== 'card') {
+            const amountToAdjust = tx.isIncome ? tx.amount : -tx.amount;
+            adjustAccountBalance(tx.account, amountToAdjust);
         }
-        setModal(null);
-      } catch (error) {
-        console.error('Erro ao salvar transação:', error);
-        addToast('Erro ao salvar transação. Tente novamente.', 'error');
-      }
-    };
 
-    const handleDeleteTransaction = async (id: string) => {
-      try {
-        // Delete installments first (foreign key constraint)
-        const { error: instError } = await supabase
-          .from('installments')
-          .delete()
-          .eq('transaction_id', id);
-
-        if (instError) throw instError;
-
-        // Delete transaction
-        const { error: txError } = await supabase
-          .from('transactions')
-          .delete()
-          .eq('id', id);
-
-        if (txError) throw txError;
-
-        addToast('Transação excluída com sucesso!', 'success');
-      } catch (error) {
-        console.error('Erro ao excluir transação:', error);
-        addToast('Erro ao excluir transação. Tente novamente.', 'error');
+        addToast('Transação adicionada com sucesso!', 'success');
+        addXp(10, 'Transação adicionada');
       }
     };
 
@@ -743,8 +647,58 @@ const App: React.FC = () => {
             addToast('Erro ao processar pagamento. Tente novamente.', 'error');
         }
     };
+
+    const handlePayInstallment = async (txId: string, instId: number, paidAmount: number) => {
+        const tx = transactions.find(t => t.id === txId);
+        if (!tx) {
+            addToast('Transação não encontrada.', 'error');
+            return;
+        }
+
+        try {
+            // 1. Update the installment
+            const { error: instError } = await supabase
+                .from('installments')
+                .update({
+                    paid: true,
+                    paid_amount: paidAmount,
+                    payment_date: new Date().toISOString().slice(0, 10)
+                })
+                .eq('transaction_id', txId)
+                .eq('id', instId);
+
+            if (instError) throw instError;
+
+            // 2. Adjust account balance
+            const account = accounts.find(a => a.id === tx.account);
+            if (account) {
+                const { error: accError } = await supabase
+                    .from('accounts')
+                    .update({ balance: account.balance - paidAmount })
+                    .eq('id', account.id);
+                if (accError) throw accError;
+            }
+
+            // 3. Check if all installments are paid and update the transaction if so
+            const allPaid = tx.installmentsSchedule.every(inst => (inst.id === instId) || inst.paid);
+            if (allPaid) {
+                const { error: txError } = await supabase
+                    .from('transactions')
+                    .update({ paid: true })
+                    .eq('id', txId);
+                if (txError) throw txError;
+            }
+
+            addToast('Parcela paga com sucesso!', 'success');
+            supabaseData.refetch(); // Refetch all data to ensure UI consistency
+
+        } catch (error) {
+            console.error("Error paying installment:", error);
+            addToast('Erro ao processar pagamento. Tente novamente.', 'error');
+        }
+    };
     
-    const handleUnpayInstallment = async (txId: string, instId: string) => {
+    const handleUnpayInstallment = async (txId: string, instId: number) => {
         const tx = transactions.find(t => t.id === txId);
         const inst = tx?.installmentsSchedule.find(i => i.id === instId);
 
@@ -804,7 +758,7 @@ const App: React.FC = () => {
         setSelectedTransaction(null);
     };
 
-    const handleUnpayInvoice = async (details: UnpayInvoiceDetails) => {
+    const handleUnpayInvoice = (details: UnpayInvoiceDetails) => {
       if (details.cardId && details.total > 0 && details.accountId) {
         try {
             const card = cards.find(c => c.id === details.cardId);
@@ -1047,7 +1001,7 @@ const App: React.FC = () => {
                 onDeleteTransfer={(id) => setTransfers(p => p.filter(t => t.id !== id))} onOpenFilter={() => setModal('filters')}
                 ownerProfile={ownerProfile} isLoading={isLoading}
                 focusedInvoice={focusedInvoice} setFocusedInvoice={setFocusedInvoice}
-             /> : <div className="flex items-center justify-center h-full"><p>Carregando perfil...</p></div>;
+             />;
             case 'familyDashboard': return <FamilyDashboardPage 
                 transactions={transactions} users={users} goals={goals} categories={categories}
                 getCategoryName={getCategoryName} subscription={subscription}
