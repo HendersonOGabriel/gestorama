@@ -477,45 +477,376 @@ const App: React.FC = () => {
       }
     };
 
-    const handlePayInvoice = (cardId: string, month: string) => {
+    const handleDeleteTransaction = async (id: string) => {
+      try {
+        // Delete installments first (foreign key constraint)
+        const { error: instError } = await supabase
+          .from('installments')
+          .delete()
+          .eq('transaction_id', id);
+
+        if (instError) throw instError;
+
+        // Delete transaction
+        const { error: txError } = await supabase
+          .from('transactions')
+          .delete()
+          .eq('id', id);
+
+        if (txError) throw txError;
+
+        addToast('Transação excluída com sucesso!', 'success');
+      } catch (error) {
+        console.error('Erro ao excluir transação:', error);
+        addToast('Erro ao excluir transação. Tente novamente.', 'error');
+      }
+    };
+
+    const handlePayInstallment = async (txId: string, instId: number, amount: number) => {
+      try {
+        const { error } = await supabase
+          .from('installments')
+          .update({ 
+            paid: true, 
+            payment_date: new Date().toISOString().slice(0, 10),
+            paid_amount: amount
+          })
+          .eq('transaction_id', txId)
+          .eq('installment_number', instId);
+
+        if (error) throw error;
+
+        // Update account balance
+        const tx = transactions.find(t => t.id === txId);
+        if (tx) {
+          const account = accounts.find(a => a.id === tx.account);
+          if (account) {
+            await supabase
+              .from('accounts')
+              .update({ balance: account.balance - amount })
+              .eq('id', tx.account);
+          }
+        }
+
+        addToast('Parcela paga com sucesso!', 'success');
+        setPayingInstallment(null);
+      } catch (error) {
+        console.error('Erro ao pagar parcela:', error);
+        addToast('Erro ao pagar parcela. Tente novamente.', 'error');
+      }
+    };
+
+    const handleUnpayInstallment = async (txId: string, instId: number) => {
+      try {
+        // Get the installment to know the paid amount
+        const tx = transactions.find(t => t.id === txId);
+        const inst = tx?.installmentsSchedule.find(i => i.id === instId);
+        
+        if (!inst || !inst.paidAmount) return;
+
+        const { error } = await supabase
+          .from('installments')
+          .update({ paid: false, payment_date: null, paid_amount: null })
+          .eq('transaction_id', txId)
+          .eq('installment_number', instId);
+
+        if (error) throw error;
+
+        // Update account balance
+        if (tx) {
+          const account = accounts.find(a => a.id === tx.account);
+          if (account) {
+            await supabase
+              .from('accounts')
+              .update({ balance: account.balance + inst.paidAmount })
+              .eq('id', tx.account);
+          }
+        }
+
+        addToast('Pagamento estornado com sucesso!', 'success');
+      } catch (error) {
+        console.error('Erro ao estornar pagamento:', error);
+        addToast('Erro ao estornar pagamento. Tente novamente.', 'error');
+      }
+    };
+
+    const handleRecurringAdd = async (item: RecurringItem) => {
+      try {
+        const { error } = await supabase
+          .from('recurring_items')
+          .insert({
+            description: item.desc,
+            amount: item.amount,
+            day: item.day,
+            type: item.type,
+            is_income: item.isIncome,
+            account_id: item.account,
+            card_id: item.card,
+            category_id: item.categoryId,
+            enabled: item.enabled,
+            next_run: item.nextRun,
+            user_id: user!.id
+          });
+
+        if (error) throw error;
+
+        addToast('Recorrência adicionada com sucesso!', 'success');
+        setModal(null);
+      } catch (error) {
+        console.error('Erro ao adicionar recorrência:', error);
+        addToast('Erro ao adicionar recorrência. Tente novamente.', 'error');
+      }
+    };
+
+    const handleRecurringUpdate = async (item: RecurringItem) => {
+      try {
+        const { error } = await supabase
+          .from('recurring_items')
+          .update({
+            description: item.desc,
+            amount: item.amount,
+            day: item.day,
+            type: item.type,
+            is_income: item.isIncome,
+            account_id: item.account,
+            card_id: item.card,
+            category_id: item.categoryId,
+            enabled: item.enabled,
+            next_run: item.nextRun
+          })
+          .eq('id', item.id);
+
+        if (error) throw error;
+
+        addToast('Recorrência atualizada com sucesso!', 'success');
+        setModal(null);
+      } catch (error) {
+        console.error('Erro ao atualizar recorrência:', error);
+        addToast('Erro ao atualizar recorrência. Tente novamente.', 'error');
+      }
+    };
+
+    const handleTransferUpdate = async (transfer: Transfer) => {
+      try {
+        const { error } = await supabase
+          .from('transfers')
+          .update({
+            amount: transfer.amount,
+            date: transfer.date,
+            from_account: transfer.fromAccount,
+            to_account: transfer.toAccount
+          })
+          .eq('id', transfer.id);
+
+        if (error) throw error;
+
+        addToast('Transferência atualizada com sucesso!', 'success');
+        setModal(null);
+      } catch (error) {
+        console.error('Erro ao atualizar transferência:', error);
+        addToast('Erro ao atualizar transferência. Tente novamente.', 'error');
+      }
+    };
+
+    const handleImportTransactions = async (txs: Transaction[]) => {
+      try {
+        // Insert all transactions
+        for (const tx of txs) {
+          const { data: newTx, error: txError } = await supabase
+            .from('transactions')
+            .insert({
+              description: tx.desc,
+              amount: tx.amount,
+              date: tx.date,
+              installments: tx.installments,
+              type: tx.type,
+              is_income: tx.isIncome,
+              person: tx.person,
+              account_id: tx.account,
+              card_id: tx.card,
+              category_id: tx.categoryId,
+              paid: tx.paid,
+              reminder_days_before: tx.reminderDaysBefore,
+              user_id: user!.id
+            })
+            .select()
+            .single();
+
+          if (txError) throw txError;
+
+          if (newTx) {
+            // Create installments
+            const installmentsData = tx.installmentsSchedule.map(inst => ({
+              transaction_id: newTx.id,
+              installment_number: inst.id,
+              amount: inst.amount,
+              posting_date: inst.postingDate,
+              paid: inst.paid,
+              payment_date: inst.paymentDate,
+              paid_amount: inst.paidAmount
+            }));
+
+            const { error: instError } = await supabase
+              .from('installments')
+              .insert(installmentsData);
+
+            if (instError) throw instError;
+          }
+        }
+
+        addToast(`${txs.length} transações importadas com sucesso!`, 'success');
+        setModal(null);
+      } catch (error) {
+        console.error('Erro ao importar transações:', error);
+        addToast('Erro ao importar transações. Tente novamente.', 'error');
+      }
+    };
+
+    const handlePayInvoice = async (cardId: string, month: string) => {
         let totalPaid = 0;
         let accountId: string | null = null;
         const card = cards.find(c => c.id === cardId);
         if (!card) return;
 
-        setTransactions(prev => prev.map(tx => {
-            if (tx.card !== cardId) return tx;
-            const newSchedule = tx.installmentsSchedule.map(s => {
+        const installmentsToUpdate: any[] = [];
+
+        transactions.forEach(tx => {
+            if (tx.card !== cardId) return;
+            tx.installmentsSchedule.forEach(s => {
                 const invoiceM = getInvoiceMonthKey(s.postingDate, card.closingDay);
                 if (invoiceM === month && !s.paid) {
                     totalPaid += s.amount;
                     accountId = tx.account;
-                    return { ...s, paid: true, paymentDate: new Date().toISOString().slice(0, 10), paidAmount: s.amount };
+                    installmentsToUpdate.push({
+                        transaction_id: tx.id,
+                        installment_number: s.id,
+                        paid: true,
+                        payment_date: new Date().toISOString().slice(0, 10),
+                        paid_amount: s.amount
+                    });
                 }
-                return s;
             });
-            return { ...tx, installmentsSchedule: newSchedule, paid: newSchedule.every(s => s.paid) };
-        }));
+        });
 
-        if (accountId && totalPaid > 0) {
-            adjustAccountBalance(accountId, -totalPaid);
-            addToast(`Fatura de ${toCurrency(totalPaid)} paga!`, 'success');
+        if (accountId && totalPaid > 0 && installmentsToUpdate.length > 0) {
+            try {
+                // Update installments in Supabase
+                for (const inst of installmentsToUpdate) {
+                    const { error } = await supabase
+                        .from('installments')
+                        .update({ 
+                            paid: inst.paid, 
+                            payment_date: inst.payment_date, 
+                            paid_amount: inst.paid_amount 
+                        })
+                        .eq('transaction_id', inst.transaction_id)
+                        .eq('installment_number', inst.installment_number);
+
+                    if (error) throw error;
+                }
+
+                // Update account balance
+                const { error: balanceError } = await supabase
+                    .from('accounts')
+                    .update({ balance: accounts.find(a => a.id === accountId)!.balance - totalPaid })
+                    .eq('id', accountId);
+
+                if (balanceError) throw balanceError;
+
+                addToast(`Fatura de ${toCurrency(totalPaid)} paga!`, 'success');
+            } catch (error) {
+                console.error('Erro ao pagar fatura:', error);
+                addToast('Erro ao pagar fatura. Tente novamente.', 'error');
+            }
         }
     };
     
-    const handleUnpayInvoice = (details: UnpayInvoiceDetails) => {
+    const handleUnpayInvoice = async (details: UnpayInvoiceDetails) => {
       if (details.cardId && details.total > 0 && details.accountId) {
-        adjustAccountBalance(details.accountId, details.total);
-        addToast('Estorno da fatura realizado.', 'success');
+        try {
+            const card = cards.find(c => c.id === details.cardId);
+            if (!card) return;
+
+            // Find all installments to unpay
+            const installmentsToUpdate: any[] = [];
+            transactions.forEach(tx => {
+                if (tx.card !== details.cardId) return;
+                tx.installmentsSchedule.forEach(s => {
+                    const invoiceM = getInvoiceMonthKey(s.postingDate, card.closingDay);
+                    if (invoiceM === details.month && s.paid) {
+                        installmentsToUpdate.push({
+                            transaction_id: tx.id,
+                            installment_number: s.id
+                        });
+                    }
+                });
+            });
+
+            // Update installments in Supabase
+            for (const inst of installmentsToUpdate) {
+                const { error } = await supabase
+                    .from('installments')
+                    .update({ paid: false, payment_date: null, paid_amount: null })
+                    .eq('transaction_id', inst.transaction_id)
+                    .eq('installment_number', inst.installment_number);
+
+                if (error) throw error;
+            }
+
+            // Update account balance
+            const { error: balanceError } = await supabase
+                .from('accounts')
+                .update({ balance: accounts.find(a => a.id === details.accountId)!.balance + details.total })
+                .eq('id', details.accountId);
+
+            if (balanceError) throw balanceError;
+
+            addToast('Estorno da fatura realizado.', 'success');
+        } catch (error) {
+            console.error('Erro ao estornar fatura:', error);
+            addToast('Erro ao estornar fatura. Tente novamente.', 'error');
+        }
       }
     }
 
-    const onAddTransfer = (transfer: Transfer) => {
-        setTransfers(prev => [transfer, ...prev]);
-        adjustAccountBalance(transfer.fromAccount, -transfer.amount);
-        adjustAccountBalance(transfer.toAccount, transfer.amount);
-        addToast('Transferência realizada!', 'success');
-        setModal(null);
+    const onAddTransfer = async (transfer: Transfer) => {
+        try {
+            const { error } = await supabase
+                .from('transfers')
+                .insert({
+                    amount: transfer.amount,
+                    date: transfer.date,
+                    from_account: transfer.fromAccount,
+                    to_account: transfer.toAccount,
+                    user_id: user!.id
+                });
+
+            if (error) throw error;
+
+            // Update account balances
+            const fromAccount = accounts.find(a => a.id === transfer.fromAccount);
+            const toAccount = accounts.find(a => a.id === transfer.toAccount);
+
+            if (fromAccount) {
+                await supabase
+                    .from('accounts')
+                    .update({ balance: fromAccount.balance - transfer.amount })
+                    .eq('id', transfer.fromAccount);
+            }
+
+            if (toAccount) {
+                await supabase
+                    .from('accounts')
+                    .update({ balance: toAccount.balance + transfer.amount })
+                    .eq('id', transfer.toAccount);
+            }
+
+            addToast('Transferência realizada!', 'success');
+            setModal(null);
+        } catch (error) {
+            console.error('Erro ao criar transferência:', error);
+            addToast('Erro ao criar transferência. Tente novamente.', 'error');
+        }
     }
     
     const handleEnterApp = (page?: string) => {
@@ -730,15 +1061,15 @@ const App: React.FC = () => {
             
             {/* Modals */}
             <TransactionForm isOpen={modal === 'addTransaction' || modal === 'editTransaction'} onClose={() => {setModal(null); setSelectedTransaction(null)}} onSubmit={handleTransactionSubmit} transaction={selectedTransaction} accounts={accounts} cards={cards} categories={categories} isLoading={isLoading} />
-            <TransactionDetailModal transaction={selectedTransaction} onClose={() => setSelectedTransaction(null)} onEdit={(tx) => {setSelectedTransaction(tx); setModal('editTransaction')}} onDelete={(id) => setTransactions(p => p.filter(t => t.id !== id))} onPay={(details) => setPayingInstallment(details)} onUnpay={(txId, instId) => {}} getInstallmentDueDate={getInstallmentDueDate} getCategoryName={getCategoryName} accounts={accounts} cards={cards} />
-            <PaymentModal payingInstallment={payingInstallment} onClose={() => setPayingInstallment(null)} onConfirm={(txId, instId, amount) => {}} />
+            <TransactionDetailModal transaction={selectedTransaction} onClose={() => setSelectedTransaction(null)} onEdit={(tx) => {setSelectedTransaction(tx); setModal('editTransaction')}} onDelete={handleDeleteTransaction} onPay={(details) => setPayingInstallment(details)} onUnpay={handleUnpayInstallment} getInstallmentDueDate={getInstallmentDueDate} getCategoryName={getCategoryName} accounts={accounts} cards={cards} />
+            <PaymentModal payingInstallment={payingInstallment} onClose={() => setPayingInstallment(null)} onConfirm={handlePayInstallment} />
             <TransactionFilterModal isOpen={modal === 'filters'} onClose={() => setModal(null)} onApply={setFilters} onClear={() => setFilters({ description: '', categoryId: '', accountId: '', cardId: '', status: 'all', startDate: '', endDate: '' })} initialFilters={filters} accounts={accounts} cards={cards} categories={categories} />
-            <Dialog open={modal === 'addRecurring' || modal === 'editRecurring'} onOpenChange={() => {setModal(null); setSelectedRecurring(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editRecurring' ? 'Editar' : 'Adicionar'} Recorrência</DialogTitle></DialogHeader><RecurringForm recurringItem={selectedRecurring} onAdd={(item) => {setRecurring(p=>[...p, {...item, id: Date.now().toString()}]); setModal(null);}} onUpdate={(item) => {setRecurring(p=>p.map(r=>r.id===item.id?item:r)); setModal(null);}} accounts={accounts} cards={cards} categories={categories} onClose={() => setModal(null)} isLoading={isLoading}/></DialogContent></Dialog>
-            <Dialog open={modal === 'addTransfer' || modal === 'editTransfer'} onOpenChange={() => {setModal(null); setSelectedTransfer(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editTransfer' ? 'Editar' : 'Nova'} Transferência</DialogTitle></DialogHeader><TransferForm accounts={accounts} transfer={selectedTransfer} onTransfer={onAddTransfer} onUpdate={(t) => {setTransfers(p=>p.map(tr=>tr.id===t.id?t:tr)); setModal(null)}} onDismiss={() => setModal(null)} onError={addToast} isLoading={isLoading}/></DialogContent></Dialog>
-            <Dialog open={modal === 'accounts'} onOpenChange={() => setModal(null)}><DialogContent className="w-full"><DialogHeader><DialogTitle>Contas</DialogTitle></DialogHeader><AccountList accounts={accounts} setAccounts={setAccounts} adjustAccountBalance={adjustAccountBalance} setTransactions={setTransactions} addToast={addToast} onConfirmDelete={(acc) => {}} userId={user?.id || ''} /><AccountForm setAccounts={setAccounts} setTransactions={setTransactions} userId={user?.id || ''} addToast={addToast} /></DialogContent></Dialog>
+            <Dialog open={modal === 'addRecurring' || modal === 'editRecurring'} onOpenChange={() => {setModal(null); setSelectedRecurring(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editRecurring' ? 'Editar' : 'Adicionar'} Recorrência</DialogTitle></DialogHeader><RecurringForm recurringItem={selectedRecurring} onAdd={handleRecurringAdd} onUpdate={handleRecurringUpdate} accounts={accounts} cards={cards} categories={categories} onClose={() => setModal(null)} isLoading={isLoading}/></DialogContent></Dialog>
+            <Dialog open={modal === 'addTransfer' || modal === 'editTransfer'} onOpenChange={() => {setModal(null); setSelectedTransfer(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editTransfer' ? 'Editar' : 'Nova'} Transferência</DialogTitle></DialogHeader><TransferForm accounts={accounts} transfer={selectedTransfer} onTransfer={onAddTransfer} onUpdate={handleTransferUpdate} onDismiss={() => setModal(null)} onError={addToast} isLoading={isLoading}/></DialogContent></Dialog>
+            <Dialog open={modal === 'accounts'} onOpenChange={() => setModal(null)}><DialogContent className="w-full"><DialogHeader><DialogTitle>Contas</DialogTitle></DialogHeader><AccountList accounts={accounts} setAccounts={setAccounts} adjustAccountBalance={adjustAccountBalance} setTransactions={setTransactions} addToast={addToast} onConfirmDelete={(acc) => {}} userId={user?.id || ''} transactions={transactions} /><AccountForm setAccounts={setAccounts} setTransactions={setTransactions} userId={user?.id || ''} addToast={addToast} /></DialogContent></Dialog>
             <Dialog open={modal === 'cards'} onOpenChange={() => setModal(null)}><DialogContent className="w-full"><DialogHeader><DialogTitle>Cartões</DialogTitle></DialogHeader><CardList cards={cards} setCards={setCards} transactions={transactions} addToast={addToast} onConfirmDelete={(c) => {}} accounts={accounts} userId={user?.id || ''} /><CardForm setCards={setCards} accounts={accounts} addToast={addToast} userId={user?.id || ''} /></DialogContent></Dialog>
             <Dialog open={modal === 'categories'} onOpenChange={() => setModal(null)}><DialogContent className="flex flex-col"><DialogHeader><DialogTitle>Categorias</DialogTitle></DialogHeader><CategoryManager categories={categories} setCategories={setCategories} transactions={transactions} recurring={recurring} userId={user?.id || ''} addToast={addToast} /></DialogContent></Dialog>
-            <ImportTransactionsModal isOpen={modal === 'import'} onClose={() => setModal(null)} accounts={accounts} onConfirmImport={(txs) => {}} addToast={addToast} isLoading={isLoading} />
+            <ImportTransactionsModal isOpen={modal === 'import'} onClose={() => setModal(null)} accounts={accounts} onConfirmImport={handleImportTransactions} addToast={addToast} isLoading={isLoading} />
 
             {/* Global UI */}
             {ownerProfile && <YaraChat 
