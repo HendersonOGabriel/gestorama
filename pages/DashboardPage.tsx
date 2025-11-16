@@ -196,6 +196,17 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [transactions, filters]);
 
+  const groupedTransactions = useMemo(() => {
+    return displayTransactions.reduce((acc, tx) => {
+      const key = monthKey(new Date(tx.date + 'T12:00:00Z'));
+      if (!acc[key]) {
+        acc[key] = [];
+      }
+      acc[key].push(tx);
+      return acc;
+    }, {} as Record<string, Transaction[]>);
+  }, [displayTransactions]);
+
   const summaryData = useMemo(() => {
     return transactions.reduce((acc, t) => {
       t.installmentsSchedule.forEach(s => {
@@ -599,24 +610,43 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
                             </td>
                           </tr>
                         ) : (
-                          displayTransactions.map(t => (
-                            <tr 
-                              key={t.id} 
-                              className="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer"
-                              onClick={() => onViewTransaction(t)}
-                              tabIndex={0}
-                              onKeyDown={(e) => { if(e.key === 'Enter' || e.key === ' ') onViewTransaction(t); }}
-                            >
-                              <td className="p-3">
-                                <p className="font-medium">{t.desc}</p>
-                                <p className="text-xs text-slate-500">{getCategoryName(t.categoryId)}</p>
-                              </td>
-                              <td className={`p-3 text-right font-medium ${t.isIncome ? 'text-green-500' : 'text-red-500'}`}>
-                                {toCurrency(t.amount)}
-                              </td>
-                              <td className="p-3 hidden sm:table-cell">{displayDate(t.date)}</td>
-                              <td className="p-3 text-center"><span className={`text-xs px-2 py-1 rounded-full ${t.paid ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300'}`}>{t.paid ? 'Pago' : 'Pendente'}</span></td>
-                            </tr>
+                          Object.keys(groupedTransactions).sort((a, b) => b.localeCompare(a)).map(month => {
+                            const currentMonthKey = monthKey(new Date());
+                            const isCurrentMonth = month === currentMonthKey;
+                            return (
+                              <React.Fragment key={month}>
+                                <tr>
+                                  <td colSpan={4} className="p-3 bg-slate-100 dark:bg-slate-800 sticky top-0">
+                                    <div className="flex items-center gap-3">
+                                      <h3 className="font-semibold text-slate-800 dark:text-slate-200">{displayMonthYear(month)}</h3>
+                                      {isCurrentMonth && (
+                                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-200 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300">
+                                          Este Mês
+                                        </span>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                                {groupedTransactions[month].map(t => (
+                                <tr
+                                  key={t.id}
+                                  className="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer"
+                                  onClick={() => onViewTransaction(t)}
+                                  tabIndex={0}
+                                  onKeyDown={(e) => { if(e.key === 'Enter' || e.key === ' ') onViewTransaction(t); }}
+                                >
+                                  <td className="p-3">
+                                    <p className="font-medium">{t.desc}</p>
+                                    <p className="text-xs text-slate-500">{getCategoryName(t.categoryId)}</p>
+                                  </td>
+                                  <td className={`p-3 text-right font-medium ${t.isIncome ? 'text-green-500' : 'text-red-500'}`}>
+                                    {toCurrency(t.amount)}
+                                  </td>
+                                  <td className="p-3 hidden sm:table-cell">{displayDate(t.date)}</td>
+                                  <td className="p-3 text-center"><span className={`text-xs px-2 py-1 rounded-full ${t.paid ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300'}`}>{t.paid ? 'Pago' : 'Pendente'}</span></td>
+                                </tr>
+                              ))}
+                            </React.Fragment>
                           ))
                         )}
                       </tbody>
