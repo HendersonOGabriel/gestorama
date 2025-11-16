@@ -7,7 +7,6 @@ import { Subscription } from '../../types';
 interface SidebarProps {
   currentPage: string;
   setCurrentPage: (page: string) => void;
-  onOpenAccounts: () => void;
   onOpenCards: () => void;
   onOpenCategories: () => void;
   isMinimized: boolean;
@@ -79,7 +78,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, onOpenAc
         </div>
         <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-700">
           {!isMinimized && <h3 className={cn("text-xs font-semibold text-slate-400 uppercase mb-2", logoClasses)}>Configurações</h3>}
-          <button onClick={() => handleAction(onOpenAccounts)} className={navItemClasses('accounts')}><PiggyBank className="h-5 w-5 flex-shrink-0" /><span className={labelClasses}>Contas</span></button>
+          <button onClick={() => handleNavigation('accounts')} className={navItemClasses('accounts')}><PiggyBank className="h-5 w-5 flex-shrink-0" /><span className={labelClasses}>Contas</span></button>
           <button onClick={() => handleAction(onOpenCards)} className={navItemClasses('cards')}><CreditCard className="h-5 w-5 flex-shrink-0" /><span className={labelClasses}>Cartões</span></button>
           <button onClick={() => handleAction(onOpenCategories)} className={navItemClasses('categories')}><Tag className="h-5 w-5 flex-shrink-0" /><span className={labelClasses}>Categorias</span></button>
         </div>

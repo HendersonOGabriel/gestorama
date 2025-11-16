@@ -10,6 +10,7 @@ import CalendarPage from './pages/CalendarPage';
 import ReportsPage from './pages/ReportsPage';
 import ProfilePage from './pages/ProfilePage';
 import SubscriptionPage from './pages/SubscriptionPage';
+import AccountsPage from './pages/AccountsPage';
 import { TermosDeUsoPage, PoliticaPrivacidadePage, ContatoSuportePage, SobrePage, FAQPage } from './pages/InstitutionalPages';
 import TransactionForm from './components/transactions/TransactionForm';
 import TransactionDetailModal from './components/transactions/TransactionDetailModal';
@@ -18,8 +19,6 @@ import TransactionFilterModal from './components/transactions/TransactionFilterM
 import RecurringForm from './components/recurring/RecurringForm';
 import TransferForm from './components/transfers/TransferForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './components/ui/Dialog';
-import AccountList from './components/accounts/AccountList';
-import AccountForm from './components/accounts/AccountForm';
 import CardList from './components/cards/CardList';
 import CardForm from './components/cards/CardForm';
 import OnboardingTour from './components/tour/OnboardingTour';
@@ -451,6 +450,7 @@ const App: React.FC = () => {
                 addToast={addToast} transactions={transactions} isLoading={isLoading} addXp={addXp}
             />;
             case 'reports': return <ReportsPage transactions={transactions} accounts={accounts} cards={cards} categories={categories} getCategoryName={getCategoryName} />;
+            case 'accounts': return <AccountsPage accounts={accounts} setAccounts={setAccounts} adjustAccountBalance={adjustAccountBalance} setTransactions={setTransactions} addToast={addToast} />;
             case 'calendar': return <CalendarPage transactions={transactions} reminders={reminders} setReminders={setReminders} getInstallmentDueDate={getInstallmentDueDate} getCategoryName={getCategoryName}/>;
             case 'profile': return <ProfilePage 
                 ownerProfile={ownerProfile} users={users} subscription={subscription}
@@ -514,7 +514,6 @@ const App: React.FC = () => {
             <TransactionFilterModal isOpen={modal === 'filters'} onClose={() => setModal(null)} onApply={setFilters} onClear={() => setFilters({ description: '', categoryId: '', accountId: '', cardId: '', status: 'all', startDate: '', endDate: '' })} initialFilters={filters} accounts={accounts} cards={cards} categories={categories} />
             <Dialog open={modal === 'addRecurring' || modal === 'editRecurring'} onOpenChange={() => {setModal(null); setSelectedRecurring(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editRecurring' ? 'Editar' : 'Adicionar'} Recorrência</DialogTitle></DialogHeader><RecurringForm recurringItem={selectedRecurring} onAdd={(item) => {setRecurring(p=>[...p, {...item, id: Date.now().toString()}]); setModal(null);}} onUpdate={(item) => {setRecurring(p=>p.map(r=>r.id===item.id?item:r)); setModal(null);}} accounts={accounts} cards={cards} categories={categories} onClose={() => setModal(null)} isLoading={isLoading}/></DialogContent></Dialog>
             <Dialog open={modal === 'addTransfer' || modal === 'editTransfer'} onOpenChange={() => {setModal(null); setSelectedTransfer(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editTransfer' ? 'Editar' : 'Nova'} Transferência</DialogTitle></DialogHeader><TransferForm accounts={accounts} transfer={selectedTransfer} onTransfer={onAddTransfer} onUpdate={(t) => {setTransfers(p=>p.map(tr=>tr.id===t.id?t:tr)); setModal(null)}} onDismiss={() => setModal(null)} onError={addToast} isLoading={isLoading}/></DialogContent></Dialog>
-            <Dialog open={modal === 'accounts'} onOpenChange={() => setModal(null)}><DialogContent><DialogHeader><DialogTitle>Contas</DialogTitle></DialogHeader><AccountList accounts={accounts} setAccounts={setAccounts} adjustAccountBalance={adjustAccountBalance} setTransactions={setTransactions} addToast={addToast} onConfirmDelete={(acc) => {}} /><AccountForm setAccounts={setAccounts} setTransactions={setTransactions} /></DialogContent></Dialog>
             <Dialog open={modal === 'cards'} onOpenChange={() => setModal(null)}><DialogContent><DialogHeader><DialogTitle>Cartões</DialogTitle></DialogHeader><CardList cards={cards} setCards={setCards} transactions={transactions} addToast={addToast} onConfirmDelete={(c) => {}} accounts={accounts}/><CardForm setCards={setCards} accounts={accounts} addToast={addToast}/></DialogContent></Dialog>
             <Dialog open={modal === 'categories'} onOpenChange={() => setModal(null)}><DialogContent className="h-[90vh] flex flex-col"><DialogHeader><DialogTitle>Categorias</DialogTitle></DialogHeader><CategoryManager categories={categories} setCategories={setCategories} transactions={transactions} recurring={recurring} /></DialogContent></Dialog>
             <ImportTransactionsModal isOpen={modal === 'import'} onClose={() => setModal(null)} accounts={accounts} onConfirmImport={(txs) => {}} addToast={addToast} isLoading={isLoading} />
