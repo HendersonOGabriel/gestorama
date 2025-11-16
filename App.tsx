@@ -1027,7 +1027,7 @@ const App: React.FC = () => {
     const pageContent = () => {
         if (isLoading) return <div>Loading...</div>;
         switch (currentPage) {
-            case 'dashboard': return <DashboardPage
+            case 'dashboard': return ownerProfile ? <DashboardPage
                 transactions={transactions} filters={filters} accounts={accounts} cards={cards} transfers={transfers}
                 recurring={recurring} categories={categories} getCategoryName={getCategoryName}
                 getInstallmentDueDate={getInstallmentDueDate} addToast={addToast} onPayInvoice={handlePayInvoice}
@@ -1038,7 +1038,7 @@ const App: React.FC = () => {
                 onAddTransfer={() => {setSelectedTransfer(null); setModal('addTransfer')}} onEditTransfer={(t) => {setSelectedTransfer(t); setModal('editTransfer')}}
                 onDeleteTransfer={(id) => setTransfers(p => p.filter(t => t.id !== id))} onOpenFilter={() => setModal('filters')}
                 ownerProfile={ownerProfile} isLoading={isLoading}
-             />;
+             /> : <div className="flex items-center justify-center h-full"><p>Carregando dashboard...</p></div>;
             case 'familyDashboard': return <FamilyDashboardPage 
                 transactions={transactions} users={users} goals={goals} categories={categories}
                 getCategoryName={getCategoryName} subscription={subscription}
