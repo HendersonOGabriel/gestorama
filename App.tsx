@@ -795,6 +795,56 @@ const App: React.FC = () => {
             addToast('Erro ao processar pagamento. Tente novamente.', 'error');
         }
     };
+
+    const handlePayInstallment = async (txId: string, instId: number, paidAmount: number) => {
+        const tx = transactions.find(t => t.id === txId);
+        if (!tx) {
+            addToast('Transação não encontrada.', 'error');
+            return;
+        }
+
+        try {
+            // 1. Update the installment
+            const { error: instError } = await supabase
+                .from('installments')
+                .update({
+                    paid: true,
+                    paid_amount: paidAmount,
+                    payment_date: new Date().toISOString().slice(0, 10)
+                })
+                .eq('transaction_id', txId)
+                .eq('id', instId);
+
+            if (instError) throw instError;
+
+            // 2. Adjust account balance
+            const account = accounts.find(a => a.id === tx.account);
+            if (account) {
+                const { error: accError } = await supabase
+                    .from('accounts')
+                    .update({ balance: account.balance - paidAmount })
+                    .eq('id', account.id);
+                if (accError) throw accError;
+            }
+
+            // 3. Check if all installments are paid and update the transaction if so
+            const allPaid = tx.installmentsSchedule.every(inst => (inst.id === instId) || inst.paid);
+            if (allPaid) {
+                const { error: txError } = await supabase
+                    .from('transactions')
+                    .update({ paid: true })
+                    .eq('id', txId);
+                if (txError) throw txError;
+            }
+
+            addToast('Parcela paga com sucesso!', 'success');
+            supabaseData.refetch(); // Refetch all data to ensure UI consistency
+
+        } catch (error) {
+            console.error("Error paying installment:", error);
+            addToast('Erro ao processar pagamento. Tente novamente.', 'error');
+        }
+    };
     
     const handleUnpayInstallment = async (txId: string, instId: string) => {
         const tx = transactions.find(t => t.id === txId);

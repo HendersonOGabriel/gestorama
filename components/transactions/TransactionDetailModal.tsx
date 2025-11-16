@@ -2,6 +2,7 @@ import React from 'react';
 import { Transaction, Installment, PayingInstallment, Account, Card as CardType, Category } from '../../types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/Dialog';
 import { Button } from '../ui/Button';
+import ProgressBar from '../ui/ProgressBar'; // Import the new component
 import { toCurrency, displayDate, cn, getInvoiceMonthKey } from '../../utils/helpers';
 import { Edit3, Trash2, CheckCircle2, Clock, DollarSign, Calendar, Tag, CreditCard, PiggyBank, User } from 'lucide-react';
 
@@ -39,6 +40,7 @@ const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
   const cardName = cardData ? `${cardData.name}${cardData.deleted ? ' (Excluído)' : ''}` : 'N/A';
   const categoryName = getCategoryName(transaction.categoryId);
   const totalPaid = transaction.installmentsSchedule.filter(s => s.paid).reduce((acc, s) => acc + (s.paidAmount || s.amount), 0);
+  const progressPercentage = transaction.amount > 0 ? (totalPaid / transaction.amount) * 100 : 0;
 
   const getTransactionTypeLabel = () => {
     switch (transaction.type) {
@@ -80,6 +82,12 @@ const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
             <DetailItem icon={transaction.paid ? <CheckCircle2 size={16} className="text-green-500" /> : <Clock size={16} className="text-amber-500" />} label="Status Geral" value={
               transaction.paid ? `Quitado (${toCurrency(totalPaid)})` : `Pendente (${toCurrency(totalPaid)} de ${toCurrency(transaction.amount)} pago)`
             } />
+            {transaction.installments > 1 && !transaction.isIncome && (
+              <div className="pt-2">
+                <ProgressBar value={progressPercentage} />
+                <div className="text-xs text-right text-slate-500 mt-1">{progressPercentage.toFixed(0)}% Pago</div>
+              </div>
+            )}
           </div>
 
           {/* Installments & Payment Section */}
