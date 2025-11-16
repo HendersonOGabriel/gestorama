@@ -502,74 +502,6 @@ const App: React.FC = () => {
       }
     };
 
-    const handlePayInstallment = async (txId: string, instId: number, amount: number) => {
-      try {
-        const { error } = await supabase
-          .from('installments')
-          .update({ 
-            paid: true, 
-            payment_date: new Date().toISOString().slice(0, 10),
-            paid_amount: amount
-          })
-          .eq('transaction_id', txId)
-          .eq('installment_number', instId);
-
-        if (error) throw error;
-
-        // Update account balance
-        const tx = transactions.find(t => t.id === txId);
-        if (tx) {
-          const account = accounts.find(a => a.id === tx.account);
-          if (account) {
-            await supabase
-              .from('accounts')
-              .update({ balance: account.balance - amount })
-              .eq('id', tx.account);
-          }
-        }
-
-        addToast('Parcela paga com sucesso!', 'success');
-        setPayingInstallment(null);
-      } catch (error) {
-        console.error('Erro ao pagar parcela:', error);
-        addToast('Erro ao pagar parcela. Tente novamente.', 'error');
-      }
-    };
-
-    const handleUnpayInstallment = async (txId: string, instId: number) => {
-      try {
-        // Get the installment to know the paid amount
-        const tx = transactions.find(t => t.id === txId);
-        const inst = tx?.installmentsSchedule.find(i => i.id === instId);
-        
-        if (!inst || !inst.paidAmount) return;
-
-        const { error } = await supabase
-          .from('installments')
-          .update({ paid: false, payment_date: null, paid_amount: null })
-          .eq('transaction_id', txId)
-          .eq('installment_number', instId);
-
-        if (error) throw error;
-
-        // Update account balance
-        if (tx) {
-          const account = accounts.find(a => a.id === tx.account);
-          if (account) {
-            await supabase
-              .from('accounts')
-              .update({ balance: account.balance + inst.paidAmount })
-              .eq('id', tx.account);
-          }
-        }
-
-        addToast('Pagamento estornado com sucesso!', 'success');
-      } catch (error) {
-        console.error('Erro ao estornar pagamento:', error);
-        addToast('Erro ao estornar pagamento. Tente novamente.', 'error');
-      }
-    };
-
     const handleRecurringAdd = async (item: RecurringItem) => {
       try {
         const { error } = await supabase
@@ -778,7 +710,7 @@ const App: React.FC = () => {
                     payment_date: new Date().toISOString().slice(0, 10)
                 })
                 .eq('transaction_id', txId)
-                .eq('id', instId);
+                .eq('installment_number', instId);
 
             if (instError) throw instError;
 
@@ -832,7 +764,7 @@ const App: React.FC = () => {
                     payment_date: null
                 })
                 .eq('transaction_id', txId)
-                .eq('id', instId);
+                .eq('installment_number', instId);
 
             if (instError) throw instError;
 
@@ -864,7 +796,7 @@ const App: React.FC = () => {
         }
     };
 
-    const handleUnpayInvoice = (details: UnpayInvoiceDetails) => {
+    const handleUnpayInvoice = async (details: UnpayInvoiceDetails) => {
       if (details.cardId && details.total > 0 && details.accountId) {
         try {
             const card = cards.find(c => c.id === details.cardId);
@@ -999,21 +931,35 @@ const App: React.FC = () => {
                 return;
             }
 
-            const { data, error } = await supabase
+            // Fetch profile data
+            const { data: profileData, error: profileError } = await supabase
                 .from('profiles')
                 .select('*')
                 .eq('user_id', user.id)
                 .maybeSingle();
 
-            if (data && !error) {
-                setUsers([{
-                    id: data.user_id,
-                    name: data.name,
-                    email: data.email,
-                    avatar: data.avatar,
-                    role: data.role as 'owner' | 'member'
-                }]);
+            if (profileError || !profileData) {
+                console.error('Error loading profile:', profileError);
+                return;
             }
+
+            // Fetch user role from user_roles table (secure)
+            const { data: roleData } = await supabase
+                .from('user_roles')
+                .select('role')
+                .eq('user_id', user.id)
+                .maybeSingle();
+
+            // Use role from user_roles table or fallback to 'member'
+            const userRole = roleData?.role === 'owner' ? 'owner' : 'member';
+
+            setUsers([{
+                id: profileData.user_id,
+                name: profileData.name,
+                email: profileData.email,
+                avatar: profileData.avatar,
+                role: userRole
+            }]);
         };
 
         loadProfile();
