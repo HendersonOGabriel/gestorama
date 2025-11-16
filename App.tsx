@@ -694,57 +694,7 @@ const App: React.FC = () => {
         }
     };
 
-    const handlePayInstallment = async (txId: string, instId: number, paidAmount: number) => {
-        const tx = transactions.find(t => t.id === txId);
-        if (!tx) {
-            addToast('Transação não encontrada.', 'error');
-            return;
-        }
-
-        try {
-            // 1. Update the installment
-            const { error: instError } = await supabase
-                .from('installments')
-                .update({
-                    paid: true,
-                    paid_amount: paidAmount,
-                    payment_date: new Date().toISOString().slice(0, 10)
-                })
-                .eq('transaction_id', txId)
-                .eq('installment_number', instId);
-
-            if (instError) throw instError;
-
-            // 2. Adjust account balance
-            const account = accounts.find(a => a.id === tx.account);
-            if (account) {
-                const { error: accError } = await supabase
-                    .from('accounts')
-                    .update({ balance: account.balance - paidAmount })
-                    .eq('id', account.id);
-                if (accError) throw accError;
-            }
-
-            // 3. Check if all installments are paid and update the transaction if so
-            const allPaid = tx.installmentsSchedule.every(inst => (inst.id === instId) || inst.paid);
-            if (allPaid) {
-                const { error: txError } = await supabase
-                    .from('transactions')
-                    .update({ paid: true })
-                    .eq('id', txId);
-                if (txError) throw txError;
-            }
-
-            addToast('Parcela paga com sucesso!', 'success');
-            supabaseData.refetch(); // Refetch all data to ensure UI consistency
-
-        } catch (error) {
-            console.error("Error paying installment:", error);
-            addToast('Erro ao processar pagamento. Tente novamente.', 'error');
-        }
-    };
-
-    const handlePayInstallment = async (txId: string, instId: number, paidAmount: number) => {
+    const handlePayInstallment = async (txId: string, instId: string, paidAmount: number) => {
         const tx = transactions.find(t => t.id === txId);
         if (!tx) {
             addToast('Transação não encontrada.', 'error');
@@ -794,7 +744,7 @@ const App: React.FC = () => {
         }
     };
     
-    const handleUnpayInstallment = async (txId: string, instId: number) => {
+    const handleUnpayInstallment = async (txId: string, instId: string) => {
         const tx = transactions.find(t => t.id === txId);
         const inst = tx?.installmentsSchedule.find(i => i.id === instId);
 
@@ -854,7 +804,7 @@ const App: React.FC = () => {
         setSelectedTransaction(null);
     };
 
-    const handleUnpayInvoice = (details: UnpayInvoiceDetails) => {
+    const handleUnpayInvoice = async (details: UnpayInvoiceDetails) => {
       if (details.cardId && details.total > 0 && details.accountId) {
         try {
             const card = cards.find(c => c.id === details.cardId);
@@ -869,7 +819,7 @@ const App: React.FC = () => {
                     if (invoiceM === details.month && s.paid) {
                         installmentsToUpdate.push({
                             transaction_id: tx.id,
-                            installment_number: s.id
+                            installment_id: s.id
                         });
                     }
                 });
@@ -881,7 +831,7 @@ const App: React.FC = () => {
                     .from('installments')
                     .update({ paid: false, payment_date: null, paid_amount: null })
                     .eq('transaction_id', inst.transaction_id)
-                    .eq('installment_number', inst.installment_number);
+                    .eq('id', inst.installment_id);
 
                 if (error) throw error;
             }
@@ -1097,7 +1047,7 @@ const App: React.FC = () => {
                 onDeleteTransfer={(id) => setTransfers(p => p.filter(t => t.id !== id))} onOpenFilter={() => setModal('filters')}
                 ownerProfile={ownerProfile} isLoading={isLoading}
                 focusedInvoice={focusedInvoice} setFocusedInvoice={setFocusedInvoice}
-             />;
+             /> : <div className="flex items-center justify-center h-full"><p>Carregando perfil...</p></div>;
             case 'familyDashboard': return <FamilyDashboardPage 
                 transactions={transactions} users={users} goals={goals} categories={categories}
                 getCategoryName={getCategoryName} subscription={subscription}
