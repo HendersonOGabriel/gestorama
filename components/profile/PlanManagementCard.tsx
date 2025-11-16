@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Subscription, User } from '../../types';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Plus, Trash2, User as UserIcon } from 'lucide-react';
+import { supabase } from '@/src/integrations/supabase/client';
 
 interface PlanManagementCardProps {
   subscription: Subscription;
@@ -17,6 +18,30 @@ const PlanManagementCard: React.FC<PlanManagementCardProps> = ({ subscription, u
   const [showInviteForm, setShowInviteForm] = useState(false);
   const [inviteName, setInviteName] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
+  const [userRoles, setUserRoles] = useState<Record<string, 'owner' | 'member'>>({});
+
+  // Fetch user roles from user_roles table
+  useEffect(() => {
+    const fetchUserRoles = async () => {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session.session?.user?.id) return;
+
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .in('user_id', users.map(u => u.id));
+
+      if (!error && data) {
+        const rolesMap: Record<string, 'owner' | 'member'> = {};
+        data.forEach(item => {
+          rolesMap[item.user_id] = item.role as 'owner' | 'member';
+        });
+        setUserRoles(rolesMap);
+      }
+    };
+
+    fetchUserRoles();
+  }, [users]);
 
   const canInvite = users.length < subscription.memberSlots;
   const planName = {
@@ -58,11 +83,11 @@ const PlanManagementCard: React.FC<PlanManagementCardProps> = ({ subscription, u
                     </span>
                   )}
                   <div>
-                    <p className="font-medium text-sm">{user.name} {user.role === 'owner' && '(Você)'}</p>
+                    <p className="font-medium text-sm">{user.name} {userRoles[user.id] === 'owner' && '(Você)'}</p>
                     <p className="text-xs text-slate-500">{user.email}</p>
                   </div>
                 </div>
-                {user.role !== 'owner' && (
+                {userRoles[user.id] !== 'owner' && (
                   <Button size="icon" variant="ghost" className="h-8 w-8 text-red-500" onClick={() => onRemoveUser(user.id)} loading={isLoading}>
                     <Trash2 className="w-4 h-4" />
                   </Button>

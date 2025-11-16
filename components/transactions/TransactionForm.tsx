@@ -113,6 +113,9 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ isOpen, onClose, onSu
     return acc;
   }, {} as Record<string, Category[]>);
 
+  const expenseLabel = form.type === 'card' ? 'Despesa' : 'Despesa';
+  const incomeLabel = form.type === 'card' ? 'Cashback/desconto' : 'Receita';
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
@@ -143,8 +146,8 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ isOpen, onClose, onSu
                     onChange={(e) => setForm(f => ({ ...f, isIncome: e.target.value === 'receita' }))}
                     className="w-full p-2 h-10 border rounded-md bg-white dark:bg-slate-800 dark:border-slate-700"
                 >
-                    <option value="despesa">Despesa</option>
-                    <option value="receita">Receita</option>
+                    <option value="despesa">{expenseLabel}</option>
+                    <option value="receita">{incomeLabel}</option>
                 </select>
               </div>
               <div className="space-y-1">

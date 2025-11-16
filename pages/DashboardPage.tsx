@@ -16,8 +16,9 @@ interface DashboardPageProps {
   transactions: Transaction[];
   filters: { description: string; categoryId: string; accountId: string; cardId: string; status: string; startDate: string; endDate: string; };
   accounts: Account[];
-  // FIX: Updated cards prop to use aliased CardType.
   cards: CardType[];
+  focusedInvoice: { cardId: string, month: string } | null;
+  setFocusedInvoice: (focus: { cardId: string, month: string } | null) => void;
   transfers: Transfer[];
   recurring: RecurringItem[];
   categories: Category[];
@@ -64,7 +65,8 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
         onViewTransaction, onAddRecurring, onEditRecurring, onUpdateRecurring,
         onRemoveRecurring, onAddTransfer, onEditTransfer, onDeleteTransfer, onOpenFilter,
         ownerProfile,
-        isLoading
+        isLoading,
+        focusedInvoice, setFocusedInvoice
     } = props;
 
   const [mainTab, setMainTab] = useState('transactions');
@@ -79,6 +81,27 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
   const [summaryChartType, setSummaryChartType] = useState<'bar' | 'line' | 'pie' | 'stacked'>('bar');
   const [trendsChartType, setTrendsChartType] = useState<'bar' | 'line' | 'area'>('bar');
   const [projectionsChartType, setProjectionsChartType] = useState<'area' | 'line' | 'bar'>('area');
+
+  useEffect(() => {
+    if (focusedInvoice) {
+        setMainTab('invoices');
+        setInvoiceMonth(new Date(focusedInvoice.month + '-02T12:00:00Z'));
+
+        // Timeout to allow the tab to render before scrolling
+        setTimeout(() => {
+            const elementId = `invoice-${focusedInvoice.cardId}-${focusedInvoice.month}`;
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                element.classList.add('highlight-invoice');
+                setTimeout(() => {
+                    element.classList.remove('highlight-invoice');
+                }, 2000); // Highlight for 2 seconds
+            }
+            setFocusedInvoice(null); // Reset focus
+        }, 100);
+    }
+  }, [focusedInvoice, setFocusedInvoice]);
 
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
@@ -172,6 +195,17 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
       })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [transactions, filters]);
+
+  const groupedTransactions = useMemo(() => {
+    return displayTransactions.reduce((acc, tx) => {
+      const key = monthKey(new Date(tx.date + 'T12:00:00Z'));
+      if (!acc[key]) {
+        acc[key] = [];
+      }
+      acc[key].push(tx);
+      return acc;
+    }, {} as Record<string, Transaction[]>);
+  }, [displayTransactions]);
 
   const summaryData = useMemo(() => {
     return transactions.reduce((acc, t) => {
@@ -543,7 +577,14 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
         {mainTab === 'transactions' && (
              <Card data-tour-id="transactions-list">
                 <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                  <CardTitle>Transações</CardTitle>
+                  <div className="flex items-center gap-3">
+                    <CardTitle>Transações</CardTitle>
+                    {filters.startDate && filters.endDate && monthKey(new Date(filters.startDate + 'T12:00:00Z')) === monthKey(new Date()) && monthKey(new Date(filters.endDate + 'T12:00:00Z')) === monthKey(new Date()) && (
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-200 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300">
+                        Este Mês
+                      </span>
+                    )}
+                  </div>
                   <div className="flex gap-2 w-full sm:w-auto">
                     <Button onClick={onOpenFilter} size="sm" variant="outline" className="relative w-full sm:w-auto"><Filter className="w-4 h-4 mr-1.5" />Filtrar</Button>
                     <div data-tour-id="add-transaction-button">
@@ -576,24 +617,43 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
                             </td>
                           </tr>
                         ) : (
-                          displayTransactions.map(t => (
-                            <tr 
-                              key={t.id} 
-                              className="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer"
-                              onClick={() => onViewTransaction(t)}
-                              tabIndex={0}
-                              onKeyDown={(e) => { if(e.key === 'Enter' || e.key === ' ') onViewTransaction(t); }}
-                            >
-                              <td className="p-3">
-                                <p className="font-medium">{t.desc}</p>
-                                <p className="text-xs text-slate-500">{getCategoryName(t.categoryId)}</p>
-                              </td>
-                              <td className={`p-3 text-right font-medium ${t.isIncome ? 'text-green-500' : 'text-red-500'}`}>
-                                {toCurrency(t.amount)}
-                              </td>
-                              <td className="p-3 hidden sm:table-cell">{displayDate(t.date)}</td>
-                              <td className="p-3 text-center"><span className={`text-xs px-2 py-1 rounded-full ${t.paid ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300'}`}>{t.paid ? 'Pago' : 'Pendente'}</span></td>
-                            </tr>
+                          Object.keys(groupedTransactions).sort((a, b) => b.localeCompare(a)).map(month => {
+                            const currentMonthKey = monthKey(new Date());
+                            const isCurrentMonth = month === currentMonthKey;
+                            return (
+                              <React.Fragment key={month}>
+                                <tr>
+                                  <td colSpan={4} className="p-3 bg-slate-100 dark:bg-slate-800 sticky top-0">
+                                    <div className="flex items-center gap-3">
+                                      <h3 className="font-semibold text-slate-800 dark:text-slate-200">{displayMonthYear(month)}</h3>
+                                      {isCurrentMonth && (
+                                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-200 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300">
+                                          Este Mês
+                                        </span>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                                {groupedTransactions[month].map(t => (
+                                <tr
+                                  key={t.id}
+                                  className="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer"
+                                  onClick={() => onViewTransaction(t)}
+                                  tabIndex={0}
+                                  onKeyDown={(e) => { if(e.key === 'Enter' || e.key === ' ') onViewTransaction(t); }}
+                                >
+                                  <td className="p-3">
+                                    <p className="font-medium">{t.desc}</p>
+                                    <p className="text-xs text-slate-500">{getCategoryName(t.categoryId)}</p>
+                                  </td>
+                                  <td className={`p-3 text-right font-medium ${t.isIncome ? 'text-green-500' : 'text-red-500'}`}>
+                                    {toCurrency(t.amount)}
+                                  </td>
+                                  <td className="p-3 hidden sm:table-cell">{displayDate(t.date)}</td>
+                                  <td className="p-3 text-center"><span className={`text-xs px-2 py-1 rounded-full ${t.paid ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300'}`}>{t.paid ? 'Pago' : 'Pendente'}</span></td>
+                                </tr>
+                              ))}
+                            </React.Fragment>
                           ))
                         )}
                       </tbody>
@@ -684,7 +744,16 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
                                 const m = getInvoiceMonthKey(s.postingDate, card.closingDay);
                                 acc[m] = acc[m] || { total: 0, items: [], accountId: tx.account };
                                 if(!s.paid) acc[m].total += s.amount;
-                                acc[m].items.push({ ...s, tx });
+                                // Only include the fields we need to avoid rendering raw DB objects
+                                acc[m].items.push({ 
+                                    id: s.id,
+                                    amount: s.amount,
+                                    paid: s.paid,
+                                    postingDate: s.postingDate,
+                                    paymentDate: s.paymentDate,
+                                    paidAmount: s.paidAmount,
+                                    tx 
+                                });
                             });
                             return acc;
                         }, {} as Record<string, { total: number; items: any[]; accountId: string; }>);
@@ -692,7 +761,7 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
                         const invoiceForMonth = groupedInvoices[selectedMonthKey];
                         const isCardDeleted = !!card.deleted;
 
-                        return (<div key={card.id} className="mb-6">
+                        return (<div key={card.id} id={`invoice-${card.id}-${selectedMonthKey}`} className="mb-6 rounded-lg transition-all duration-500">
                             <h4 className="font-semibold text-lg mb-2">{card.name}{isCardDeleted ? ' (Excluído)' : ''}</h4>
                             {!invoiceForMonth || invoiceForMonth.items.length === 0 ? (
                                 <div className="text-sm text-slate-500 text-center py-8 border rounded-md mt-2 bg-slate-50 dark:bg-slate-800/50">
@@ -784,7 +853,7 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
                   )}
                 </tbody>
               </table>
-            </div>
+              </div>
             </CardContent></Card>}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
