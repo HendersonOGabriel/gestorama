@@ -84,7 +84,7 @@ export const useSupabaseData = (userId: string | null) => {
     if (!userId) return [];
     const { data, error } = await supabase
       .from('transactions')
-      .select('*')
+      .select('*, installments(*)')
       .eq('user_id', userId)
       .order('date', { ascending: false });
     
@@ -96,7 +96,7 @@ export const useSupabaseData = (userId: string | null) => {
       date: tx.date,
       isIncome: tx.is_income,
       type: tx.type as 'card' | 'cash' | 'prazo',
-      installments: tx.installments,
+      installments: Math.max(1, tx.installments ? tx.installments.length : 0),
       account: tx.account_id,
       card: tx.card_id,
       categoryId: tx.category_id,
@@ -105,7 +105,14 @@ export const useSupabaseData = (userId: string | null) => {
       reminderDaysBefore: tx.reminder_days_before,
       recurringSourceId: tx.recurring_source_id,
       userId: tx.user_id,
-      installmentsSchedule: []
+      installmentsSchedule: tx.installments ? tx.installments.map((inst: any) => ({
+        id: inst.id,
+        amount: Number(inst.amount),
+        paid: inst.paid,
+        postingDate: inst.posting_date,
+        paymentDate: inst.payment_date,
+        paidAmount: inst.paid_amount ? Number(inst.paid_amount) : null,
+      })).sort((a: any, b: any) => a.id - b.id) : []
     }));
   }, [userId]);
 
