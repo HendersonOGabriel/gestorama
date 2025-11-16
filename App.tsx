@@ -346,7 +346,7 @@ const App: React.FC = () => {
 
     // -- Derived State --
     const isLoading = authLoading || supabaseData.loading;
-    const ownerProfile = useMemo(() => users.find(u => u.role === 'owner')!, [users]);
+    const ownerProfile = useMemo(() => users.find(u => u.role === 'owner'), [users]);
 
     // -- Handlers --
     const addToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
@@ -1051,7 +1051,7 @@ const App: React.FC = () => {
             />;
             case 'reports': return <ReportsPage transactions={transactions} accounts={accounts} cards={cards} categories={categories} getCategoryName={getCategoryName} />;
             case 'calendar': return <CalendarPage transactions={transactions} reminders={reminders} setReminders={setReminders} getInstallmentDueDate={getInstallmentDueDate} getCategoryName={getCategoryName}/>;
-            case 'profile': return <ProfilePage 
+            case 'profile': return ownerProfile ? <ProfilePage 
                 ownerProfile={ownerProfile} users={users} subscription={subscription}
                 onUpdateUser={(user) => setUsers(prev => prev.map(u => u.id === user.id ? user : u))}
                 onAddUser={(name, email) => setUsers(prev => [...prev, { id: Date.now().toString(), name, email, avatar: null, role: 'member' }])}
@@ -1063,7 +1063,7 @@ const App: React.FC = () => {
                 appState={stateToExport}
                 gamification={gamification}
                 onLogout={handleLogout}
-            />;
+            /> : <div className="flex items-center justify-center h-full"><p>Carregando perfil...</p></div>;
             case 'subscription': return <SubscriptionPage 
                 currentSubscription={subscription} isLoading={isLoading} addToast={addToast}
                 onUpgradePlan={(plan, slots) => { setSubscription({ plan, memberSlots: slots, expires: null }); addToast('Plano atualizado com sucesso!'); setCurrentPage('profile');}}
