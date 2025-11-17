@@ -244,7 +244,7 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
   }, [transactions, getCategoryName]);
 
   const upcomingPaymentsData = useMemo(() => {
-    const payments: { id: string, desc: string, amount: number, date: string }[] = [];
+    const payments: { id: string, desc: string, amount: number, date: string, installment: string }[] = [];
     const today = new Date().toISOString().slice(0, 10);
     const futureLimit = addMonths(new Date(), 2).toISOString().slice(0, 10);
     
@@ -253,7 +253,7 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
       t.installmentsSchedule.forEach(s => {
         const dueDate = getInstallmentDueDate(t, s);
         if (!s.paid && dueDate >= today && dueDate <= futureLimit) {
-          payments.push({ id: `${t.id}-${s.id}`, desc: `${t.desc} (Parc. ${s.id}/${t.installments})`, amount: s.amount, date: dueDate });
+          payments.push({ id: `${t.id}-${s.id}`, desc: t.desc, amount: s.amount, date: dueDate, installment: `Parcela ${s.id}/${t.installments}` });
         }
       });
     });
@@ -517,7 +517,10 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
                           {upcomingPaymentsData.map((payment) => (
                               <li key={payment.id} className="py-3 sm:py-4 flex items-center space-x-4">
                                   <div className="flex-shrink-0"><span className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900"><AlertTriangle className="h-4 w-4 text-amber-500" /></span></div>
-                                  <div className="flex-1 min-w-0"><p className="text-sm font-medium truncate">{payment.desc}</p><p className="text-sm text-slate-500 dark:text-slate-400 truncate">Venc: {displayDate(payment.date)}</p></div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium truncate">{payment.desc}</p>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{payment.installment} • Venc: {displayDate(payment.date)}</p>
+                                  </div>
                                   <div className="inline-flex items-center text-base font-semibold text-red-500">{toCurrency(payment.amount)}</div>
                               </li>
                           ))}
