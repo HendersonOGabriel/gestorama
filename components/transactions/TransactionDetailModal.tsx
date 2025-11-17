@@ -12,7 +12,7 @@ interface TransactionDetailModalProps {
   onEdit: (tx: Transaction) => void;
   onDelete: (id: string) => void;
   onPay: (details: PayingInstallment) => void;
-  onUnpay: (txId: string, instId: number) => void;
+  onUnpay: (txId: string, instId: string) => void;
   onSettle: (tx: Transaction) => void;
   getInstallmentDueDate: (tx: Transaction, inst: Installment) => string;
   getCategoryName: (id: string | null) => string;
@@ -154,7 +154,7 @@ const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
                       >
                         <div>
                           <div className="font-medium">
-                            {transaction.installments > 1 ? `Parcela ${inst.id}/${transaction.installments} - ` : ''}
+                            {transaction.installments > 1 ? `Parcela ${inst.installmentNumber}/${transaction.installments} - ` : ''}
                             {amountDisplay}
                           </div>
                           <div className="text-xs text-slate-500">Vencimento: {displayDate(getInstallmentDueDate(transaction, inst))}</div>

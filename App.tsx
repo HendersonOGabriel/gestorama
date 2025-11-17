@@ -668,19 +668,25 @@ const App: React.FC = () => {
                 if (accError) throw accError;
             }
 
-            // 3. Check if all installments are paid and update the transaction if so
-            const allPaid = tx.installmentsSchedule.every(inst => (inst.id === instId) || inst.paid);
+            // 3. Check if all installments are now paid and update the parent transaction
+            const { data: allInstallments, error: fetchError } = await supabase
+              .from('installments')
+              .select('paid')
+              .eq('transaction_id', txId);
+
+            if (fetchError) throw fetchError;
+
+            const allPaid = allInstallments.every(inst => inst.paid);
             if (allPaid) {
-                const { error: txError } = await supabase
-                    .from('transactions')
-                    .update({ paid: true })
-                    .eq('id', txId);
-                if (txError) throw txError;
+              const { error: txError } = await supabase
+                .from('transactions')
+                .update({ paid: true })
+                .eq('id', txId);
+              if (txError) throw txError;
             }
 
             addToast('Parcela paga com sucesso!', 'success');
             supabaseData.refetch(); // Refetch all data to ensure UI consistency
-
         } catch (error) {
             console.error("Error paying installment:", error);
             addToast('Erro ao processar pagamento. Tente novamente.', 'error');
@@ -733,7 +739,6 @@ const App: React.FC = () => {
 
             addToast('Estorno realizado com sucesso!', 'success');
             supabaseData.refetch();
-
         } catch (error) {
             console.error("Error processing refund:", error);
             addToast('Erro ao processar estorno. Tente novamente.', 'error');
