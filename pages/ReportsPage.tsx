@@ -42,7 +42,8 @@ const getYearRange = (date: Date) => {
 const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, accounts, cards, categories, getCategoryName }) => {
   const [reportType, setReportType] = useState<'evolution' | 'category' | 'comparison'>('evolution');
   
-  const [primaryDate, setPrimaryDate] = useState(getMonthRange(new Date()));
+  const [periodA, setPeriodA] = useState(getMonthRange(new Date()));
+  const [periodB, setPeriodB] = useState({ startDate: '', endDate: '' });
   const [useCompare, setUseCompare] = useState(false);
   const [compareType, setCompareType] = useState<'previous_period' | 'previous_year'>('previous_period');
 
@@ -55,11 +56,14 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, accounts, cards
     window.scrollTo(0, 0);
   }, [reportType]);
 
-  const calculatedCompareDate = useMemo(() => {
-    if (!useCompare || !primaryDate.startDate || !primaryDate.endDate) return { startDate: '', endDate: '' };
+  useEffect(() => {
+    if (!useCompare || !periodA.startDate || !periodA.endDate) {
+      setPeriodB({ startDate: '', endDate: '' });
+      return;
+    };
 
-    const primStart = new Date(primaryDate.startDate + 'T12:00:00Z');
-    const primEnd = new Date(primaryDate.endDate + 'T12:00:00Z');
+    const primStart = new Date(periodA.startDate + 'T12:00:00Z');
+    const primEnd = new Date(periodA.endDate + 'T12:00:00Z');
     let compStart: Date;
     let compEnd: Date;
 
@@ -74,11 +78,11 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, accounts, cards
         compStart = new Date(compEnd.getTime() - durationMs);
     }
 
-    return {
+    setPeriodB({
         startDate: compStart.toISOString().slice(0, 10),
         endDate: compEnd.toISOString().slice(0, 10),
-    };
-  }, [primaryDate, useCompare, compareType]);
+    });
+  }, [periodA, useCompare, compareType]);
 
 
   const filteredData = useMemo(() => {
@@ -104,14 +108,40 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, accounts, cards
       return paymentSourceMatches && isInCategories && isCorrectType;
     };
 
-    const primaryTxs = transactions.filter(tx => filterFunction(tx, primaryDate));
-    const compareTxs = useCompare ? transactions.filter(tx => filterFunction(tx, calculatedCompareDate)) : [];
+    const primaryTxs = transactions.filter(tx => filterFunction(tx, periodA));
+    const compareTxs = useCompare ? transactions.filter(tx => filterFunction(tx, periodB)) : [];
 
     return { primaryTxs, compareTxs };
-  }, [transactions, primaryDate, useCompare, calculatedCompareDate, selectedAccounts, selectedCards, selectedCategories, txType, accounts, cards, categories]);
+  }, [transactions, periodA, useCompare, periodB, selectedAccounts, selectedCards, selectedCategories, txType, accounts, cards, categories]);
 
-  const evolutionData = useMemo(() => {
-    const processTxs = (txs: Transaction[], periodKey: 'primary' | 'compare') => {
+  const reportData = useMemo(() => {
+    const processCategoryTxs = (txs: Transaction[], range: { startDate: string, endDate: string }) => {
+        const expenses = txs.filter(tx => !tx.isIncome);
+        const byCategory: Record<string, number> = {};
+        let total = 0;
+        expenses.forEach(tx => {
+            tx.installmentsSchedule.forEach(s => {
+                if(s.paid && s.paymentDate && s.paymentDate >= range.startDate && s.paymentDate <= range.endDate){
+                    const amount = s.paidAmount || s.amount;
+                    const catId = tx.categoryId || 'none';
+                    byCategory[catId] = (byCategory[catId] || 0) + amount;
+                    total += amount;
+                }
+            });
+        });
+
+        if (total === 0) return { pieData: [], tableData: [], total: 0 };
+
+        const sorted = Object.entries(byCategory).sort(([,a], [,b]) => b - a);
+
+        return {
+          pieData: sorted.map(([id, value], i) => ({ id, name: getCategoryName(id), value, fill: PIE_COLORS[i % PIE_COLORS.length] })),
+          tableData: sorted.map(([id, value]) => ({ id, name: getCategoryName(id), value, percentage: (value / total) * 100 })),
+          total
+        };
+    };
+
+    const processEvolutionTxs = (txs: Transaction[]) => {
       const monthly: Record<string, { income: number, expense: number }> = {};
       txs.forEach(tx => {
         tx.installmentsSchedule.forEach(s => {
@@ -124,50 +154,28 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, accounts, cards
           }
         });
       });
-      return monthly;
+      const sortedKeys = Object.keys(monthly).sort();
+      return sortedKeys.map(key => ({
+        month: displayMonthYear(key),
+        Receita: monthly[key]?.income || 0,
+        Despesa: monthly[key]?.expense || 0,
+      }));
     };
     
-    const primaryMonthly = processTxs(filteredData.primaryTxs, 'primary');
-    const compareMonthly = useCompare ? processTxs(filteredData.compareTxs, 'compare') : {};
-
-    const allKeys = new Set([...Object.keys(primaryMonthly), ...Object.keys(compareMonthly)]);
-    const sortedKeys = Array.from(allKeys).sort();
-
-    return sortedKeys.map(key => ({
-      month: displayMonthYear(key),
-      Receita: primaryMonthly[key]?.income || 0,
-      Despesa: primaryMonthly[key]?.expense || 0,
-      'Receita (Comp.)': compareMonthly[key]?.income || undefined,
-      'Despesa (Comp.)': compareMonthly[key]?.expense || undefined,
-    }));
-  }, [filteredData, useCompare]);
-  
-  const categoryData = useMemo(() => {
-    const expenses = filteredData.primaryTxs.filter(tx => !tx.isIncome);
-    const byCategory: Record<string, number> = {};
-    let total = 0;
-    expenses.forEach(tx => {
-        tx.installmentsSchedule.forEach(s => {
-            if(s.paid && s.paymentDate && s.paymentDate >= primaryDate.startDate && s.paymentDate <= primaryDate.endDate){
-                const amount = s.paidAmount || s.amount;
-                const catId = tx.categoryId || 'none';
-                byCategory[catId] = (byCategory[catId] || 0) + amount;
-                total += amount;
-            }
-        });
-    });
+    const categoryDataA = processCategoryTxs(filteredData.primaryTxs, periodA);
+    const evolutionDataA = processEvolutionTxs(filteredData.primaryTxs);
     
-    if (total === 0) return { pieData: [], tableData: [], total: 0 };
-    
-    const sorted = Object.entries(byCategory).sort(([,a], [,b]) => b - a);
-    
-    return {
-      pieData: sorted.map(([id, value], i) => ({ id, name: getCategoryName(id), value, fill: PIE_COLORS[i % PIE_COLORS.length] })),
-      tableData: sorted.map(([id, value]) => ({ id, name: getCategoryName(id), value, percentage: (value / total) * 100 })),
-      total
-    };
+    let categoryDataB = null;
+    let evolutionDataB = null;
 
-  }, [filteredData.primaryTxs, getCategoryName, primaryDate]);
+    if (useCompare) {
+      categoryDataB = processCategoryTxs(filteredData.compareTxs, periodB);
+      evolutionDataB = processEvolutionTxs(filteredData.compareTxs);
+    }
+    
+    return { categoryDataA, categoryDataB, evolutionDataA, evolutionDataB };
+
+  }, [filteredData, useCompare, periodA, periodB, getCategoryName]);
 
   const comparisonData = useMemo(() => {
       const calculateMetrics = (txs: Transaction[], range: { startDate: string, endDate: string }) => {
@@ -182,8 +190,8 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, accounts, cards
           return { income, expense, balance: income - expense };
       };
       
-      const primary = calculateMetrics(filteredData.primaryTxs, primaryDate);
-      const compare = useCompare ? calculateMetrics(filteredData.compareTxs, calculatedCompareDate) : { income: 0, expense: 0, balance: 0 };
+      const primary = calculateMetrics(filteredData.primaryTxs, periodA);
+      const compare = useCompare ? calculateMetrics(filteredData.compareTxs, periodB) : { income: 0, expense: 0, balance: 0 };
       
       const calcChange = (p: number, c: number) => c === 0 ? (p > 0 ? 100 : 0) : ((p - c) / Math.abs(c)) * 100;
       
@@ -193,17 +201,17 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, accounts, cards
           expenseChange: calcChange(primary.expense, compare.expense),
           balanceChange: calcChange(primary.balance, compare.balance)
       };
-  }, [filteredData, useCompare, primaryDate, calculatedCompareDate]);
+  }, [filteredData, useCompare, periodA, periodB]);
   
   const handleSetPreset = (preset: 'this_month' | 'last_month' | 'this_year') => {
     const today = new Date();
     if (preset === 'this_month') {
-        setPrimaryDate(getMonthRange(today));
+        setPeriodA(getMonthRange(today));
     } else if (preset === 'last_month') {
         const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-        setPrimaryDate(getMonthRange(lastMonth));
+        setPeriodA(getMonthRange(lastMonth));
     } else if (preset === 'this_year') {
-        setPrimaryDate(getYearRange(today));
+        setPeriodA(getYearRange(today));
     }
   };
 
@@ -225,52 +233,76 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, accounts, cards
     else setter([...selected, id]);
   };
 
+  const renderEvolution = (data: any, title: string) => (
+    <Card>
+      <CardHeader><CardTitle className="text-base">{title}</CardTitle></CardHeader>
+      <CardContent>
+        {data.length > 0 ? (
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={data} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="month" />
+            <YAxis tickFormatter={(v) => toCurrency(v).replace('R$', '')} />
+            <Tooltip formatter={(v: number) => toCurrency(v)} />
+            <Legend />
+            <Line type="monotone" dataKey="Receita" stroke="#22c55e" strokeWidth={2} />
+            <Line type="monotone" dataKey="Despesa" stroke="#ef4444" strokeWidth={2} />
+          </LineChart>
+        </ResponsiveContainer>
+        ) : <div className="text-center py-20 text-slate-500">Nenhum dado para o período.</div>}
+      </CardContent>
+    </Card>
+  );
+
+  const renderCategory = (data: any, title: string) => (
+      <Card>
+          <CardHeader><CardTitle className="text-base">Despesas por Categoria ({toCurrency(data.total)}) <span className="font-normal text-slate-500">{title}</span></CardTitle></CardHeader>
+          <CardContent>
+              {data.pieData.length > 0 ? (
+                  <div className="grid lg:grid-cols-2 gap-6 items-center">
+                      <ResponsiveContainer width="100%" height={300}>
+                          <PieChart>
+                          <Pie data={data.pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={120} labelLine={false} label={({ name, percent }: any) => `${((percent as number) * 100).toFixed(0)}%`}>
+                              {data.pieData.map((entry: any, index: number) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
+                          </Pie>
+                          <Tooltip formatter={(v: number) => toCurrency(v)} />
+                          </PieChart>
+                      </ResponsiveContainer>
+                      <div className="overflow-x-auto">
+                          <div className="max-h-[300px] overflow-y-auto">
+                              <table className="min-w-full text-sm">
+                                  <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800"><tr className="text-left"><th className="p-2 font-medium">Categoria</th><th className="p-2 font-medium text-right">Valor</th><th className="p-2 font-medium text-right">%</th></tr></thead>
+                                  <tbody>
+                                      {data.tableData.map((item: any) => (
+                                          <tr key={item.id} className="border-t dark:border-slate-700"><td className="p-2">{item.name}</td><td className="p-2 text-right">{toCurrency(item.value)}</td><td className="p-2 text-right">{item.percentage.toFixed(1)}%</td></tr>
+                                      ))}
+                                  </tbody>
+                                  <tfoot><tr className="border-t-2 font-bold"><td className="p-2">Total</td><td className="p-2 text-right">{toCurrency(data.total)}</td><td className="p-2 text-right">100%</td></tr></tfoot>
+                              </table>
+                          </div>
+                      </div>
+                  </div>
+              ) : <div className="text-center py-20 text-slate-500">Nenhuma despesa encontrada para os filtros selecionados.</div>}
+          </CardContent>
+      </Card>
+  );
+
   const renderReportContent = () => {
+    const { categoryDataA, categoryDataB, evolutionDataA, evolutionDataB } = reportData;
+
     switch (reportType) {
       case 'evolution':
         return (
-          <ResponsiveContainer width="100%" height={400}>
-            <LineChart data={evolutionData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis tickFormatter={(v) => toCurrency(v).replace('R$', '')} />
-              <Tooltip formatter={(v: number) => toCurrency(v)} />
-              <Legend />
-              <Line type="monotone" dataKey="Receita" stroke="#22c55e" strokeWidth={2} />
-              <Line type="monotone" dataKey="Despesa" stroke="#ef4444" strokeWidth={2} />
-              {useCompare && <Line type="monotone" dataKey="Receita (Comp.)" stroke="#16a34a" strokeDasharray="5 5" />}
-              {useCompare && <Line type="monotone" dataKey="Despesa (Comp.)" stroke="#dc2626" strokeDasharray="5 5" />}
-            </LineChart>
-          </ResponsiveContainer>
+          <div className={cn("grid gap-6", useCompare && "xl:grid-cols-2")}>
+            {renderEvolution(evolutionDataA, `Período A: ${displayDate(periodA.startDate)} - ${displayDate(periodA.endDate)}`)}
+            {useCompare && evolutionDataB && renderEvolution(evolutionDataB, `Período B: ${displayDate(periodB.startDate)} - ${displayDate(periodB.endDate)}`)}
+          </div>
         );
       case 'category':
         return (
-          <div className="grid lg:grid-cols-2 gap-6 items-center">
-            {categoryData.pieData.length > 0 ? (
-                <>
-                <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                    <Pie data={categoryData.pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={120} labelLine={false} label={({ name, percent }: any) => `${((percent as number) * 100).toFixed(0)}%`}>
-                        {categoryData.pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
-                    </Pie>
-                    <Tooltip formatter={(v: number) => toCurrency(v)} />
-                    </PieChart>
-                </ResponsiveContainer>
-                <div className="overflow-x-auto">
-                    <div className="max-h-[300px] overflow-y-auto">
-                        <table className="min-w-full text-sm">
-                            <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800"><tr className="text-left"><th className="p-2 font-medium">Categoria</th><th className="p-2 font-medium text-right">Valor</th><th className="p-2 font-medium text-right">%</th></tr></thead>
-                            <tbody>
-                                {categoryData.tableData.map(item => (
-                                    <tr key={item.id} className="border-t dark:border-slate-700"><td className="p-2">{item.name}</td><td className="p-2 text-right">{toCurrency(item.value)}</td><td className="p-2 text-right">{item.percentage.toFixed(1)}%</td></tr>
-                                ))}
-                            </tbody>
-                            <tfoot><tr className="border-t-2 font-bold"><td className="p-2">Total</td><td className="p-2 text-right">{toCurrency(categoryData.total)}</td><td className="p-2 text-right">100%</td></tr></tfoot>
-                        </table>
-                    </div>
-                </div>
-                </>
-            ) : <div className="col-span-2 text-center py-20 text-slate-500">Nenhuma despesa encontrada para os filtros selecionados.</div>}
+          <div className={cn("grid gap-6", useCompare && "xl:grid-cols-2")}>
+             {renderCategory(categoryDataA, `(${displayDate(periodA.startDate)} - ${displayDate(periodA.endDate)})`)}
+             {useCompare && categoryDataB && renderCategory(categoryDataB, `(${displayDate(periodB.startDate)} - ${displayDate(periodB.endDate)})`)}
           </div>
         );
         case 'comparison':
@@ -293,21 +325,24 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, accounts, cards
             };
 
             return (
-              <div className="space-y-6">
-                <div className="text-center text-sm text-slate-500">
-                  Comparando {displayDate(primaryDate.startDate)} até {displayDate(primaryDate.endDate)} com {displayDate(calculatedCompareDate.startDate)} até {displayDate(calculatedCompareDate.endDate)}
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <SummaryCard title="Receitas" value={toCurrency(comparisonData.primary.income)} icon={<ChangeIndicator value={comparisonData.incomeChange} positiveIsGood={true} />} colorClass="text-slate-800 dark:text-slate-100" />
-                    <SummaryCard title="Despesas" value={toCurrency(comparisonData.primary.expense)} icon={<ChangeIndicator value={comparisonData.expenseChange} />} colorClass="text-slate-800 dark:text-slate-100" />
-                    <SummaryCard title="Saldo Final" value={toCurrency(comparisonData.primary.balance)} icon={<ChangeIndicator value={comparisonData.balanceChange} positiveIsGood={true} />} colorClass="text-slate-800 dark:text-slate-100" />
-                </div>
-                <div className="text-sm text-slate-500 grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-                  <div>vs. {toCurrency(comparisonData.compare.income)}</div>
-                  <div>vs. {toCurrency(comparisonData.compare.expense)}</div>
-                  <div>vs. {toCurrency(comparisonData.compare.balance)}</div>
-                </div>
-              </div>
+              <Card>
+                <CardHeader><CardTitle>Comparativo entre Períodos</CardTitle></CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="text-center text-sm text-slate-500">
+                    Comparando Período A ({displayDate(periodA.startDate)} até {displayDate(periodA.endDate)}) com Período B ({displayDate(periodB.startDate)} até {displayDate(periodB.endDate)})
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <SummaryCard title="Receitas" value={toCurrency(comparisonData.primary.income)} icon={<ChangeIndicator value={comparisonData.incomeChange} positiveIsGood={true} />} colorClass="text-slate-800 dark:text-slate-100" />
+                      <SummaryCard title="Despesas" value={toCurrency(comparisonData.primary.expense)} icon={<ChangeIndicator value={comparisonData.expenseChange} />} colorClass="text-slate-800 dark:text-slate-100" />
+                      <SummaryCard title="Saldo Final" value={toCurrency(comparisonData.primary.balance)} icon={<ChangeIndicator value={comparisonData.balanceChange} positiveIsGood={true} />} colorClass="text-slate-800 dark:text-slate-100" />
+                  </div>
+                  <div className="text-sm text-slate-500 grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                    <div>vs. {toCurrency(comparisonData.compare.income)}</div>
+                    <div>vs. {toCurrency(comparisonData.compare.expense)}</div>
+                    <div>vs. {toCurrency(comparisonData.compare.balance)}</div>
+                  </div>
+                </CardContent>
+              </Card>
             );
       default: return null;
     }
@@ -321,10 +356,10 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, accounts, cards
           <CardHeader><CardTitle className="flex items-center gap-2"><Filter className="w-5 h-5"/> Filtros de Relatório</CardTitle></CardHeader>
           <CardContent className="space-y-4">
           <div>
-            <Label>Período Principal</Label>
+            <Label>Período A</Label>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-1">
-              <Input type="date" value={primaryDate.startDate} onChange={e => setPrimaryDate(p => ({...p, startDate: e.target.value}))} />
-              <Input type="date" value={primaryDate.endDate} onChange={e => setPrimaryDate(p => ({...p, endDate: e.target.value}))} />
+              <Input type="date" value={periodA.startDate} onChange={e => setPeriodA(p => ({...p, startDate: e.target.value}))} />
+              <Input type="date" value={periodA.endDate} onChange={e => setPeriodA(p => ({...p, endDate: e.target.value}))} />
               <div className="col-span-1 sm:col-span-2 flex items-center gap-2 flex-wrap">
                  <Button size="sm" variant="outline" onClick={() => handleSetPreset('this_month')}>Este Mês</Button>
                  <Button size="sm" variant="outline" onClick={() => handleSetPreset('last_month')}>Mês Passado</Button>
@@ -332,18 +367,29 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, accounts, cards
               </div>
             </div>
           </div>
-           <div className="flex items-center gap-4 pt-2">
-              <div className="flex items-center gap-2">
+           <div className="flex items-center gap-2 pt-2">
                 <Checkbox id="use-compare" checked={useCompare} onCheckedChange={(checked) => setUseCompare(Boolean(checked))} />
-                <Label htmlFor="use-compare" className="mb-0">Comparar com:</Label>
-              </div>
-              {useCompare && (
-                <select value={compareType} onChange={e => setCompareType(e.target.value as any)} className="p-1 h-8 text-sm border rounded-md bg-white dark:bg-slate-800 dark:border-slate-700">
-                    <option value="previous_period">Período Anterior</option>
-                    <option value="previous_year">Ano Anterior</option>
-                </select>
-              )}
-           </div>
+                <Label htmlFor="use-compare" className="mb-0">Comparar Períodos</Label>
+            </div>
+            {useCompare && (
+                <div className="space-y-4 pt-4 mt-4 border-t dark:border-slate-700">
+                    <div className="flex items-center gap-4">
+                        <Label className="mb-0 shrink-0">Comparar Período A com:</Label>
+                        <select value={compareType} onChange={e => setCompareType(e.target.value as any)} className="p-1 h-8 text-sm border rounded-md bg-white dark:bg-slate-800 dark:border-slate-700">
+                            <option value="previous_period">Período Anterior</option>
+                            <option value="previous_year">Ano Anterior</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <Label>Período B</Label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-1">
+                            <Input type="date" value={periodB.startDate} onChange={e => setPeriodB(p => ({...p, startDate: e.target.value}))} />
+                            <Input type="date" value={periodB.endDate} onChange={e => setPeriodB(p => ({...p, endDate: e.target.value}))} />
+                        </div>
+                    </div>
+                </div>
+            )}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t dark:border-slate-700">
             <div>
               <Label>Tipo de Movimentação</Label>
@@ -380,25 +426,14 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ transactions, accounts, cards
         <Button onClick={() => setReportType('comparison')} variant={reportType==='comparison' ? 'default' : 'ghost'} className="flex-1"><Replace className="w-4 h-4 mr-2"/>Comparativo</Button>
       </div>
 
-      <div className="overflow-x-auto">
-        <Card>
-        <CardHeader>
-            <CardTitle>
-                {reportType === 'evolution' && 'Evolução de Receitas e Despesas'}
-                {reportType === 'category' && `Despesas por Categoria (${toCurrency(categoryData.total)})`}
-                {reportType === 'comparison' && 'Comparativo entre Períodos'}
-            </CardTitle>
-        </CardHeader>
-        <CardContent>
-            {renderReportContent()}
-        </CardContent>
-        </Card>
+      <div className="overflow-x-auto space-y-6">
+        {renderReportContent()}
       </div>
       </div>
       <ReportSummary
         reportType={reportType}
-        evolutionData={evolutionData}
-        categoryData={categoryData}
+        evolutionData={reportData.evolutionDataA}
+        categoryData={reportData.categoryDataA}
         comparisonData={comparisonData}
       />
     </div>
