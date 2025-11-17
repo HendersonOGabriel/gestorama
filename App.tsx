@@ -1151,7 +1151,8 @@ const App: React.FC = () => {
             if (deleteError) throw deleteError;
 
             addToast('Recorrência excluída com sucesso!', 'success');
-            supabaseData.refetch();
+            // Manually update the state to reflect the deletion in the UI immediately.
+            setRecurring(prev => prev.filter(item => item.id !== id));
         } catch (error) {
             console.error('Erro ao excluir recorrência:', error);
             addToast('Erro ao excluir recorrência. Tente novamente.', 'error');
