@@ -5,6 +5,7 @@ import { toCurrency, cn, displayMonthYear, monthKey, addMonths, displayDate } fr
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import ReminderFormModal from '../components/calendar/ReminderFormModal';
+import { supabase } from '../src/integrations/supabase/client';
 
 interface CalendarPageProps {
   transactions: Transaction[];
@@ -12,13 +13,85 @@ interface CalendarPageProps {
   setReminders: React.Dispatch<React.SetStateAction<Reminder[]>>;
   getInstallmentDueDate: (tx: Transaction, inst: any) => string;
   getCategoryName: (id: string | null) => string;
+  userId: string;
+  addToast: (message: string, type?: 'error' | 'success') => void;
 }
 
-const CalendarPage: React.FC<CalendarPageProps> = ({ transactions, reminders, setReminders, getInstallmentDueDate, getCategoryName }) => {
+const CalendarPage: React.FC<CalendarPageProps> = ({ transactions, reminders, setReminders, getInstallmentDueDate, getCategoryName, userId, addToast }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState(new Date());
   const [modalOpen, setModalOpen] = useState(false);
   const [editReminder, setEditReminder] = useState<Reminder | null>(null);
+
+  const handleSaveReminder = async (data: Omit<Reminder, 'id'>) => {
+    try {
+      const { data: newReminder, error } = await supabase
+        .from('reminders')
+        .insert({
+          user_id: userId,
+          date: data.date,
+          description: data.desc,
+          time: data.time
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setReminders(p => [...p, {
+        id: newReminder.id,
+        date: newReminder.date,
+        desc: newReminder.description,
+        time: newReminder.time
+      }]);
+      
+      addToast('Lembrete criado com sucesso!', 'success');
+      setModalOpen(false);
+    } catch (error) {
+      console.error('Erro ao criar lembrete:', error);
+      addToast('Erro ao criar lembrete. Tente novamente.', 'error');
+    }
+  };
+
+  const handleUpdateReminder = async (id: string, data: Partial<Reminder>) => {
+    try {
+      const { error } = await supabase
+        .from('reminders')
+        .update({
+          date: data.date,
+          description: data.desc,
+          time: data.time
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setReminders(p => p.map(r => r.id === id ? {...r, ...data} : r));
+      addToast('Lembrete atualizado com sucesso!', 'success');
+      setModalOpen(false);
+    } catch (error) {
+      console.error('Erro ao atualizar lembrete:', error);
+      addToast('Erro ao atualizar lembrete. Tente novamente.', 'error');
+    }
+  };
+
+  const handleDeleteReminder = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('reminders')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setReminders(p => p.filter(r => r.id !== id));
+      addToast('Lembrete excluído com sucesso!', 'success');
+      setModalOpen(false);
+    } catch (error) {
+      console.error('Erro ao excluir lembrete:', error);
+      addToast('Erro ao excluir lembrete. Tente novamente.', 'error');
+    }
+  };
 
   const dayDataMap = useMemo(() => {
     const map = new Map<string, { reminders: Reminder[], transactions: { tx: Transaction, inst: any }[] }>();
@@ -139,7 +212,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ transactions, reminders, se
             </div>
         </CardContent>
       </Card>
-      <ReminderFormModal isOpen={modalOpen} onClose={() => setModalOpen(false)} onSave={(data) => setReminders(p=>[...p, {...data, id: Date.now().toString()}])} onUpdate={(id, data) => setReminders(p=>p.map(r=>r.id===id?{...r, ...data}:r))} onDelete={(id) => setReminders(p=>p.filter(r=>r.id!==id))} reminder={editReminder} selectedDateISO={selectedDayISO} />
+      <ReminderFormModal isOpen={modalOpen} onClose={() => { setModalOpen(false); setEditReminder(null); }} onSave={handleSaveReminder} onUpdate={handleUpdateReminder} onDelete={handleDeleteReminder} reminder={editReminder} selectedDateISO={selectedDayISO} />
     </div>
   );
 };

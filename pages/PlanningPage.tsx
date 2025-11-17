@@ -7,6 +7,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/Dialog';
+import { supabase } from '../src/integrations/supabase/client';
 
 interface BudgetSectionProps {
   categories: Category[];
@@ -254,24 +255,110 @@ interface PlanningPageProps {
   transactions: Transaction[]; // Added transactions prop
   isLoading: boolean;
   addXp: (amount: number, reason: string) => void;
+  userId: string;
 }
 
-const PlanningPage: React.FC<PlanningPageProps> = ({ categories, budgets, setBudgets, goals, setGoals, accounts, adjustAccountBalance, setTransactions, addToast, transactions, isLoading, addXp }) => {
+const PlanningPage: React.FC<PlanningPageProps> = ({ categories, budgets, setBudgets, goals, setGoals, accounts, adjustAccountBalance, setTransactions, addToast, transactions, isLoading, addXp, userId }) => {
     
     const [viewingMonth, setViewingMonth] = useState(new Date());
 
-    const handleSetBudget = (categoryId: string, amount: number) => {
-      if (!budgets[categoryId] || budgets[categoryId] === 0) {
-        addXp(50, 'Novo orçamento');
+    const handleSetBudget = async (categoryId: string, amount: number) => {
+      try {
+        const isNew = !budgets[categoryId] || budgets[categoryId] === 0;
+        const month = monthKey(viewingMonth);
+
+        const { error } = await supabase
+          .from('budgets')
+          .upsert({
+            user_id: userId,
+            category_id: categoryId,
+            month: month,
+            amount: amount
+          }, {
+            onConflict: 'user_id,category_id,month'
+          });
+
+        if (error) throw error;
+
+        if (isNew) {
+          addXp(50, 'Novo orçamento');
+        }
+
+        setBudgets(p => ({...p, [categoryId]: amount}));
+        addToast('Orçamento salvo com sucesso!', 'success');
+      } catch (error) {
+        console.error('Erro ao salvar orçamento:', error);
+        addToast('Erro ao salvar orçamento. Tente novamente.', 'error');
       }
-      setBudgets(p => ({...p, [categoryId]: amount}));
     };
-    const handleAddGoal = (goal: Omit<Goal, 'id'>) => {
-      setGoals(p => [{...goal, id: Date.now().toString()}, ...p]);
-      addXp(100, 'Nova meta criada');
+    
+    const handleAddGoal = async (goal: Omit<Goal, 'id'>) => {
+      try {
+        const { data, error } = await supabase
+          .from('goals')
+          .insert({
+            user_id: userId,
+            name: goal.name,
+            target_amount: goal.targetAmount,
+            current_amount: goal.currentAmount
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        setGoals(p => [{
+          id: data.id,
+          name: data.name,
+          targetAmount: data.target_amount,
+          currentAmount: data.current_amount
+        }, ...p]);
+        
+        addXp(100, 'Nova meta criada');
+        addToast('Meta criada com sucesso!', 'success');
+      } catch (error) {
+        console.error('Erro ao criar meta:', error);
+        addToast('Erro ao criar meta. Tente novamente.', 'error');
+      }
     };
-    const handleUpdateGoal = (id: string, updates: Partial<Goal>) => setGoals(p => p.map(g => g.id === id ? {...g, ...updates} : g));
-    const handleRemoveGoal = (id: string) => setGoals(p => p.filter(g => g.id !== id));
+    
+    const handleUpdateGoal = async (id: string, updates: Partial<Goal>) => {
+      try {
+        const { error } = await supabase
+          .from('goals')
+          .update({
+            name: updates.name,
+            target_amount: updates.targetAmount,
+            current_amount: updates.currentAmount
+          })
+          .eq('id', id);
+
+        if (error) throw error;
+
+        setGoals(p => p.map(g => g.id === id ? {...g, ...updates} : g));
+        addToast('Meta atualizada com sucesso!', 'success');
+      } catch (error) {
+        console.error('Erro ao atualizar meta:', error);
+        addToast('Erro ao atualizar meta. Tente novamente.', 'error');
+      }
+    };
+    
+    const handleRemoveGoal = async (id: string) => {
+      try {
+        const { error } = await supabase
+          .from('goals')
+          .delete()
+          .eq('id', id);
+
+        if (error) throw error;
+
+        setGoals(p => p.filter(g => g.id !== id));
+        addToast('Meta excluída com sucesso!', 'success');
+      } catch (error) {
+        console.error('Erro ao excluir meta:', error);
+        addToast('Erro ao excluir meta. Tente novamente.', 'error');
+      }
+    };
     
     const createGoalTransaction = (goal: Goal, amount: number, accountId: string, isWithdraw: boolean) => {
         const dateStr = new Date().toISOString().slice(0, 10);
