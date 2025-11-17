@@ -590,7 +590,7 @@ const App: React.FC = () => {
                 const invoiceM = getInvoiceMonthKey(s.postingDate, card.closingDay);
                 if (invoiceM === month && !s.paid) {
                     totalPaid += s.amount;
-                    accountId = tx.account;
+                    accountId = tx.account; // Assuming all transactions in an invoice share the same account
                     installmentsToUpdate.push({
                         transaction_id: tx.id,
                         installment_number: s.id,
@@ -604,7 +604,25 @@ const App: React.FC = () => {
 
         if (accountId && totalPaid > 0 && installmentsToUpdate.length > 0) {
             try {
-                // Update installments in Supabase
+                // 1. Create a consolidated transaction for the invoice payment
+                const { error: newTxError } = await supabase
+                    .from('transactions')
+                    .insert({
+                        description: `Pagamento Fatura ${card.name} - ${month}`,
+                        amount: totalPaid,
+                        date: new Date().toISOString().slice(0, 10),
+                        type: 'invoice_payment', // Special type
+                        is_income: false,
+                        account_id: accountId,
+                        card_id: cardId,
+                        paid: true,
+                        installments: 1,
+                        user_id: user!.id
+                    });
+
+                if (newTxError) throw newTxError;
+
+                // 2. Update all individual installments to paid
                 for (const inst of installmentsToUpdate) {
                     const { error } = await supabase
                         .from('installments')
@@ -619,15 +637,18 @@ const App: React.FC = () => {
                     if (error) throw error;
                 }
 
-                // Update account balance
+                // 3. Update account balance (this might be redundant if the new tx triggers it)
+                const currentBalance = accounts.find(a => a.id === accountId)!.balance;
                 const { error: balanceError } = await supabase
                     .from('accounts')
-                    .update({ balance: accounts.find(a => a.id === accountId)!.balance - totalPaid })
+                    .update({ balance: currentBalance - totalPaid })
                     .eq('id', accountId);
 
                 if (balanceError) throw balanceError;
 
                 addToast(`Fatura de ${toCurrency(totalPaid)} paga!`, 'success');
+                supabaseData.refetch();
+
             } catch (error) {
                 console.error('Erro ao pagar fatura:', error);
                 addToast('Erro ao pagar fatura. Tente novamente.', 'error');
@@ -987,6 +1008,13 @@ const App: React.FC = () => {
     };
 
     const handleDeleteRecurring = async (id: string) => {
+        const hasTransactions = transactions.some(t => t.recurringId === id);
+
+        if (hasTransactions) {
+            addToast('Não é possível excluir. Esta recorrência já gerou transações.', 'error');
+            return;
+        }
+
         try {
             const { error } = await supabase
                 .from('recurring_items')
@@ -1370,10 +1398,10 @@ const App: React.FC = () => {
             case 'planning': return <PlanningPage 
                 categories={categories} budgets={budgets} setBudgets={setBudgets} goals={goals} setGoals={setGoals} 
                 accounts={accounts} adjustAccountBalance={adjustAccountBalance} setTransactions={setTransactions} 
-                addToast={addToast} transactions={transactions} isLoading={isLoading} addXp={addXp} userId={user!.id}
+                addToast={addToast} transactions={transactions} isLoading={isLoading} addXp={addXp} userId={user.id}
             />;
             case 'reports': return <ReportsPage transactions={transactions} accounts={accounts} cards={cards} categories={categories} getCategoryName={getCategoryName} />;
-            case 'calendar': return <CalendarPage transactions={transactions} reminders={reminders} setReminders={setReminders} getInstallmentDueDate={getInstallmentDueDate} getCategoryName={getCategoryName} userId={user!.id} addToast={addToast} />;
+            case 'calendar': return <CalendarPage transactions={transactions} reminders={reminders} setReminders={setReminders} getInstallmentDueDate={getInstallmentDueDate} getCategoryName={getCategoryName} userId={user.id} addToast={addToast} />;
             case 'profile': return ownerProfile ? <ProfilePage 
                 ownerProfile={ownerProfile} users={users} subscription={subscription}
                 onUpdateUser={(user) => setUsers(prev => prev.map(u => u.id === user.id ? user : u))}
@@ -1399,6 +1427,18 @@ const App: React.FC = () => {
             default: return null;
         }
     };
+
+    // Early return if user is not loaded yet
+    if (!user) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-background">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Carregando...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className={cn("bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-50", themePreference === 'system' ? '' : themePreference)}>
@@ -1440,7 +1480,7 @@ const App: React.FC = () => {
             <Dialog open={modal === 'addTransfer' || modal === 'editTransfer'} onOpenChange={() => {setModal(null); setSelectedTransfer(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editTransfer' ? 'Editar' : 'Nova'} Transferência</DialogTitle></DialogHeader><TransferForm accounts={accounts} transfer={selectedTransfer} onTransfer={onAddTransfer} onUpdate={(t) => {setTransfers(p=>p.map(tr=>tr.id===t.id?t:tr)); setModal(null)}} onDismiss={() => setModal(null)} onError={addToast} isLoading={isLoading}/></DialogContent></Dialog>
             <Dialog open={modal === 'accounts'} onOpenChange={() => setModal(null)}><DialogContent className="w-full"><DialogHeader><DialogTitle>Contas</DialogTitle></DialogHeader><AccountList accounts={accounts} setAccounts={setAccounts} adjustAccountBalance={adjustAccountBalance} setTransactions={setTransactions} addToast={addToast} userId={user!.id} transactions={transactions} onConfirmDelete={handleDeleteAccount} /><AccountForm setAccounts={setAccounts} setTransactions={setTransactions} /></DialogContent></Dialog>
             <Dialog open={modal === 'cards'} onOpenChange={() => setModal(null)}><DialogContent className="w-full"><DialogHeader><DialogTitle>Cartões</DialogTitle></DialogHeader><CardList cards={cards} setCards={setCards} transactions={transactions} addToast={addToast} onConfirmDelete={(c) => {}} accounts={accounts}/><CardForm setCards={setCards} accounts={accounts} addToast={addToast}/></DialogContent></Dialog>
-            <Dialog open={modal === 'categories'} onOpenChange={() => setModal(null)}><DialogContent className="flex flex-col"><DialogHeader><DialogTitle>Categorias</DialogTitle></DialogHeader><CategoryManager categories={categories} setCategories={setCategories} transactions={transactions} recurring={recurring} /></DialogContent></Dialog>
+            <Dialog open={modal === 'categories'} onOpenChange={() => setModal(null)}><DialogContent className="flex flex-col"><DialogHeader><DialogTitle>Categorias</DialogTitle></DialogHeader><CategoryManager categories={categories} setCategories={setCategories} transactions={transactions} recurring={recurring} userId={user.id} addToast={addToast} /></DialogContent></Dialog>
             <ImportTransactionsModal isOpen={modal === 'import'} onClose={() => setModal(null)} accounts={accounts} onConfirmImport={(txs) => {}} addToast={addToast} isLoading={isLoading} />
 
             {/* Global UI */}

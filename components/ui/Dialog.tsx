@@ -109,3 +109,7 @@ export const DialogHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ c
 export const DialogTitle: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = ({ children, ...props }) => (
   <h2 className="text-xl font-semibold" {...props}>{children}</h2>
 );
+
+export const DialogFooter: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className, children, ...props }) => (
+  <div className={cn("flex justify-end gap-2 pt-4", className)} {...props}>{children}</div>
+);
