@@ -76,7 +76,14 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ isOpen, onClose, onSu
     if (!form.desc || !amount) return;
 
     const installmentsCount = form.type === 'cash' ? 1 : form.installments;
-    const schedule = buildInstallments(form.date, amount, installmentsCount);
+    const cardData = isCardExpense ? cards.find(c => c.id === selectedCard) : null;
+    const schedule = buildInstallments(
+        form.date,
+        amount,
+        installmentsCount,
+        isCardExpense,
+        cardData?.closingDay
+    );
     
     if (form.isIncome || form.type === 'cash') {
       schedule.forEach(s => { s.paid = true; s.paymentDate = form.date; s.paidAmount = s.amount; });
