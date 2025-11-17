@@ -88,7 +88,17 @@ const BudgetSection: React.FC<BudgetSectionProps> = ({ categories, budgets, onSe
                                                 <div className="space-y-2">
                                                     <Label htmlFor={`budget-${cat.id}`}>{cat.name}</Label>
                                                     <div className="flex items-center gap-2">
-                                                        <Input id={`budget-${cat.id}`} type="number" min="0" step="0.01" value={tempBudgetValue} onChange={(e) => setTempBudgetValue(e.target.value)} />
+                                                        <Input
+                                                            id={`budget-${cat.id}`}
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.01"
+                                                            value={tempBudgetValue}
+                                                            onChange={(e) => setTempBudgetValue(e.target.value)}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter') handleSaveEdit(cat.id);
+                                                            }}
+                                                        />
                                                         <Button size="sm" onClick={() => handleSaveEdit(cat.id)}>Salvar</Button>
                                                         <Button size="sm" variant="ghost" onClick={() => setEditingCatId(null)}><X className="w-4 h-4" /></Button>
                                                     </div>
@@ -121,17 +131,26 @@ interface GoalsSectionProps {
     onRemoveGoal: (id: string) => void;
     onAddFunds: (goalId: string, amount: number, accountId: string) => void;
     onWithdrawFunds: (goalId: string, amount: number, accountId: string) => void;
-    addToast: (message: string, type?: 'error' | 'success') => void;
     isLoading: boolean;
+    modalOpen: 'add' | 'edit' | 'funds' | 'withdraw' | null;
+    setModalOpen: React.Dispatch<React.SetStateAction<'add' | 'edit' | 'funds' | 'withdraw' | null>>;
+    selectedGoal: Goal | null;
+    setSelectedGoal: React.Dispatch<React.SetStateAction<Goal | null>>;
+    form: { name: string; targetAmount: string; };
+    setForm: React.Dispatch<React.SetStateAction<{ name: string; targetAmount: string; }>>;
+    fundsAmount: string;
+    setFundsAmount: React.Dispatch<React.SetStateAction<string>>;
+    fundsAccount: string;
+    setFundsAccount: React.Dispatch<React.SetStateAction<string>>;
 }
 
-const GoalsSection: React.FC<GoalsSectionProps> = ({ goals, accounts, onAddGoal, onUpdateGoal, onRemoveGoal, onAddFunds, onWithdrawFunds, addToast, isLoading }) => {
-    const [modalOpen, setModalOpen] = useState<'add' | 'edit' | 'funds' | 'withdraw' | null>(null);
-    const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
-    const [form, setForm] = useState({ name: '', targetAmount: '' });
-    const [fundsAmount, setFundsAmount] = useState('');
-    const [fundsAccount, setFundsAccount] = useState(accounts[0]?.id || '');
-
+const GoalsSection: React.FC<GoalsSectionProps> = ({
+    goals, accounts, onAddGoal, onUpdateGoal, onRemoveGoal,
+    onAddFunds, onWithdrawFunds, isLoading,
+    // Modal state and handlers passed from parent
+    modalOpen, setModalOpen, selectedGoal, setSelectedGoal,
+    form, setForm, fundsAmount, setFundsAmount, fundsAccount, setFundsAccount
+}) => {
     const handleGoalSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         
@@ -262,11 +281,23 @@ const PlanningPage: React.FC<PlanningPageProps> = ({ categories, budgets, setBud
     
     const [viewingMonth, setViewingMonth] = useState(new Date());
 
-    const handleSetBudget = async (categoryId: string, amount: number) => {
-      try {
-        const isNew = !budgets[categoryId] || budgets[categoryId] === 0;
-        const month = monthKey(viewingMonth);
+    // State for GoalsSection modal lifted up to PlanningPage
+    const [goalModalOpen, setGoalModalOpen] = useState<'add' | 'edit' | 'funds' | 'withdraw' | null>(null);
+    const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
+    const [goalForm, setGoalForm] = useState({ name: '', targetAmount: '' });
+    const [goalFundsAmount, setGoalFundsAmount] = useState('');
+    const [goalFundsAccount, setGoalFundsAccount] = useState(accounts[0]?.id || '');
 
+    const handleSetBudget = async (categoryId: string, amount: number) => {
+      const isNew = !budgets[categoryId] || budgets[categoryId] === 0;
+      const month = monthKey(viewingMonth);
+      const previousBudgets = { ...budgets };
+
+      // Optimistic update
+      setBudgets(p => ({...p, [categoryId]: amount}));
+      addToast('Orçamento salvo com sucesso!', 'success');
+
+      try {
         const { error } = await supabase
           .from('budgets')
           .upsert({
@@ -283,12 +314,11 @@ const PlanningPage: React.FC<PlanningPageProps> = ({ categories, budgets, setBud
         if (isNew) {
           addXp(50, 'Novo orçamento');
         }
-
-        setBudgets(p => ({...p, [categoryId]: amount}));
-        addToast('Orçamento salvo com sucesso!', 'success');
       } catch (error) {
         console.error('Erro ao salvar orçamento:', error);
-        addToast('Erro ao salvar orçamento. Tente novamente.', 'error');
+        addToast('Erro ao salvar orçamento. A alteração foi desfeita.', 'error');
+        // Rollback on error
+        setBudgets(previousBudgets);
       }
     };
     
@@ -404,7 +434,26 @@ const PlanningPage: React.FC<PlanningPageProps> = ({ categories, budgets, setBud
               viewingMonth={viewingMonth}
               onMonthChange={setViewingMonth}
             />
-            <GoalsSection isLoading={isLoading} goals={goals} accounts={accounts} onAddGoal={handleAddGoal} onUpdateGoal={handleUpdateGoal} onRemoveGoal={handleRemoveGoal} onAddFunds={handleAddFunds} onWithdrawFunds={handleWithdrawFunds} addToast={addToast} />
+            <GoalsSection
+                isLoading={isLoading}
+                goals={goals}
+                accounts={accounts}
+                onAddGoal={handleAddGoal}
+                onUpdateGoal={handleUpdateGoal}
+                onRemoveGoal={handleRemoveGoal}
+                onAddFunds={handleAddFunds}
+                onWithdrawFunds={handleWithdrawFunds}
+                modalOpen={goalModalOpen}
+                setModalOpen={setGoalModalOpen}
+                selectedGoal={selectedGoal}
+                setSelectedGoal={setSelectedGoal}
+                form={goalForm}
+                setForm={setGoalForm}
+                fundsAmount={goalFundsAmount}
+                setFundsAmount={setGoalFundsAmount}
+                fundsAccount={goalFundsAccount}
+                setFundsAccount={setGoalFundsAccount}
+            />
         </div>
     );
 };
