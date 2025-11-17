@@ -218,8 +218,8 @@ const CategoryManager: React.FC<{
   };
 
   return (
-    <div className="flex flex-col flex-1">
-      <div className="flex-1 overflow-y-auto pr-2 space-y-4 min-h-0 mb-4">
+    <div>
+      <div className="overflow-y-auto pr-2 space-y-4 mb-4 max-h-96">
         {Object.keys(categoryGroups).sort().map(groupName => (
           <div key={groupName}>
             {editingGroup === groupName ? (
@@ -1575,7 +1575,7 @@ const App: React.FC = () => {
             <Dialog open={modal === 'addTransfer' || modal === 'editTransfer'} onOpenChange={() => {setModal(null); setSelectedTransfer(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editTransfer' ? 'Editar' : 'Nova'} Transferência</DialogTitle></DialogHeader><TransferForm accounts={accounts} transfer={selectedTransfer} onTransfer={onAddTransfer} onUpdate={(t) => {setTransfers(p=>p.map(tr=>tr.id===t.id?t:tr)); setModal(null)}} onDismiss={() => setModal(null)} onError={addToast} isLoading={isLoading}/></DialogContent></Dialog>
             <Dialog open={modal === 'accounts'} onOpenChange={() => setModal(null)}><DialogContent className="w-full"><DialogHeader><DialogTitle>Contas</DialogTitle></DialogHeader><AccountList accounts={accounts} setAccounts={setAccounts} adjustAccountBalance={adjustAccountBalance} setTransactions={setTransactions} addToast={addToast} onConfirmDelete={(acc) => {}} />{user && <AccountForm setAccounts={setAccounts} setTransactions={setTransactions} userId={user.id} addToast={addToast} />}</DialogContent></Dialog>
             <Dialog open={modal === 'cards'} onOpenChange={() => setModal(null)}><DialogContent className="w-full"><DialogHeader><DialogTitle>Cartões</DialogTitle></DialogHeader><CardList cards={cards} setCards={setCards} transactions={transactions} addToast={addToast} onConfirmDelete={(c) => {}} accounts={accounts}/>{user && <CardForm setCards={setCards} accounts={accounts} addToast={addToast} userId={user.id}/>}</DialogContent></Dialog>
-            <Dialog open={modal === 'categories'} onOpenChange={() => setModal(null)}><DialogContent className="flex flex-col"><DialogHeader><DialogTitle>Categorias</DialogTitle></DialogHeader>{user && <CategoryManager categories={categories} setCategories={setCategories} transactions={transactions} recurring={recurring} userId={user.id} addToast={addToast} />}</DialogContent></Dialog>
+            <Dialog open={modal === 'categories'} onOpenChange={() => setModal(null)}><DialogContent><DialogHeader><DialogTitle>Categorias</DialogTitle></DialogHeader>{user && <CategoryManager categories={categories} setCategories={setCategories} transactions={transactions} recurring={recurring} userId={user.id} addToast={addToast} />}</DialogContent></Dialog>
             <ImportTransactionsModal isOpen={modal === 'import'} onClose={() => setModal(null)} accounts={accounts} onConfirmImport={(txs) => {}} addToast={addToast} isLoading={isLoading} />
 
             {/* Global UI */}
