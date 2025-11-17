@@ -62,7 +62,7 @@ const AccountForm: React.FC<AccountFormProps> = ({ setAccounts, setTransactions,
       if (initialBalance !== 0 && newAccount) {
         const dateStr = new Date().toISOString().slice(0, 10);
         
-        const { error: txError } = await supabase
+        const { data: newTx, error: txError } = await supabase
           .from('transactions')
           .insert({
             description: `Saldo Inicial (${name})`,
@@ -77,21 +77,25 @@ const AccountForm: React.FC<AccountFormProps> = ({ setAccounts, setTransactions,
             category_id: null,
             paid: true,
             user_id: userId
-          });
+          })
+          .select()
+          .single();
 
         if (txError) throw txError;
 
         // Create installment record
-        const installment = buildInstallments(dateStr, Math.abs(initialBalance), 1)[0];
-        await supabase.from('installments').insert({
-          transaction_id: `adj_init_${newAccount.id}`,
-          installment_number: installment.id,
-          amount: installment.amount,
-          posting_date: installment.postingDate,
-          paid: true,
-          payment_date: dateStr,
-          paid_amount: Math.abs(initialBalance)
-        });
+        if (newTx) {
+          const installment = buildInstallments(dateStr, Math.abs(initialBalance), 1)[0];
+          await supabase.from('installments').insert({
+            transaction_id: newTx.id,
+            installment_number: installment.installmentNumber,
+            amount: installment.amount,
+            posting_date: installment.postingDate,
+            paid: true,
+            payment_date: dateStr,
+            paid_amount: Math.abs(initialBalance)
+          });
+        }
       }
 
       addToast('Conta adicionada com sucesso!', 'success');

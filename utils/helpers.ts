@@ -112,7 +112,7 @@ export const buildInstallments = (
     remaining -= amount;
     
     installments.push({
-      id: i,
+      id: `inst_${Date.now()}_${i}`,
       installmentNumber: i,
       amount: amount,
       postingDate: postingDate.toISOString().slice(0, 10),
