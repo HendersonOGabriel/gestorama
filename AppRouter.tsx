@@ -100,8 +100,8 @@ export const AppRouter: React.FC = () => {
         <Route
           path="/app/*"
           element={
-            session ? (
-              <App user={user!} session={session} />
+            session && user ? (
+              <App />
             ) : (
               <Navigate to="/" replace />
             )
