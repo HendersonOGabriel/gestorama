@@ -118,6 +118,18 @@ const CardList: React.FC<CardListProps> = ({ cards, setCards, transactions, addT
   };
 
 
+  // Calculate available limit for each card
+  const calculateAvailableLimit = (card: Card) => {
+    const openInvoicesTotal = transactions
+      .filter(tx => tx.card === card.id && !tx.isIncome)
+      .reduce((sum, tx) => {
+        const unpaidInstallments = tx.installmentsSchedule.filter(inst => !inst.paid);
+        return sum + unpaidInstallments.reduce((instSum, inst) => instSum + inst.amount, 0);
+      }, 0);
+    
+    return card.limit - openInvoicesTotal;
+  };
+
   if (cards.length === 0) {
     return (
       <div className="text-center py-10 px-4 border-2 border-dashed rounded-lg">
@@ -162,7 +174,12 @@ const CardList: React.FC<CardListProps> = ({ cards, setCards, transactions, addT
                   <div className="text-sm text-slate-500 dark:text-slate-400">
                     {accounts.find(a => a.id === c.accountId)?.name || 'Conta não encontrada'}
                   </div>
-                  <div className="text-xs text-slate-500">Fecha: {c.closingDay} | Vence: {c.dueDay} | Limite: {toCurrency(c.limit)}</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">
+                    Fecha: {c.closingDay} | Vence: {c.dueDay}
+                  </div>
+                  <div className="text-xs font-medium">
+                    Limite: {toCurrency(c.limit)} | Disponível: <span className={cn(calculateAvailableLimit(c) >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400")}>{toCurrency(calculateAvailableLimit(c))}</span>
+                  </div>
               </div>
               <div className="flex flex-wrap gap-2 justify-end">
                 <Button size="sm" variant="outline" onClick={() => setEditCard(c)}>Editar</Button>

@@ -411,23 +411,114 @@ const App: React.FC = () => {
         setAccounts(prev => prev.map(acc => acc.id === accountId ? { ...acc, balance: acc.balance + delta } : acc));
     }, []);
 
-    const handleTransactionSubmit = (tx: Transaction) => {
-      const existing = transactions.find(t => t.id === tx.id);
-      if (existing) {
-        // TODO: Handle balance adjustment for edited transactions
-        setTransactions(prev => prev.map(t => t.id === tx.id ? tx : t));
-        addToast('Transação atualizada com sucesso!', 'success');
-      } else {
-        setTransactions(prev => [tx, ...prev]);
+    const handleTransactionSubmit = async (tx: Transaction) => {
+      try {
+        const existing = transactions.find(t => t.id === tx.id);
+        
+        if (existing) {
+          // Update existing transaction
+          const { error: txError } = await supabase
+            .from('transactions')
+            .update({
+              description: tx.desc,
+              amount: tx.amount,
+              date: tx.date,
+              installments: tx.installments,
+              type: tx.type,
+              is_income: tx.isIncome,
+              person: tx.person,
+              account_id: tx.account,
+              card_id: tx.card,
+              category_id: tx.categoryId,
+              paid: tx.paid,
+              reminder_days_before: tx.reminderDaysBefore
+            })
+            .eq('id', tx.id);
 
-        // Adjust account balance only for new, non-card transactions
-        if (tx.type !== 'card') {
+          if (txError) throw txError;
+
+          // Delete existing installments
+          await supabase.from('installments').delete().eq('transaction_id', tx.id);
+
+          // Insert new installments
+          const installmentsData = tx.installmentsSchedule.map(inst => ({
+            transaction_id: tx.id,
+            installment_number: inst.id,
+            amount: inst.amount,
+            posting_date: inst.postingDate,
+            paid: inst.paid,
+            payment_date: inst.paymentDate,
+            paid_amount: inst.paidAmount
+          }));
+
+          const { error: instError } = await supabase
+            .from('installments')
+            .insert(installmentsData);
+
+          if (instError) throw instError;
+
+          addToast('Transação atualizada com sucesso!', 'success');
+          supabaseData.refetch();
+        } else {
+          // Create new transaction
+          const { data: newTx, error: txError } = await supabase
+            .from('transactions')
+            .insert({
+              description: tx.desc,
+              amount: tx.amount,
+              date: tx.date,
+              installments: tx.installments,
+              type: tx.type,
+              is_income: tx.isIncome,
+              person: tx.person,
+              account_id: tx.account,
+              card_id: tx.card,
+              category_id: tx.categoryId,
+              paid: tx.paid,
+              reminder_days_before: tx.reminderDaysBefore,
+              user_id: user!.id
+            })
+            .select()
+            .single();
+
+          if (txError) throw txError;
+
+          // Create installments
+          const installmentsData = tx.installmentsSchedule.map(inst => ({
+            transaction_id: newTx.id,
+            installment_number: inst.id,
+            amount: inst.amount,
+            posting_date: inst.postingDate,
+            paid: inst.paid,
+            payment_date: inst.paymentDate,
+            paid_amount: inst.paidAmount
+          }));
+
+          const { error: instError } = await supabase
+            .from('installments')
+            .insert(installmentsData);
+
+          if (instError) throw instError;
+
+          // Adjust account balance only for new, non-card, paid transactions
+          if (tx.type !== 'card' && tx.paid) {
             const amountToAdjust = tx.isIncome ? tx.amount : -tx.amount;
-            adjustAccountBalance(tx.account, amountToAdjust);
-        }
+            const account = accounts.find(a => a.id === tx.account);
+            if (account) {
+              await supabase
+                .from('accounts')
+                .update({ balance: account.balance + amountToAdjust })
+                .eq('id', tx.account);
+            }
+          }
 
-        addToast('Transação adicionada com sucesso!', 'success');
-        addXp(10, 'Transação adicionada');
+          addToast('Transação adicionada com sucesso!', 'success');
+          addXp(10, 'Transação adicionada');
+          supabaseData.refetch();
+        }
+      } catch (error) {
+        console.error('Erro ao salvar transação:', error);
+        addToast('Erro ao salvar transação. Tente novamente.', 'error');
       }
     };
 
@@ -798,6 +889,99 @@ const App: React.FC = () => {
         }
     };
 
+    const handleDeleteTransaction = async (id: string) => {
+        try {
+            const tx = transactions.find(t => t.id === id);
+            if (!tx) return;
+
+            // Revert balance if transaction was paid
+            if (tx.paid && tx.type !== 'card') {
+                const account = accounts.find(a => a.id === tx.account);
+                if (account) {
+                    const amountToRevert = tx.isIncome ? -tx.amount : tx.amount;
+                    await supabase
+                        .from('accounts')
+                        .update({ balance: account.balance + amountToRevert })
+                        .eq('id', tx.account);
+                }
+            }
+
+            // Delete installments first
+            await supabase.from('installments').delete().eq('transaction_id', id);
+
+            // Delete transaction
+            const { error } = await supabase
+                .from('transactions')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+
+            addToast('Transação excluída com sucesso!', 'success');
+            setSelectedTransaction(null);
+            supabaseData.refetch();
+        } catch (error) {
+            console.error('Erro ao excluir transação:', error);
+            addToast('Erro ao excluir transação. Tente novamente.', 'error');
+        }
+    };
+
+    const handleDeleteRecurring = async (id: string) => {
+        try {
+            const { error } = await supabase
+                .from('recurring_items')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+
+            addToast('Recorrência excluída com sucesso!', 'success');
+            supabaseData.refetch();
+        } catch (error) {
+            console.error('Erro ao excluir recorrência:', error);
+            addToast('Erro ao excluir recorrência. Tente novamente.', 'error');
+        }
+    };
+
+    const handleDeleteTransfer = async (id: string) => {
+        try {
+            const transfer = transfers.find(t => t.id === id);
+            if (!transfer) return;
+
+            // Revert balances
+            const fromAccount = accounts.find(a => a.id === transfer.fromAccount);
+            const toAccount = accounts.find(a => a.id === transfer.toAccount);
+
+            if (fromAccount) {
+                await supabase
+                    .from('accounts')
+                    .update({ balance: fromAccount.balance + Number(transfer.amount) })
+                    .eq('id', transfer.fromAccount);
+            }
+
+            if (toAccount) {
+                await supabase
+                    .from('accounts')
+                    .update({ balance: toAccount.balance - Number(transfer.amount) })
+                    .eq('id', transfer.toAccount);
+            }
+
+            // Delete transfer
+            const { error } = await supabase
+                .from('transfers')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+
+            addToast('Transferência excluída com sucesso!', 'success');
+            supabaseData.refetch();
+        } catch (error) {
+            console.error('Erro ao excluir transferência:', error);
+            addToast('Erro ao excluir transferência. Tente novamente.', 'error');
+        }
+    };
+
     const handleRecurringUpdate = async (item: RecurringItem) => {
         try {
             // Validate recurring data
@@ -1073,9 +1257,9 @@ const App: React.FC = () => {
                 onUnpayInvoice={handleUnpayInvoice} onAddTransaction={() => {setSelectedTransaction(null); setModal('addTransaction')}}
                 onViewTransaction={(tx) => setSelectedTransaction(tx)}
                 onAddRecurring={() => {setSelectedRecurring(null); setModal('addRecurring')}} onEditRecurring={(item) => {setSelectedRecurring(item); setModal('editRecurring')}}
-                onUpdateRecurring={setRecurring as any} onRemoveRecurring={setRecurring as any}
+                onUpdateRecurring={setRecurring as any} onRemoveRecurring={handleDeleteRecurring}
                 onAddTransfer={() => {setSelectedTransfer(null); setModal('addTransfer')}} onEditTransfer={(t) => {setSelectedTransfer(t); setModal('editTransfer')}}
-                onDeleteTransfer={(id) => setTransfers(p => p.filter(t => t.id !== id))} onOpenFilter={() => setModal('filters')}
+                onDeleteTransfer={handleDeleteTransfer} onOpenFilter={() => setModal('filters')}
                 ownerProfile={ownerProfile} isLoading={isLoading}
                 focusedInvoice={focusedInvoice} setFocusedInvoice={setFocusedInvoice}
              /> : null;
@@ -1087,10 +1271,10 @@ const App: React.FC = () => {
             case 'planning': return <PlanningPage 
                 categories={categories} budgets={budgets} setBudgets={setBudgets} goals={goals} setGoals={setGoals} 
                 accounts={accounts} adjustAccountBalance={adjustAccountBalance} setTransactions={setTransactions} 
-                addToast={addToast} transactions={transactions} isLoading={isLoading} addXp={addXp}
+                addToast={addToast} transactions={transactions} isLoading={isLoading} addXp={addXp} userId={user!.id}
             />;
             case 'reports': return <ReportsPage transactions={transactions} accounts={accounts} cards={cards} categories={categories} getCategoryName={getCategoryName} />;
-            case 'calendar': return <CalendarPage transactions={transactions} reminders={reminders} setReminders={setReminders} getInstallmentDueDate={getInstallmentDueDate} getCategoryName={getCategoryName}/>;
+            case 'calendar': return <CalendarPage transactions={transactions} reminders={reminders} setReminders={setReminders} getInstallmentDueDate={getInstallmentDueDate} getCategoryName={getCategoryName} userId={user!.id} addToast={addToast} />;
             case 'profile': return ownerProfile ? <ProfilePage 
                 ownerProfile={ownerProfile} users={users} subscription={subscription}
                 onUpdateUser={(user) => setUsers(prev => prev.map(u => u.id === user.id ? user : u))}
@@ -1150,7 +1334,7 @@ const App: React.FC = () => {
             
             {/* Modals */}
             <TransactionForm isOpen={modal === 'addTransaction' || modal === 'editTransaction'} onClose={() => {setModal(null); setSelectedTransaction(null)}} onSubmit={handleTransactionSubmit} transaction={selectedTransaction} accounts={accounts} cards={cards} categories={categories} isLoading={isLoading} />
-            <TransactionDetailModal transaction={selectedTransaction} onClose={() => setSelectedTransaction(null)} onEdit={(tx) => {setSelectedTransaction(tx); setModal('editTransaction')}} onDelete={(id) => setTransactions(p => p.filter(t => t.id !== id))} onPay={(details) => setPayingInstallment(details)} onUnpay={handleUnpayInstallment} getInstallmentDueDate={getInstallmentDueDate} getCategoryName={getCategoryName} accounts={accounts} cards={cards} onFocusInvoice={handleFocusInvoice} />
+            <TransactionDetailModal transaction={selectedTransaction} onClose={() => setSelectedTransaction(null)} onEdit={(tx) => {setSelectedTransaction(tx); setModal('editTransaction')}} onDelete={handleDeleteTransaction} onPay={(details) => setPayingInstallment(details)} onUnpay={handleUnpayInstallment} getInstallmentDueDate={getInstallmentDueDate} getCategoryName={getCategoryName} accounts={accounts} cards={cards} onFocusInvoice={handleFocusInvoice} />
             <PaymentModal payingInstallment={payingInstallment} onClose={() => setPayingInstallment(null)} onConfirm={handlePayInstallment} />
             <TransactionFilterModal isOpen={modal === 'filters'} onClose={() => setModal(null)} onApply={setFilters} onClear={() => setFilters({ description: '', categoryId: '', accountId: '', cardId: '', status: 'all', startDate: '', endDate: '' })} initialFilters={filters} accounts={accounts} cards={cards} categories={categories} />
             <Dialog open={modal === 'addRecurring' || modal === 'editRecurring'} onOpenChange={() => {setModal(null); setSelectedRecurring(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editRecurring' ? 'Editar' : 'Adicionar'} Recorrência</DialogTitle></DialogHeader><RecurringForm recurringItem={selectedRecurring} onAdd={(item) => {setRecurring(p=>[...p, {...item, id: Date.now().toString()}]); setModal(null);}} onUpdate={(item) => {setRecurring(p=>p.map(r=>r.id===item.id?item:r)); setModal(null);}} accounts={accounts} cards={cards} categories={categories} onClose={() => setModal(null)} isLoading={isLoading}/></DialogContent></Dialog>
