@@ -113,6 +113,7 @@ export const buildInstallments = (
     
     installments.push({
       id: i,
+      installmentNumber: i,
       amount: amount,
       postingDate: postingDate.toISOString().slice(0, 10),
       paid: false,

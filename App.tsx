@@ -554,7 +554,7 @@ const App: React.FC = () => {
             // Create installments
             const installmentsData = tx.installmentsSchedule.map(inst => ({
               transaction_id: newTx.id,
-              installment_number: inst.id,
+              installment_number: inst.installmentNumber,
               amount: inst.amount,
               posting_date: inst.postingDate,
               paid: inst.paid,
