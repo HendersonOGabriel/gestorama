@@ -70,7 +70,7 @@ const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
             {transaction.isIncome ? '+' : '-'} {toCurrency(transaction.amount)}
           </p>
         </DialogHeader>
-        <div className="flex flex-col gap-4 max-h-[70vh]">
+        <div className="space-y-3 mt-4">
           {/* Details Section */}
           <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg space-y-3">
             <DetailItem icon={<Calendar size={16} />} label="Data da Compra" value={displayDate(transaction.date)} />
@@ -96,7 +96,7 @@ const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
               <h4 className="font-semibold mb-2 text-md">
                 {transaction.installments > 1 ? 'Parcelamento' : 'Pagamento'}
               </h4>
-              <div className="space-y-2 border border-slate-200 dark:border-slate-700 rounded-lg p-3 overflow-y-auto h-full">
+              <div className="space-y-2 border border-slate-200 dark:border-slate-700 rounded-lg p-3 max-h-64 overflow-y-auto">
                 {transaction.installmentsSchedule.map((inst, index) => {
                     const isAmountDifferent = inst.paid && inst.paidAmount !== null && inst.paidAmount !== inst.amount;
                     const isCardTx = transaction.type === 'card';
