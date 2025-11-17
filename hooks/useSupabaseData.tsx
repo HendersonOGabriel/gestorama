@@ -82,30 +82,39 @@ export const useSupabaseData = (userId: string | null) => {
 
   const fetchTransactions = useCallback(async () => {
     if (!userId) return [];
-    const { data, error } = await supabase
+
+    // 1. Fetch all transactions
+    const { data: transactionsData, error: transactionsError } = await supabase
       .from('transactions')
-      .select('*, installments(*)')
+      .select('*')
       .eq('user_id', userId)
       .order('date', { ascending: false });
     
-    if (error) throw error;
-    return (data || []).map(tx => ({
-      id: tx.id,
-      desc: tx.description,
-      amount: Number(tx.amount),
-      date: tx.date,
-      isIncome: tx.is_income,
-      type: tx.type as 'card' | 'cash' | 'prazo',
-      installments: Math.max(1, tx.installments ? tx.installments.length : 0),
-      account: tx.account_id,
-      card: tx.card_id,
-      categoryId: tx.category_id,
-      paid: tx.paid,
-      person: tx.person,
-      reminderDaysBefore: tx.reminder_days_before,
-      recurringSourceId: tx.recurring_source_id,
-      userId: tx.user_id,
-      installmentsSchedule: tx.installments ? tx.installments.map((inst: any) => ({
+    if (transactionsError) throw transactionsError;
+    if (!transactionsData || transactionsData.length === 0) return [];
+
+    const transactionIds = transactionsData.map(t => t.id);
+
+    // 2. Fetch all installments for those transactions
+    const { data: installmentsData, error: installmentsError } = await supabase
+      .from('installments')
+      .select('*')
+      .in('transaction_id', transactionIds);
+
+    if (installmentsError) throw installmentsError;
+
+    // 3. Group installments by transaction_id
+    const installmentsByTxId = (installmentsData || []).reduce((acc, inst) => {
+      if (!acc[inst.transaction_id]) {
+        acc[inst.transaction_id] = [];
+      }
+      acc[inst.transaction_id].push(inst);
+      return acc;
+    }, {} as Record<string, any[]>);
+
+    // 4. Map transactions and attach installments
+    return transactionsData.map(tx => {
+      const schedule = (installmentsByTxId[tx.id] || []).map((inst: any) => ({
         id: inst.id,
         installmentNumber: inst.installment_number,
         amount: Number(inst.amount),
@@ -113,8 +122,27 @@ export const useSupabaseData = (userId: string | null) => {
         postingDate: inst.posting_date,
         paymentDate: inst.payment_date,
         paidAmount: inst.paid_amount ? Number(inst.paid_amount) : null,
-      })).sort((a: any, b: any) => a.id - b.id) : []
-    }));
+      })).sort((a: any, b: any) => a.installmentNumber - b.installmentNumber);
+
+      return {
+        id: tx.id,
+        desc: tx.description,
+        amount: Number(tx.amount),
+        date: tx.date,
+        isIncome: tx.is_income,
+        type: tx.type as 'card' | 'cash' | 'prazo',
+        installments: tx.installments, // Now this is the correct number from the DB
+        account: tx.account_id,
+        card: tx.card_id,
+        categoryId: tx.category_id,
+        paid: tx.paid,
+        person: tx.person,
+        reminderDaysBefore: tx.reminder_days_before,
+        recurringSourceId: tx.recurring_source_id,
+        userId: tx.user_id,
+        installmentsSchedule: schedule
+      }
+    });
   }, [userId]);
 
   const fetchCategories = useCallback(async () => {
