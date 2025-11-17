@@ -738,6 +738,63 @@ const App: React.FC = () => {
         }
     };
 
+    const handlePayEarly = async (txId: string, paidAmount: number) => {
+      const tx = transactions.find(t => t.id === txId);
+      if (!tx) {
+          addToast('Transação não encontrada.', 'error');
+          return;
+      }
+
+      try {
+          const today = new Date().toISOString().slice(0, 10);
+
+          // Update all unpaid installments
+          const unpaidInstallments = tx.installmentsSchedule.filter(i => !i.paid);
+          let remainingPaidAmount = paidAmount;
+
+          for (const inst of unpaidInstallments) {
+              if (remainingPaidAmount <= 0) break;
+
+              const amountToPay = Math.min(inst.amount, remainingPaidAmount);
+
+              await supabase
+                  .from('installments')
+                  .update({
+                      paid: true,
+                      paid_amount: amountToPay,
+                      payment_date: today
+                  })
+                  .eq('transaction_id', txId)
+                  .eq('id', inst.id);
+
+              remainingPaidAmount -= amountToPay;
+          }
+
+          // Adjust account balance
+          const account = accounts.find(a => a.id === tx.account);
+          if (account) {
+              await supabase
+                  .from('accounts')
+                  .update({ balance: account.balance - paidAmount })
+                  .eq('id', account.id);
+          }
+
+          // Update transaction itself
+          await supabase
+              .from('transactions')
+              .update({ paid: true })
+              .eq('id', txId);
+
+          addToast('Transação quitada com sucesso!', 'success');
+          setSelectedTransaction(null);
+          supabaseData.refetch();
+
+      } catch (error) {
+          console.error("Error processing early payment:", error);
+          addToast('Erro ao quitar transação. Tente novamente.', 'error');
+      }
+    };
+
     const handleFocusInvoice = (cardId: string, month: string) => {
         setFocusedInvoice({ cardId, month });
         setCurrentPage('dashboard');
@@ -778,14 +835,17 @@ const App: React.FC = () => {
             }
 
             // Update account balance
-            const { error: balanceError } = await supabase
-                .from('accounts')
-                .update({ balance: accounts.find(a => a.id === details.accountId)!.balance + details.total })
-                .eq('id', details.accountId);
-
-            if (balanceError) throw balanceError;
+            const account = accounts.find(a => a.id === details.accountId);
+            if (account) {
+                const { error: balanceError } = await supabase
+                    .from('accounts')
+                    .update({ balance: account.balance + details.total })
+                    .eq('id', details.accountId);
+                if (balanceError) throw balanceError;
+            }
 
             addToast('Estorno da fatura realizado.', 'success');
+            supabaseData.refetch();
         } catch (error) {
             console.error('Erro ao estornar fatura:', error);
             addToast('Erro ao estornar fatura. Tente novamente.', 'error');
@@ -941,6 +1001,45 @@ const App: React.FC = () => {
             console.error('Erro ao excluir recorrência:', error);
             addToast('Erro ao excluir recorrência. Tente novamente.', 'error');
         }
+    };
+
+    const handleDeleteAccount = async (accountId: string, newAccountId?: string | null) => {
+      const accountToDelete = accounts.find(a => a.id === accountId);
+      if (!accountToDelete) {
+        addToast('Conta não encontrada.', 'error');
+        return;
+      }
+
+      const hasTransactions = transactions.some(t => t.account === accountId);
+
+      if (hasTransactions && !newAccountId) {
+        addToast('Esta conta possui transações. Selecione uma nova conta para transferi-las.', 'error');
+        return;
+      }
+
+      try {
+        if (hasTransactions && newAccountId) {
+          // Re-associate transactions
+          const { error: updateError } = await supabase
+            .from('transactions')
+            .update({ account_id: newAccountId })
+            .eq('account_id', accountId);
+          if (updateError) throw updateError;
+        }
+
+        // Delete account
+        const { error: deleteError } = await supabase
+          .from('accounts')
+          .delete()
+          .eq('id', accountId);
+        if (deleteError) throw deleteError;
+
+        addToast('Conta excluída com sucesso!', 'success');
+        supabaseData.refetch();
+      } catch (error) {
+        console.error('Erro ao excluir conta:', error);
+        addToast('Erro ao excluir conta. Tente novamente.', 'error');
+      }
     };
 
     const handleDeleteTransfer = async (id: string) => {
@@ -1334,12 +1433,12 @@ const App: React.FC = () => {
             
             {/* Modals */}
             <TransactionForm isOpen={modal === 'addTransaction' || modal === 'editTransaction'} onClose={() => {setModal(null); setSelectedTransaction(null)}} onSubmit={handleTransactionSubmit} transaction={selectedTransaction} accounts={accounts} cards={cards} categories={categories} isLoading={isLoading} />
-            <TransactionDetailModal transaction={selectedTransaction} onClose={() => setSelectedTransaction(null)} onEdit={(tx) => {setSelectedTransaction(tx); setModal('editTransaction')}} onDelete={handleDeleteTransaction} onPay={(details) => setPayingInstallment(details)} onUnpay={handleUnpayInstallment} getInstallmentDueDate={getInstallmentDueDate} getCategoryName={getCategoryName} accounts={accounts} cards={cards} onFocusInvoice={handleFocusInvoice} />
+            <TransactionDetailModal transaction={selectedTransaction} onClose={() => setSelectedTransaction(null)} onEdit={(tx) => {setSelectedTransaction(tx); setModal('editTransaction')}} onDelete={handleDeleteTransaction} onPay={(details) => setPayingInstallment(details)} onUnpay={handleUnpayInstallment} onPayEarly={handlePayEarly} onUnpayInvoice={handleUnpayInvoice} getInstallmentDueDate={getInstallmentDueDate} getCategoryName={getCategoryName} accounts={accounts} cards={cards} onFocusInvoice={handleFocusInvoice} />
             <PaymentModal payingInstallment={payingInstallment} onClose={() => setPayingInstallment(null)} onConfirm={handlePayInstallment} />
             <TransactionFilterModal isOpen={modal === 'filters'} onClose={() => setModal(null)} onApply={setFilters} onClear={() => setFilters({ description: '', categoryId: '', accountId: '', cardId: '', status: 'all', startDate: '', endDate: '' })} initialFilters={filters} accounts={accounts} cards={cards} categories={categories} />
             <Dialog open={modal === 'addRecurring' || modal === 'editRecurring'} onOpenChange={() => {setModal(null); setSelectedRecurring(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editRecurring' ? 'Editar' : 'Adicionar'} Recorrência</DialogTitle></DialogHeader><RecurringForm recurringItem={selectedRecurring} onAdd={(item) => {setRecurring(p=>[...p, {...item, id: Date.now().toString()}]); setModal(null);}} onUpdate={(item) => {setRecurring(p=>p.map(r=>r.id===item.id?item:r)); setModal(null);}} accounts={accounts} cards={cards} categories={categories} onClose={() => setModal(null)} isLoading={isLoading}/></DialogContent></Dialog>
             <Dialog open={modal === 'addTransfer' || modal === 'editTransfer'} onOpenChange={() => {setModal(null); setSelectedTransfer(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editTransfer' ? 'Editar' : 'Nova'} Transferência</DialogTitle></DialogHeader><TransferForm accounts={accounts} transfer={selectedTransfer} onTransfer={onAddTransfer} onUpdate={(t) => {setTransfers(p=>p.map(tr=>tr.id===t.id?t:tr)); setModal(null)}} onDismiss={() => setModal(null)} onError={addToast} isLoading={isLoading}/></DialogContent></Dialog>
-            <Dialog open={modal === 'accounts'} onOpenChange={() => setModal(null)}><DialogContent className="w-full"><DialogHeader><DialogTitle>Contas</DialogTitle></DialogHeader><AccountList accounts={accounts} setAccounts={setAccounts} adjustAccountBalance={adjustAccountBalance} setTransactions={setTransactions} addToast={addToast} onConfirmDelete={(acc) => {}} /><AccountForm setAccounts={setAccounts} setTransactions={setTransactions} /></DialogContent></Dialog>
+            <Dialog open={modal === 'accounts'} onOpenChange={() => setModal(null)}><DialogContent className="w-full"><DialogHeader><DialogTitle>Contas</DialogTitle></DialogHeader><AccountList accounts={accounts} setAccounts={setAccounts} adjustAccountBalance={adjustAccountBalance} setTransactions={setTransactions} addToast={addToast} userId={user!.id} transactions={transactions} onConfirmDelete={handleDeleteAccount} /><AccountForm setAccounts={setAccounts} setTransactions={setTransactions} /></DialogContent></Dialog>
             <Dialog open={modal === 'cards'} onOpenChange={() => setModal(null)}><DialogContent className="w-full"><DialogHeader><DialogTitle>Cartões</DialogTitle></DialogHeader><CardList cards={cards} setCards={setCards} transactions={transactions} addToast={addToast} onConfirmDelete={(c) => {}} accounts={accounts}/><CardForm setCards={setCards} accounts={accounts} addToast={addToast}/></DialogContent></Dialog>
             <Dialog open={modal === 'categories'} onOpenChange={() => setModal(null)}><DialogContent className="flex flex-col"><DialogHeader><DialogTitle>Categorias</DialogTitle></DialogHeader><CategoryManager categories={categories} setCategories={setCategories} transactions={transactions} recurring={recurring} /></DialogContent></Dialog>
             <ImportTransactionsModal isOpen={modal === 'import'} onClose={() => setModal(null)} accounts={accounts} onConfirmImport={(txs) => {}} addToast={addToast} isLoading={isLoading} />

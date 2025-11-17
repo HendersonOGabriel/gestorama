@@ -1,10 +1,13 @@
-import React from 'react';
-import { Transaction, Installment, PayingInstallment, Account, Card as CardType, Category } from '../../types';
+import React, { useState } from 'react';
+import { Transaction, Installment, PayingInstallment, Account, Card as CardType } from '../../types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/Dialog';
 import { Button } from '../ui/Button';
-import ProgressBar from '../ui/ProgressBar'; // Import the new component
+import ProgressBar from '../ui/ProgressBar';
 import { toCurrency, displayDate, cn, getInvoiceMonthKey } from '../../utils/helpers';
-import { Edit3, Trash2, CheckCircle2, Clock, DollarSign, Calendar, Tag, CreditCard, PiggyBank, User } from 'lucide-react';
+import { Edit3, Trash2, CheckCircle2, Clock, DollarSign, Calendar, Tag, CreditCard, PiggyBank, User, Check } from 'lucide-react';
+import EarlyPaymentModal from './EarlyPaymentModal';
+
+import { UnpayInvoiceDetails } from '../../types';
 
 interface TransactionDetailModalProps {
   transaction: Transaction | null;
@@ -12,7 +15,9 @@ interface TransactionDetailModalProps {
   onEdit: (tx: Transaction) => void;
   onDelete: (id: string) => void;
   onPay: (details: PayingInstallment) => void;
-  onUnpay: (txId: string, instId: number) => void;
+  onUnpay: (txId: string, instId: string) => void;
+  onPayEarly: (txId: string, paidAmount: number) => void;
+  onUnpayInvoice: (details: UnpayInvoiceDetails) => void;
   getInstallmentDueDate: (tx: Transaction, inst: Installment) => string;
   getCategoryName: (id: string | null) => string;
   accounts: Account[];
@@ -31,8 +36,10 @@ const DetailItem: React.FC<{ icon: React.ReactNode, label: string, value: string
 );
 
 const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
-  transaction, onClose, onEdit, onDelete, onPay, onUnpay, getInstallmentDueDate, getCategoryName, accounts, cards, onFocusInvoice
+  transaction, onClose, onEdit, onDelete, onPay, onUnpay, onPayEarly, onUnpayInvoice, getInstallmentDueDate, getCategoryName, accounts, cards, onFocusInvoice
 }) => {
+  const [isEarlyPaymentModalOpen, setIsEarlyPaymentModalOpen] = useState(false);
+
   if (!transaction) return null;
 
   const accountName = accounts.find(a => a.id === transaction.account)?.name || 'N/A';
@@ -47,11 +54,13 @@ const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
       case 'card': return 'Cartão de Crédito';
       case 'cash': return 'À Vista / Débito';
       case 'prazo': return 'A Prazo (Boleto/Carnê)';
+      case 'invoice_payment': return 'Pagamento de Fatura';
       default: return 'N/A';
     }
   };
 
   const handleEdit = () => {
+    if (transaction.type === 'invoice_payment') return;
     onEdit(transaction);
     onClose();
   };
@@ -114,7 +123,7 @@ const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
                       <div key={inst.id} className="flex justify-between items-center py-2 border-b border-slate-200 dark:border-slate-700 last:border-b-0">
                         <div>
                           <div className="font-medium">
-                            {transaction.installments > 1 ? `Parcela ${index + 1}/${transaction.installments} - ` : ''}
+                            {transaction.installments > 1 ? `Parcela ${inst.installment_number}/${transaction.installments} - ` : ''}
                             {amountDisplay}
                           </div>
                           <div className="text-xs text-slate-500">Vencimento: {displayDate(getInstallmentDueDate(transaction, inst))}</div>
@@ -149,13 +158,38 @@ const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
           )}
         </div>
         <div className="flex justify-between gap-2 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-          <Button variant="destructive" onClick={handleDelete}><Trash2 className="w-4 h-4 mr-2"/>Excluir</Button>
+          {transaction.type === 'invoice_payment' ? (
+            <Button variant="destructive" onClick={() => {
+              const cardId = transaction.card;
+              const month = transaction.desc.split(' - ')[1];
+              if (cardId && month) {
+                onUnpayInvoice({ cardId, month, total: transaction.amount, accountId: transaction.account! });
+                onDelete(transaction.id); // Also delete the consolidated transaction
+              }
+              onClose();
+            }}>
+              <Trash2 className="w-4 h-4 mr-2"/>Estornar Pagamento
+            </Button>
+          ) : (
+            <Button variant="destructive" onClick={handleDelete}><Trash2 className="w-4 h-4 mr-2"/>Excluir</Button>
+          )}
           <div className="flex gap-2">
             <Button variant="ghost" onClick={onClose}>Fechar</Button>
-            <Button onClick={handleEdit}><Edit3 className="w-4 h-4 mr-2"/>Editar</Button>
+            {transaction.type === 'prazo' && !transaction.paid && (
+              <Button variant="outline" onClick={() => setIsEarlyPaymentModalOpen(true)}>
+                <Check className="w-4 h-4 mr-2"/>Quitar Todas
+              </Button>
+            )}
+            {transaction.type !== 'invoice_payment' && <Button onClick={handleEdit}><Edit3 className="w-4 h-4 mr-2"/>Editar</Button>}
           </div>
         </div>
       </DialogContent>
+      <EarlyPaymentModal
+        isOpen={isEarlyPaymentModalOpen}
+        onClose={() => setIsEarlyPaymentModalOpen(false)}
+        transaction={transaction}
+        onConfirm={(amount) => onPayEarly(transaction.id, amount)}
+      />
     </Dialog>
   );
 };
