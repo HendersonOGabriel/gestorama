@@ -57,7 +57,7 @@ const CardForm: React.FC<CardFormProps> = ({ setCards, accounts, addToast, userI
       
       const isFirstCard = !existingCards || existingCards.length === 0;
 
-      const { error } = await supabase
+      const { data: newCard, error } = await supabase
         .from('cards')
         .insert({
           name,
@@ -67,9 +67,15 @@ const CardForm: React.FC<CardFormProps> = ({ setCards, accounts, addToast, userI
           account_id: accountId,
           is_default: isFirstCard,
           user_id: userId
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
+
+      if (newCard) {
+        setCards(prev => [...prev, newCard]);
+      }
 
       addToast('Cartão adicionado com sucesso!', 'success');
       setName('');
