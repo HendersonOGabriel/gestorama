@@ -365,7 +365,7 @@ const PlanningPage: React.FC<PlanningPageProps> = ({ categories, budgets, setBud
         const newTx: Omit<Transaction, 'id'> = {
             desc: `${isWithdraw ? 'Resgate' : 'Aplicação'} Meta: ${goal.name}`,
             amount, date: dateStr, installments: 1, type: 'cash', isIncome: isWithdraw, person: 'Meta', account: accountId, card: null, categoryId: isWithdraw ? 'cat15' : 'cat6',
-            installmentsSchedule: [{id: 1, amount, postingDate: dateStr, paid: true, paymentDate: dateStr, paidAmount: amount}],
+            installmentsSchedule: [{id: `inst_${Date.now()}_1`, installmentNumber: 1, amount, postingDate: dateStr, paid: true, paymentDate: dateStr, paidAmount: amount}],
             paid: true
         };
         setTransactions(p => [{...newTx, id: Date.now().toString()}, ...p]);
