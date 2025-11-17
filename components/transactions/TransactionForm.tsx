@@ -5,7 +5,6 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { buildInstallments } from '../../utils/helpers';
-import { transactionSchema } from '../../utils/validation';
 
 // FIX: Added an interface for the form state to prevent type inference issues.
 interface TransactionFormData {
@@ -36,7 +35,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ isOpen, onClose, onSu
   const [form, setForm] = useState<TransactionFormData>({ desc: '', amount: '', date: new Date().toISOString().slice(0, 10), installments: 1, type: 'card', isIncome: false, categoryId: '', person: '', reminderDaysBefore: '' });
   const [selectedAccount, setSelectedAccount] = useState(accounts.find(a=>a.isDefault)?.id || accounts[0]?.id || '');
   const [selectedCard, setSelectedCard] = useState(cards.find(c=>c.isDefault)?.id || cards[0]?.id || '');
-  const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
   
   const isCardExpense = form.type === 'card' && !form.isIncome;
 
@@ -75,21 +73,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ isOpen, onClose, onSu
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const amount = parseFloat(form.amount);
-    
-    // Validate using Zod schema
-    const validation = transactionSchema.safeParse({
-      description: form.desc,
-      amount: amount,
-      date: form.date,
-      person: form.person || undefined,
-    });
-
-    if (!validation.success) {
-      setValidationErrors(validation.error.flatten().fieldErrors);
-      return;
-    }
-
-    setValidationErrors({});
+    if (!form.desc || !amount) return;
 
     const installmentsCount = form.type === 'cash' ? 1 : form.installments;
     const schedule = buildInstallments(form.date, amount, installmentsCount);
@@ -140,25 +124,16 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ isOpen, onClose, onSu
             <div className="space-y-1">
               <Label htmlFor="desc">Descrição</Label>
               <Input id="desc" value={form.desc} onChange={e=>setForm(f=>({...f, desc: e.target.value}))}/>
-              {validationErrors.description && (
-                <p className="text-sm text-red-600">{validationErrors.description[0]}</p>
-              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Label htmlFor="amount">Valor</Label>
                 <Input id="amount" type="number" min="0" step="0.01" value={form.amount} onChange={e=>setForm(f=>({...f, amount: e.target.value}))}/>
-                {validationErrors.amount && (
-                  <p className="text-sm text-red-600">{validationErrors.amount[0]}</p>
-                )}
               </div>
               <div className="space-y-1">
                 <Label htmlFor="date">Data da Compra</Label>
                 <Input id="date" type="date" value={form.date} onChange={e=>setForm(f=>({...f, date: e.target.value}))}/>
-                {validationErrors.date && (
-                  <p className="text-sm text-red-600">{validationErrors.date[0]}</p>
-                )}
               </div>
             </div>
 
@@ -203,9 +178,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ isOpen, onClose, onSu
                   onChange={e => setForm(f => ({ ...f, person: e.target.value }))}
                   placeholder={form.isIncome ? 'Ex: Cliente A' : 'Ex: Loja B'}
                 />
-                {validationErrors.person && (
-                  <p className="text-sm text-red-600">{validationErrors.person[0]}</p>
-                )}
               </div>
             )}
             

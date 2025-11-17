@@ -4,7 +4,6 @@ import { toCurrency } from '../../utils/helpers';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
-import { transferSchema } from '../../utils/validation';
 
 interface TransferFormProps {
   accounts: Account[];
@@ -22,7 +21,6 @@ const TransferForm: React.FC<TransferFormProps> = ({ accounts, transfer, onTrans
   const [toAccount, setToAccount] = useState(accounts[1]?.id || '');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
-  const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
     if (transfer) {
@@ -40,23 +38,12 @@ const TransferForm: React.FC<TransferFormProps> = ({ accounts, transfer, onTrans
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validate using Zod schema
-    const validation = transferSchema.safeParse({
-      amount: parseFloat(amount),
-      date: date,
-      fromAccount: fromAccount,
-      toAccount: toAccount,
-    });
-
-    if (!validation.success) {
-      const errors = validation.error.flatten().fieldErrors;
-      setValidationErrors(errors);
-      onError(Object.values(errors).flat().join(', '));
-      return;
+    if (!fromAccount || !toAccount || !amount || parseFloat(amount) <= 0) {
+      onError('Por favor, preencha todos os campos com valores válidos.'); return;
     }
-
-    setValidationErrors({});
+    if (fromAccount === toAccount) {
+      onError('A conta de origem e destino não podem ser as mesmas.'); return;
+    }
 
     if (transfer && onUpdate) {
         onUpdate({ ...transfer, fromAccount, toAccount, amount: parseFloat(amount), date });
@@ -79,16 +66,10 @@ const TransferForm: React.FC<TransferFormProps> = ({ accounts, transfer, onTrans
         <div className="space-y-1">
           <Label htmlFor="amount">Valor</Label>
           <Input id="amount" type="number" min="0" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} />
-          {validationErrors.amount && (
-            <p className="text-sm text-red-600">{validationErrors.amount[0]}</p>
-          )}
         </div>
         <div className="space-y-1">
           <Label htmlFor="date">Data</Label>
           <Input id="date" type="date" value={date} onChange={e => setDate(e.target.value)} />
-          {validationErrors.date && (
-            <p className="text-sm text-red-600">{validationErrors.date[0]}</p>
-          )}
         </div>
       </div>
       <div className="flex justify-end gap-2 pt-4">

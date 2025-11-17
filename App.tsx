@@ -590,7 +590,7 @@ const App: React.FC = () => {
                 const invoiceM = getInvoiceMonthKey(s.postingDate, card.closingDay);
                 if (invoiceM === month && !s.paid) {
                     totalPaid += s.amount;
-                    accountId = tx.account; // Assuming all transactions in an invoice share the same account
+                    accountId = tx.account;
                     installmentsToUpdate.push({
                         transaction_id: tx.id,
                         installment_number: s.id,
@@ -604,25 +604,7 @@ const App: React.FC = () => {
 
         if (accountId && totalPaid > 0 && installmentsToUpdate.length > 0) {
             try {
-                // 1. Create a consolidated transaction for the invoice payment
-                const { error: newTxError } = await supabase
-                    .from('transactions')
-                    .insert({
-                        description: `Pagamento Fatura ${card.name} - ${month}`,
-                        amount: totalPaid,
-                        date: new Date().toISOString().slice(0, 10),
-                        type: 'cash', // Cash transaction for invoice payment
-                        is_income: false,
-                        account_id: accountId,
-                        card_id: cardId,
-                        paid: true,
-                        installments: 1,
-                        user_id: user!.id
-                    });
-
-                if (newTxError) throw newTxError;
-
-                // 2. Update all individual installments to paid
+                // Update installments in Supabase
                 for (const inst of installmentsToUpdate) {
                     const { error } = await supabase
                         .from('installments')
@@ -637,18 +619,15 @@ const App: React.FC = () => {
                     if (error) throw error;
                 }
 
-                // 3. Update account balance (this might be redundant if the new tx triggers it)
-                const currentBalance = accounts.find(a => a.id === accountId)!.balance;
+                // Update account balance
                 const { error: balanceError } = await supabase
                     .from('accounts')
-                    .update({ balance: currentBalance - totalPaid })
+                    .update({ balance: accounts.find(a => a.id === accountId)!.balance - totalPaid })
                     .eq('id', accountId);
 
                 if (balanceError) throw balanceError;
 
                 addToast(`Fatura de ${toCurrency(totalPaid)} paga!`, 'success');
-                supabaseData.refetch();
-
             } catch (error) {
                 console.error('Erro ao pagar fatura:', error);
                 addToast('Erro ao pagar fatura. Tente novamente.', 'error');
@@ -759,63 +738,6 @@ const App: React.FC = () => {
         }
     };
 
-    const handlePayEarly = async (txId: string, paidAmount: number) => {
-      const tx = transactions.find(t => t.id === txId);
-      if (!tx) {
-          addToast('Transação não encontrada.', 'error');
-          return;
-      }
-
-      try {
-          const today = new Date().toISOString().slice(0, 10);
-
-          // Update all unpaid installments
-          const unpaidInstallments = tx.installmentsSchedule.filter(i => !i.paid);
-          let remainingPaidAmount = paidAmount;
-
-          for (const inst of unpaidInstallments) {
-              if (remainingPaidAmount <= 0) break;
-
-              const amountToPay = Math.min(inst.amount, remainingPaidAmount);
-
-              await supabase
-                  .from('installments')
-                  .update({
-                      paid: true,
-                      paid_amount: amountToPay,
-                      payment_date: today
-                  })
-                  .eq('transaction_id', txId)
-                  .eq('id', inst.id);
-
-              remainingPaidAmount -= amountToPay;
-          }
-
-          // Adjust account balance
-          const account = accounts.find(a => a.id === tx.account);
-          if (account) {
-              await supabase
-                  .from('accounts')
-                  .update({ balance: account.balance - paidAmount })
-                  .eq('id', account.id);
-          }
-
-          // Update transaction itself
-          await supabase
-              .from('transactions')
-              .update({ paid: true })
-              .eq('id', txId);
-
-          addToast('Transação quitada com sucesso!', 'success');
-          setSelectedTransaction(null);
-          supabaseData.refetch();
-
-      } catch (error) {
-          console.error("Error processing early payment:", error);
-          addToast('Erro ao quitar transação. Tente novamente.', 'error');
-      }
-    };
-
     const handleFocusInvoice = (cardId: string, month: string) => {
         setFocusedInvoice({ cardId, month });
         setCurrentPage('dashboard');
@@ -856,17 +778,14 @@ const App: React.FC = () => {
             }
 
             // Update account balance
-            const account = accounts.find(a => a.id === details.accountId);
-            if (account) {
-                const { error: balanceError } = await supabase
-                    .from('accounts')
-                    .update({ balance: account.balance + details.total })
-                    .eq('id', details.accountId);
-                if (balanceError) throw balanceError;
-            }
+            const { error: balanceError } = await supabase
+                .from('accounts')
+                .update({ balance: accounts.find(a => a.id === details.accountId)!.balance + details.total })
+                .eq('id', details.accountId);
+
+            if (balanceError) throw balanceError;
 
             addToast('Estorno da fatura realizado.', 'success');
-            supabaseData.refetch();
         } catch (error) {
             console.error('Erro ao estornar fatura:', error);
             addToast('Erro ao estornar fatura. Tente novamente.', 'error');
@@ -1008,13 +927,6 @@ const App: React.FC = () => {
     };
 
     const handleDeleteRecurring = async (id: string) => {
-        const hasTransactions = transactions.some(t => t.recurringId === id);
-
-        if (hasTransactions) {
-            addToast('Não é possível excluir. Esta recorrência já gerou transações.', 'error');
-            return;
-        }
-
         try {
             const { error } = await supabase
                 .from('recurring_items')
@@ -1029,45 +941,6 @@ const App: React.FC = () => {
             console.error('Erro ao excluir recorrência:', error);
             addToast('Erro ao excluir recorrência. Tente novamente.', 'error');
         }
-    };
-
-    const handleDeleteAccount = async (accountId: string, newAccountId?: string | null) => {
-      const accountToDelete = accounts.find(a => a.id === accountId);
-      if (!accountToDelete) {
-        addToast('Conta não encontrada.', 'error');
-        return;
-      }
-
-      const hasTransactions = transactions.some(t => t.account === accountId);
-
-      if (hasTransactions && !newAccountId) {
-        addToast('Esta conta possui transações. Selecione uma nova conta para transferi-las.', 'error');
-        return;
-      }
-
-      try {
-        if (hasTransactions && newAccountId) {
-          // Re-associate transactions
-          const { error: updateError } = await supabase
-            .from('transactions')
-            .update({ account_id: newAccountId })
-            .eq('account_id', accountId);
-          if (updateError) throw updateError;
-        }
-
-        // Delete account
-        const { error: deleteError } = await supabase
-          .from('accounts')
-          .delete()
-          .eq('id', accountId);
-        if (deleteError) throw deleteError;
-
-        addToast('Conta excluída com sucesso!', 'success');
-        supabaseData.refetch();
-      } catch (error) {
-        console.error('Erro ao excluir conta:', error);
-        addToast('Erro ao excluir conta. Tente novamente.', 'error');
-      }
     };
 
     const handleDeleteTransfer = async (id: string) => {
@@ -1398,10 +1271,10 @@ const App: React.FC = () => {
             case 'planning': return <PlanningPage 
                 categories={categories} budgets={budgets} setBudgets={setBudgets} goals={goals} setGoals={setGoals} 
                 accounts={accounts} adjustAccountBalance={adjustAccountBalance} setTransactions={setTransactions} 
-                addToast={addToast} transactions={transactions} isLoading={isLoading} addXp={addXp} userId={user.id}
+                addToast={addToast} transactions={transactions} isLoading={isLoading} addXp={addXp} userId={user!.id}
             />;
             case 'reports': return <ReportsPage transactions={transactions} accounts={accounts} cards={cards} categories={categories} getCategoryName={getCategoryName} />;
-            case 'calendar': return <CalendarPage transactions={transactions} reminders={reminders} setReminders={setReminders} getInstallmentDueDate={getInstallmentDueDate} getCategoryName={getCategoryName} userId={user.id} addToast={addToast} />;
+            case 'calendar': return <CalendarPage transactions={transactions} reminders={reminders} setReminders={setReminders} getInstallmentDueDate={getInstallmentDueDate} getCategoryName={getCategoryName} userId={user!.id} addToast={addToast} />;
             case 'profile': return ownerProfile ? <ProfilePage 
                 ownerProfile={ownerProfile} users={users} subscription={subscription}
                 onUpdateUser={(user) => setUsers(prev => prev.map(u => u.id === user.id ? user : u))}
@@ -1427,18 +1300,6 @@ const App: React.FC = () => {
             default: return null;
         }
     };
-
-    // Early return if user is not loaded yet
-    if (!user) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-background">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                    <p className="text-muted-foreground">Carregando...</p>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className={cn("bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-50", themePreference === 'system' ? '' : themePreference)}>
@@ -1473,14 +1334,14 @@ const App: React.FC = () => {
             
             {/* Modals */}
             <TransactionForm isOpen={modal === 'addTransaction' || modal === 'editTransaction'} onClose={() => {setModal(null); setSelectedTransaction(null)}} onSubmit={handleTransactionSubmit} transaction={selectedTransaction} accounts={accounts} cards={cards} categories={categories} isLoading={isLoading} />
-            <TransactionDetailModal transaction={selectedTransaction} onClose={() => setSelectedTransaction(null)} onEdit={(tx) => {setSelectedTransaction(tx); setModal('editTransaction')}} onDelete={handleDeleteTransaction} onPay={(details) => setPayingInstallment(details)} onUnpay={handleUnpayInstallment} onPayEarly={handlePayEarly} onUnpayInvoice={handleUnpayInvoice} getInstallmentDueDate={getInstallmentDueDate} getCategoryName={getCategoryName} accounts={accounts} cards={cards} onFocusInvoice={handleFocusInvoice} />
+            <TransactionDetailModal transaction={selectedTransaction} onClose={() => setSelectedTransaction(null)} onEdit={(tx) => {setSelectedTransaction(tx); setModal('editTransaction')}} onDelete={handleDeleteTransaction} onPay={(details) => setPayingInstallment(details)} onUnpay={handleUnpayInstallment} getInstallmentDueDate={getInstallmentDueDate} getCategoryName={getCategoryName} accounts={accounts} cards={cards} onFocusInvoice={handleFocusInvoice} />
             <PaymentModal payingInstallment={payingInstallment} onClose={() => setPayingInstallment(null)} onConfirm={handlePayInstallment} />
             <TransactionFilterModal isOpen={modal === 'filters'} onClose={() => setModal(null)} onApply={setFilters} onClear={() => setFilters({ description: '', categoryId: '', accountId: '', cardId: '', status: 'all', startDate: '', endDate: '' })} initialFilters={filters} accounts={accounts} cards={cards} categories={categories} />
             <Dialog open={modal === 'addRecurring' || modal === 'editRecurring'} onOpenChange={() => {setModal(null); setSelectedRecurring(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editRecurring' ? 'Editar' : 'Adicionar'} Recorrência</DialogTitle></DialogHeader><RecurringForm recurringItem={selectedRecurring} onAdd={(item) => {setRecurring(p=>[...p, {...item, id: Date.now().toString()}]); setModal(null);}} onUpdate={(item) => {setRecurring(p=>p.map(r=>r.id===item.id?item:r)); setModal(null);}} accounts={accounts} cards={cards} categories={categories} onClose={() => setModal(null)} isLoading={isLoading}/></DialogContent></Dialog>
             <Dialog open={modal === 'addTransfer' || modal === 'editTransfer'} onOpenChange={() => {setModal(null); setSelectedTransfer(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editTransfer' ? 'Editar' : 'Nova'} Transferência</DialogTitle></DialogHeader><TransferForm accounts={accounts} transfer={selectedTransfer} onTransfer={onAddTransfer} onUpdate={(t) => {setTransfers(p=>p.map(tr=>tr.id===t.id?t:tr)); setModal(null)}} onDismiss={() => setModal(null)} onError={addToast} isLoading={isLoading}/></DialogContent></Dialog>
-            <Dialog open={modal === 'accounts'} onOpenChange={() => setModal(null)}><DialogContent className="w-full"><DialogHeader><DialogTitle>Contas</DialogTitle></DialogHeader><AccountList accounts={accounts} setAccounts={setAccounts} adjustAccountBalance={adjustAccountBalance} setTransactions={setTransactions} addToast={addToast} userId={user!.id} transactions={transactions} onConfirmDelete={handleDeleteAccount} /><AccountForm setAccounts={setAccounts} setTransactions={setTransactions} /></DialogContent></Dialog>
+            <Dialog open={modal === 'accounts'} onOpenChange={() => setModal(null)}><DialogContent className="w-full"><DialogHeader><DialogTitle>Contas</DialogTitle></DialogHeader><AccountList accounts={accounts} setAccounts={setAccounts} adjustAccountBalance={adjustAccountBalance} setTransactions={setTransactions} addToast={addToast} onConfirmDelete={(acc) => {}} /><AccountForm setAccounts={setAccounts} setTransactions={setTransactions} /></DialogContent></Dialog>
             <Dialog open={modal === 'cards'} onOpenChange={() => setModal(null)}><DialogContent className="w-full"><DialogHeader><DialogTitle>Cartões</DialogTitle></DialogHeader><CardList cards={cards} setCards={setCards} transactions={transactions} addToast={addToast} onConfirmDelete={(c) => {}} accounts={accounts}/><CardForm setCards={setCards} accounts={accounts} addToast={addToast}/></DialogContent></Dialog>
-            <Dialog open={modal === 'categories'} onOpenChange={() => setModal(null)}><DialogContent className="flex flex-col"><DialogHeader><DialogTitle>Categorias</DialogTitle></DialogHeader><CategoryManager categories={categories} setCategories={setCategories} transactions={transactions} recurring={recurring} userId={user.id} addToast={addToast} /></DialogContent></Dialog>
+            <Dialog open={modal === 'categories'} onOpenChange={() => setModal(null)}><DialogContent className="flex flex-col"><DialogHeader><DialogTitle>Categorias</DialogTitle></DialogHeader><CategoryManager categories={categories} setCategories={setCategories} transactions={transactions} recurring={recurring} /></DialogContent></Dialog>
             <ImportTransactionsModal isOpen={modal === 'import'} onClose={() => setModal(null)} accounts={accounts} onConfirmImport={(txs) => {}} addToast={addToast} isLoading={isLoading} />
 
             {/* Global UI */}
