@@ -585,6 +585,7 @@ const App: React.FC = () => {
         if (!card) return;
 
         const installmentsToUpdate: any[] = [];
+        const transactionIdsAffected = new Set<string>();
 
         transactions.forEach(tx => {
             if (tx.card !== cardId) return;
@@ -600,6 +601,7 @@ const App: React.FC = () => {
                         payment_date: new Date().toISOString().slice(0, 10),
                         paid_amount: s.amount
                     });
+                    transactionIdsAffected.add(tx.id);
                 }
             });
         });
@@ -629,7 +631,25 @@ const App: React.FC = () => {
 
                 if (balanceError) throw balanceError;
 
+                // Check and update parent transaction status
+                for (const txId of transactionIdsAffected) {
+                    const { data: allInstallments, error: fetchError } = await supabase
+                        .from('installments')
+                        .select('paid')
+                        .eq('transaction_id', txId);
+
+                    if (fetchError) throw fetchError;
+
+                    if (allInstallments && allInstallments.every(inst => inst.paid)) {
+                        await supabase
+                            .from('transactions')
+                            .update({ paid: true })
+                            .eq('id', txId);
+                    }
+                }
+
                 addToast(`Fatura de ${toCurrency(totalPaid)} paga!`, 'success');
+                supabaseData.refetch();
             } catch (error) {
                 console.error('Erro ao pagar fatura:', error);
                 addToast('Erro ao pagar fatura. Tente novamente.', 'error');
@@ -834,8 +854,9 @@ const App: React.FC = () => {
             const card = cards.find(c => c.id === details.cardId);
             if (!card) return;
 
-            // Find all installments to unpay
+            // Find all installments to unpay and transactions to update
             const installmentsToUpdate: any[] = [];
+            const transactionIdsAffected = new Set<string>();
             transactions.forEach(tx => {
                 if (tx.card !== details.cardId) return;
                 tx.installmentsSchedule.forEach(s => {
@@ -845,6 +866,7 @@ const App: React.FC = () => {
                             transaction_id: tx.id,
                             installment_id: s.id
                         });
+                        transactionIdsAffected.add(tx.id);
                     }
                 });
             });
@@ -860,6 +882,14 @@ const App: React.FC = () => {
                 if (error) throw error;
             }
 
+            // Update parent transactions status to 'pending'
+            for (const txId of transactionIdsAffected) {
+                await supabase
+                    .from('transactions')
+                    .update({ paid: false })
+                    .eq('id', txId);
+            }
+
             // Update account balance
             const { error: balanceError } = await supabase
                 .from('accounts')
@@ -869,6 +899,7 @@ const App: React.FC = () => {
             if (balanceError) throw balanceError;
 
             addToast('Estorno da fatura realizado.', 'success');
+            supabaseData.refetch();
         } catch (error) {
             console.error('Erro ao estornar fatura:', error);
             addToast('Erro ao estornar fatura. Tente novamente.', 'error');
@@ -1010,19 +1041,21 @@ const App: React.FC = () => {
     };
 
     const handleDeleteRecurring = async (id: string) => {
+        // To avoid DB constraint errors, we disable recurring items instead of deleting them.
+        // This achieves the goal of preventing future transactions without data loss.
         try {
             const { error } = await supabase
                 .from('recurring_items')
-                .delete()
+                .update({ enabled: false })
                 .eq('id', id);
 
             if (error) throw error;
 
-            addToast('Recorrência excluída com sucesso!', 'success');
+            addToast('Recorrência desativada. Novas transações não serão geradas.', 'success');
             supabaseData.refetch();
         } catch (error) {
-            console.error('Erro ao excluir recorrência:', error);
-            addToast('Erro ao excluir recorrência. Tente novamente.', 'error');
+            console.error('Erro ao desativar recorrência:', error);
+            addToast('Erro ao desativar recorrência. Tente novamente.', 'error');
         }
     };
 
