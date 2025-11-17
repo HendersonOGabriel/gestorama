@@ -611,7 +611,7 @@ const App: React.FC = () => {
                         description: `Pagamento Fatura ${card.name} - ${month}`,
                         amount: totalPaid,
                         date: new Date().toISOString().slice(0, 10),
-                        type: 'invoice_payment', // Special type
+                        type: 'cash', // Cash transaction for invoice payment
                         is_income: false,
                         account_id: accountId,
                         card_id: cardId,
