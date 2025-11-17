@@ -1,6 +1,7 @@
 
 export interface Installment {
-  id: number;
+  id: string;
+  installmentNumber: number;
   amount: number;
   postingDate: string;
   paid: boolean;
