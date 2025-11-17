@@ -6,7 +6,7 @@ import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { buildInstallments } from '../../utils/helpers';
 import { PiggyBank } from 'lucide-react';
-import { supabase } from '@/src/integrations/supabase/client';
+import { supabase } from '../../src/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/Dialog';
 
 interface AccountListProps {
@@ -15,12 +15,12 @@ interface AccountListProps {
   adjustAccountBalance: (accountId: string, delta: number) => void;
   setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
   addToast: (message: string, type?: 'error' | 'success') => void;
-  onConfirmDelete: (account: Account) => void;
   userId: string;
   transactions: Transaction[];
+  onConfirmDelete: (accountId: string, newAccountId?: string | null) => void;
 }
 
-const AccountList: React.FC<AccountListProps> = ({ accounts, setAccounts, adjustAccountBalance, setTransactions, addToast, onConfirmDelete, userId, transactions }) => {
+const AccountList: React.FC<AccountListProps> = ({ accounts, setAccounts, adjustAccountBalance, setTransactions, addToast, userId, transactions, onConfirmDelete }) => {
   const [editAccount, setEditAccount] = useState<Account | null>(null);
   const [editName, setEditName] = useState('');
   const [editBalance, setEditBalance] = useState('');
@@ -112,35 +112,7 @@ const AccountList: React.FC<AccountListProps> = ({ accounts, setAccounts, adjust
       setAccountToDelete(account);
       setNewAccountId(accounts.find(a => a.id !== account.id)?.id || '');
     } else {
-      handleConfirmDelete(account.id, null);
-    }
-  };
-
-  const handleConfirmDelete = async (accountId: string, newAccId: string | null) => {
-    try {
-      if (newAccId) {
-        // Re-associate transactions to new account
-        const { error: updateError } = await supabase
-          .from('transactions')
-          .update({ account_id: newAccId })
-          .eq('account_id', accountId);
-
-        if (updateError) throw updateError;
-      }
-
-      // Delete account
-      const { error: deleteError } = await supabase
-        .from('accounts')
-        .delete()
-        .eq('id', accountId);
-
-      if (deleteError) throw deleteError;
-
-      addToast('Conta excluída com sucesso!', 'success');
-      setAccountToDelete(null);
-    } catch (error) {
-      console.error('Erro ao excluir conta:', error);
-      addToast('Erro ao excluir conta. Tente novamente.', 'error');
+      onConfirmDelete(account.id);
     }
   };
 
@@ -224,7 +196,10 @@ const AccountList: React.FC<AccountListProps> = ({ accounts, setAccounts, adjust
                 <Button variant="ghost" onClick={() => setAccountToDelete(null)}>Cancelar</Button>
                 <Button 
                   variant="destructive" 
-                  onClick={() => handleConfirmDelete(accountToDelete.id, newAccountId)}
+                  onClick={() => {
+                    onConfirmDelete(accountToDelete.id, newAccountId);
+                    setAccountToDelete(null);
+                  }}
                   disabled={!newAccountId}
                 >
                   Confirmar Exclusão

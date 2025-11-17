@@ -123,7 +123,7 @@ const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
                       <div key={inst.id} className="flex justify-between items-center py-2 border-b border-slate-200 dark:border-slate-700 last:border-b-0">
                         <div>
                           <div className="font-medium">
-                            {transaction.installments > 1 ? `Parcela ${inst.id}/${transaction.installments} - ` : ''}
+                            {transaction.installments > 1 ? `Parcela ${inst.installment_number}/${transaction.installments} - ` : ''}
                             {amountDisplay}
                           </div>
                           <div className="text-xs text-slate-500">Vencimento: {displayDate(getInstallmentDueDate(transaction, inst))}</div>

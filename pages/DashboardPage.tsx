@@ -253,7 +253,7 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
       t.installmentsSchedule.forEach(s => {
         const dueDate = getInstallmentDueDate(t, s);
         if (!s.paid && dueDate >= today && dueDate <= futureLimit) {
-          payments.push({ id: `${t.id}-${s.id}`, desc: t.desc, amount: s.amount, date: dueDate, installment: `Parcela ${s.id}/${t.installments}` });
+          payments.push({ id: `${t.id}-${s.id}`, desc: t.desc, amount: s.amount, date: dueDate, installment: `Parcela ${s.installment_number}/${t.installments}` });
         }
       });
     });
