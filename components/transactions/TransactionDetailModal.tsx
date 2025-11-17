@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Transaction, Installment, PayingInstallment, Account, Card as CardType, Category } from '../../types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/Dialog';
 import { Button } from '../ui/Button';
