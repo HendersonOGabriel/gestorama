@@ -31,9 +31,8 @@ interface DashboardPageProps {
   onAddRecurring: () => void;
   onEditRecurring: (item: RecurringItem) => void;
   onViewTransaction: (tx: Transaction) => void;
-  // FIX: Changed prop types to accept state setter functions.
   onUpdateRecurring: React.Dispatch<React.SetStateAction<RecurringItem[]>>;
-  onRemoveRecurring: React.Dispatch<React.SetStateAction<RecurringItem[]>>;
+  onRemoveRecurring: (id: string) => void;
   onAddTransfer: () => void;
   onEditTransfer: (t: Transfer) => void;
   onDeleteTransfer: (id: string) => void;
@@ -805,7 +804,7 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
           </div>
         )}
       
-        {mainTab === 'recurring' && <Card><CardHeader className="flex flex-row items-center gap-4"><CardTitle>Recorrências</CardTitle><Button onClick={onAddRecurring} size="sm"><Plus className="w-4 h-4 mr-1"/> Adicionar</Button></CardHeader><CardContent><RecurringList recurring={recurring} onAdd={onAddRecurring} onEdit={onEditRecurring} onUpdate={(item) => onUpdateRecurring(prev => prev.map(r => r.id === item.id ? item : r))} onRemove={(id) => onRemoveRecurring(prev => prev.filter(r => r.id !== id))} accounts={accounts} cards={cards} categories={categories} /></CardContent></Card>}
+        {mainTab === 'recurring' && <Card><CardHeader className="flex flex-row items-center gap-4"><CardTitle>Recorrências</CardTitle><Button onClick={onAddRecurring} size="sm"><Plus className="w-4 h-4 mr-1"/> Adicionar</Button></CardHeader><CardContent><RecurringList recurring={recurring} onAdd={onAddRecurring} onEdit={onEditRecurring} onUpdate={(item) => onUpdateRecurring(prev => prev.map(r => r.id === item.id ? item : r))} onRemove={onRemoveRecurring} accounts={accounts} cards={cards} categories={categories} /></CardContent></Card>}
         
         {mainTab === 'transfers' && <Card><CardHeader className="flex flex-row items-center gap-4"><CardTitle>Transferências e Movimentações Internas</CardTitle><Button onClick={onAddTransfer} size="sm"><Plus className="w-4 h-4 mr-1"/>Adicionar</Button></CardHeader><CardContent>
             <div className="overflow-x-auto">
