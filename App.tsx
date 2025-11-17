@@ -1421,36 +1421,116 @@ const App: React.FC = () => {
     }, [currentPage]);
 
     useEffect(() => {
-        if (isLoading) return; // Prevent running on initial load before state is settled
+        if (isLoading || !user) return; // Prevent running on initial load before state is settled
         
-        const todayKey = new Date().toISOString().slice(0, 10);
-        const newTxs: Transaction[] = [];
-        const updatedRecurringItems = recurring.map(item => {
-            const { item: updatedItem, newTx } = runRecurringItem(item, todayKey);
-            if (newTx) {
-                newTxs.push(newTx);
+        const processRecurringItems = async () => {
+            const todayKey = new Date().toISOString().slice(0, 10);
+            const newTxs: Transaction[] = [];
+            const itemsToUpdate: RecurringItem[] = [];
+            
+            for (const item of recurring) {
+                const { item: updatedItem, newTx } = runRecurringItem(item, todayKey);
+                
+                if (newTx) {
+                    newTxs.push(newTx);
+                    itemsToUpdate.push(updatedItem);
+                }
             }
-            return updatedItem;
-        });
-        
-        if(newTxs.length > 0) {
-            setTransactions(prev => [...prev, ...newTxs]);
-            setRecurring(updatedRecurringItems);
-            addToast(`${newTxs.length} transaç${newTxs.length > 1 ? 'ões' : 'ão'} recorrente${newTxs.length > 1 ? 's' : ''} gerada${newTxs.length > 1 ? 's' : ''}.`, 'success');
+            
+            if (newTxs.length > 0) {
+                try {
+                    // Insert transactions into Supabase with user_id
+                    for (const tx of newTxs) {
+                        const { data: newTx, error: txError } = await supabase
+                            .from('transactions')
+                            .insert({
+                                description: tx.desc,
+                                amount: tx.amount,
+                                date: tx.date,
+                                installments: tx.installments,
+                                type: tx.type,
+                                is_income: tx.isIncome,
+                                person: tx.person,
+                                account_id: tx.account,
+                                card_id: tx.card,
+                                category_id: tx.categoryId,
+                                paid: tx.paid,
+                                recurring_source_id: tx.recurringSourceId,
+                                reminder_days_before: tx.reminderDaysBefore,
+                                user_id: user.id
+                            })
+                            .select()
+                            .single();
 
-            const newRecNotifications = newTxs.map(tx => ({
-                id: `recurring-${tx.id}`,
-                type: 'info',
-                message: `Transação recorrente "${tx.desc}" foi gerada.`
-            }));
+                        if (txError) throw txError;
 
-            setNotifications(prev => {
-                const existingIds = new Set(prev.map(n => n.id));
-                const uniqueNew = newRecNotifications.filter(n => !existingIds.has(n.id));
-                return [...prev, ...uniqueNew];
-            });
-        }
-    }, [isLoading]); 
+                        if (newTx) {
+                            // Create installments
+                            const installmentsData = tx.installmentsSchedule.map(inst => ({
+                                transaction_id: newTx.id,
+                                installment_number: inst.installmentNumber,
+                                amount: inst.amount,
+                                posting_date: inst.postingDate,
+                                paid: inst.paid,
+                                payment_date: inst.paymentDate,
+                                paid_amount: inst.paidAmount
+                            }));
+
+                            const { error: instError } = await supabase
+                                .from('installments')
+                                .insert(installmentsData);
+
+                            if (instError) throw instError;
+
+                            // Adjust account balance for paid income transactions
+                            if (tx.isIncome && tx.paid) {
+                                const account = accounts.find(a => a.id === tx.account);
+                                if (account) {
+                                    await supabase
+                                        .from('accounts')
+                                        .update({ balance: account.balance + tx.amount })
+                                        .eq('id', tx.account);
+                                }
+                            }
+                        }
+                    }
+
+                    // Update recurring items with new lastRun/nextRun dates
+                    for (const item of itemsToUpdate) {
+                        await supabase
+                            .from('recurring_items')
+                            .update({
+                                last_run: item.lastRun,
+                                next_run: item.nextRun
+                            })
+                            .eq('id', item.id);
+                    }
+
+                    addToast(`${newTxs.length} transaç${newTxs.length > 1 ? 'ões' : 'ão'} recorrente${newTxs.length > 1 ? 's' : ''} gerada${newTxs.length > 1 ? 's' : ''}.`, 'success');
+
+                    const newRecNotifications = newTxs.map(tx => ({
+                        id: `recurring-${tx.id}`,
+                        type: 'info',
+                        message: `Transação recorrente "${tx.desc}" foi gerada.`
+                    }));
+
+                    setNotifications(prev => {
+                        const existingIds = new Set(prev.map(n => n.id));
+                        const uniqueNew = newRecNotifications.filter(n => !existingIds.has(n.id));
+                        return [...prev, ...uniqueNew];
+                    });
+
+                    // Refetch data to update UI with new transactions
+                    supabaseData.refetch();
+                } catch (error) {
+                    console.error('Erro ao processar itens recorrentes:', error);
+                    addToast('Erro ao gerar transações recorrentes.', 'error');
+                }
+            }
+        };
+
+        processRecurringItems();
+    }, [recurring, isLoading, user, addToast, accounts, supabaseData]);
     
     useEffect(() => {
         const applyTheme = (theme: 'light' | 'dark') => {
