@@ -257,7 +257,7 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
         }
       });
     });
-    return payments.sort((a,b) => a.date.localeCompare(b.date)).slice(0, 5);
+    return payments.sort((a,b) => a.date.localeCompare(b.date));
   }, [transactions, getInstallmentDueDate]);
 
   const summaryByTypeData = useMemo(() => {
@@ -265,9 +265,7 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
     const today = new Date();
     
     const startMonth = addMonths(today, -summaryChartPeriod);
-    
-    // Always show one month into the future for better visualization context
-    const endMonth = addMonths(today, 1);
+    const endMonth = addMonths(today, summaryChartPeriod);
 
     for (let d = startMonth; d <= endMonth; d = addMonths(d, 1)) {
       statements[monthKey(d)] = { month: monthKey(d), cartao: 0, prazo: 0, vista: 0 };
@@ -515,7 +513,7 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
               <CardHeader><CardTitle>Próximos Pagamentos</CardTitle></CardHeader>
               <CardContent>
                   {upcomingPaymentsData.length > 0 ? (
-                      <ul className="divide-y divide-slate-200 dark:divide-slate-700">
+                      <ul className="divide-y divide-slate-200 dark:divide-slate-700 max-h-72 overflow-y-auto pr-2">
                           {upcomingPaymentsData.map((payment) => (
                               <li key={payment.id} className="py-3 sm:py-4 flex items-center space-x-4">
                                   <div className="flex-shrink-0"><span className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900"><AlertTriangle className="h-4 w-4 text-amber-500" /></span></div>
@@ -543,7 +541,7 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
               </div>
               <div className="text-sm flex items-center gap-2">
                 <Label htmlFor="summary-period" className="mb-0">Período</Label>
-                <select id="summary-period" value={summaryChartPeriod} onChange={e => setSummaryChartPeriod(parseInt(e.target.value))} className="p-1 rounded border dark:bg-slate-700 h-8 text-xs"><option value={3}>3 meses</option><option value={6}>6 meses</option><option value={12}>12 meses</option></select>
+                <select id="summary-period" value={summaryChartPeriod} onChange={e => setSummaryChartPeriod(parseInt(e.target.value))} className="p-1 rounded border dark:bg-slate-700 h-8 text-xs"><option value={3}>±3 meses</option><option value={6}>±6 meses</option><option value={12}>±12 meses</option></select>
               </div>
             </div>
           </CardHeader>
@@ -644,7 +642,13 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
                                 >
                                   <td className="p-3">
                                     <p className="font-medium">{t.desc}</p>
-                                    <p className="text-xs text-slate-500">{getCategoryName(t.categoryId)}</p>
+                                    {t.categoryId && (
+                                      <div className="mt-1">
+                                        <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200">
+                                          {getCategoryName(t.categoryId)}
+                                        </span>
+                                      </div>
+                                    )}
                                   </td>
                                   <td className={`p-3 text-right font-medium ${t.isIncome ? 'text-green-500' : 'text-red-500'}`}>
                                     {toCurrency(t.amount)}

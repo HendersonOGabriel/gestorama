@@ -70,7 +70,7 @@ const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
             {transaction.isIncome ? '+' : '-'} {toCurrency(transaction.amount)}
           </p>
         </DialogHeader>
-        <div className="space-y-3 mt-4 max-h-[70vh] overflow-y-auto pr-2">
+        <div className="flex flex-col gap-4 max-h-[70vh]">
           {/* Details Section */}
           <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg space-y-3">
             <DetailItem icon={<Calendar size={16} />} label="Data da Compra" value={displayDate(transaction.date)} />
@@ -92,11 +92,11 @@ const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
 
           {/* Installments & Payment Section */}
           {!transaction.isIncome && (
-            <div>
-              <h4 className="font-semibold mb-2 mt-4 text-md">
+            <div className="flex-1 min-h-0">
+              <h4 className="font-semibold mb-2 text-md">
                 {transaction.installments > 1 ? 'Parcelamento' : 'Pagamento'}
               </h4>
-              <div className="space-y-2 border border-slate-200 dark:border-slate-700 rounded-lg p-3">
+              <div className="space-y-2 border border-slate-200 dark:border-slate-700 rounded-lg p-3 overflow-y-auto h-full">
                 {transaction.installmentsSchedule.map((inst, index) => {
                     const isAmountDifferent = inst.paid && inst.paidAmount !== null && inst.paidAmount !== inst.amount;
                     const isCardTx = transaction.type === 'card';
@@ -148,7 +148,7 @@ const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
             </div>
           )}
         </div>
-        <div className="flex justify-between gap-2 mt-6">
+        <div className="flex justify-between gap-2 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
           <Button variant="destructive" onClick={handleDelete}><Trash2 className="w-4 h-4 mr-2"/>Excluir</Button>
           <div className="flex gap-2">
             <Button variant="ghost" onClick={onClose}>Fechar</Button>
