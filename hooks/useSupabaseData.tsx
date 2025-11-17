@@ -106,7 +106,7 @@ export const useSupabaseData = (userId: string | null) => {
       recurringSourceId: tx.recurring_source_id,
       userId: tx.user_id,
       installmentsSchedule: tx.installments ? tx.installments.map((inst: any) => ({
-        id: inst.id,
+        id: inst.installment_number,
         amount: Number(inst.amount),
         paid: inst.paid,
         postingDate: inst.posting_date,
