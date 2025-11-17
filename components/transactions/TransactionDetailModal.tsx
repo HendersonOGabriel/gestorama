@@ -92,8 +92,8 @@ const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
 
           {/* Installments & Payment Section */}
           {!transaction.isIncome && (
-            <div>
-              <h4 className="font-semibold mb-2 mt-4 text-md">
+            <div className="flex-1 min-h-0">
+              <h4 className="font-semibold mb-2 text-md">
                 {transaction.installments > 1 ? 'Parcelamento' : 'Pagamento'}
               </h4>
               <div className="space-y-2 border border-slate-200 dark:border-slate-700 rounded-lg p-3 max-h-64 overflow-y-auto">
