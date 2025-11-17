@@ -13,6 +13,7 @@ interface TransactionDetailModalProps {
   onDelete: (id: string) => void;
   onPay: (details: PayingInstallment) => void;
   onUnpay: (txId: string, instId: number) => void;
+  onSettle: (tx: Transaction) => void;
   getInstallmentDueDate: (tx: Transaction, inst: Installment) => string;
   getCategoryName: (id: string | null) => string;
   accounts: Account[];
@@ -31,7 +32,7 @@ const DetailItem: React.FC<{ icon: React.ReactNode, label: string, value: string
 );
 
 const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
-  transaction, onClose, onEdit, onDelete, onPay, onUnpay, getInstallmentDueDate, getCategoryName, accounts, cards, onFocusInvoice
+  transaction, onClose, onEdit, onDelete, onPay, onUnpay, onSettle, getInstallmentDueDate, getCategoryName, accounts, cards, onFocusInvoice
 }) => {
   if (!transaction) return null;
 
@@ -40,7 +41,19 @@ const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
   const cardName = cardData ? `${cardData.name}${cardData.deleted ? ' (Excluído)' : ''}` : 'N/A';
   const categoryName = getCategoryName(transaction.categoryId);
   const totalPaid = transaction.installmentsSchedule.filter(s => s.paid).reduce((acc, s) => acc + (s.paidAmount || s.amount), 0);
-  const progressPercentage = transaction.amount > 0 ? (totalPaid / transaction.amount) * 100 : 0;
+
+  const effectiveAmount = useMemo(() => {
+    return transaction.installmentsSchedule.reduce((acc, inst) => {
+      if (inst.paid && inst.paidAmount !== null) {
+        return acc + inst.paidAmount;
+      }
+      return acc + inst.amount;
+    }, 0);
+  }, [transaction.installmentsSchedule]);
+
+  const progressPercentage = effectiveAmount > 0 ? (totalPaid / effectiveAmount) * 100 : 0;
+
+  const isAmountAdjusted = effectiveAmount !== transaction.amount;
 
   const getTransactionTypeLabel = () => {
     switch (transaction.type) {
@@ -66,9 +79,14 @@ const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{transaction.desc}</DialogTitle>
-          <p className={cn("text-2xl font-bold", transaction.isIncome ? 'text-green-500' : 'text-red-500')}>
-            {transaction.isIncome ? '+' : '-'} {toCurrency(transaction.amount)}
-          </p>
+          <div className={cn("text-2xl font-bold", transaction.isIncome ? 'text-green-500' : 'text-red-500')}>
+            {transaction.isIncome ? '+' : '-'} {toCurrency(effectiveAmount)}
+            {isAmountAdjusted && (
+              <span className="text-sm font-normal text-slate-500 line-through ml-2">
+                {toCurrency(transaction.amount)}
+              </span>
+            )}
+          </div>
         </DialogHeader>
         <div className="space-y-3 mt-4">
           {/* Details Section */}
@@ -93,9 +111,17 @@ const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
           {/* Installments & Payment Section */}
           {!transaction.isIncome && (
             <div className="flex-1 min-h-0">
-              <h4 className="font-semibold mb-2 text-md">
-                {transaction.installments > 1 ? 'Parcelamento' : 'Pagamento'}
-              </h4>
+              <div className="flex justify-between items-center mb-2">
+                <h4 className="font-semibold text-md">
+                  {transaction.installments > 1 ? 'Parcelamento' : 'Pagamento'}
+                </h4>
+                {transaction.type === 'prazo' && transaction.installmentsSchedule.some(i => !i.paid) && (
+                  <Button size="sm" variant="outline" onClick={() => onSettle(transaction)}>
+                    <DollarSign className="w-4 h-4 mr-2" />
+                    Quitar Parcelas
+                  </Button>
+                )}
+              </div>
               <div className="space-y-2 border border-slate-200 dark:border-slate-700 rounded-lg p-3 max-h-64 overflow-y-auto">
                 {transaction.installmentsSchedule.map((inst, index) => {
                     const isAmountDifferent = inst.paid && inst.paidAmount !== null && inst.paidAmount !== inst.amount;

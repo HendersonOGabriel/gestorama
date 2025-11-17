@@ -14,6 +14,7 @@ import { TermosDeUsoPage, PoliticaPrivacidadePage, ContatoSuportePage, SobrePage
 import TransactionForm from './components/transactions/TransactionForm';
 import TransactionDetailModal from './components/transactions/TransactionDetailModal';
 import PaymentModal from './components/transactions/PaymentModal';
+import SettleInstallmentsModal from './components/transactions/SettleInstallmentsModal';
 import TransactionFilterModal from './components/transactions/TransactionFilterModal';
 import RecurringForm from './components/recurring/RecurringForm';
 import TransferForm from './components/transfers/TransferForm';
@@ -339,6 +340,7 @@ const App: React.FC = () => {
     const [modal, setModal] = useState<string | null>(null);
     const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
     const [payingInstallment, setPayingInstallment] = useState<PayingInstallment | null>(null);
+    const [settlingTransaction, setSettlingTransaction] = useState<Transaction | null>(null);
     const [selectedRecurring, setSelectedRecurring] = useState<RecurringItem | null>(null);
     const [selectedTransfer, setSelectedTransfer] = useState<Transfer | null>(null);
     const [filters, setFilters] = useState({ description: '', categoryId: '', accountId: '', cardId: '', status: 'all', startDate: '', endDate: '' });
@@ -736,6 +738,77 @@ const App: React.FC = () => {
             console.error("Error processing refund:", error);
             addToast('Erro ao processar estorno. Tente novamente.', 'error');
         }
+    };
+
+    const handleSettleInstallments = async (
+      txId: string,
+      installmentsToSettle: { id: string; amount: number }[],
+      totalPaidAmount: number
+    ) => {
+      const tx = transactions.find(t => t.id === txId);
+      if (!tx) {
+        addToast('Transação não encontrada.', 'error');
+        return;
+      }
+
+      if (installmentsToSettle.length === 0) {
+        addToast('Nenhuma parcela selecionada.', 'error');
+        return;
+      }
+
+      const totalOriginalSelectedAmount = installmentsToSettle.reduce((sum, inst) => sum + inst.amount, 0);
+      const amountDifference = totalOriginalSelectedAmount - totalPaidAmount;
+      const paymentRatio = totalOriginalSelectedAmount > 0 ? totalPaidAmount / totalOriginalSelectedAmount : 0;
+
+      try {
+        // 1. Update each selected installment
+        for (const inst of installmentsToSettle) {
+          const paidAmountForInst = inst.amount * paymentRatio;
+          const { error: instError } = await supabase
+            .from('installments')
+            .update({
+              paid: true,
+              paid_amount: paidAmountForInst,
+              payment_date: new Date().toISOString().slice(0, 10)
+            })
+            .eq('transaction_id', txId)
+            .eq('id', inst.id);
+
+          if (instError) throw instError;
+        }
+
+        // 2. Adjust account balance
+        const account = accounts.find(a => a.id === tx.account);
+        if (account) {
+          const { error: accError } = await supabase
+            .from('accounts')
+            .update({ balance: account.balance - totalPaidAmount })
+            .eq('id', account.id);
+          if (accError) throw accError;
+        }
+
+        // 4. Check if all installments are paid now and update the transaction status
+        const allInstallmentIds = new Set(tx.installmentsSchedule.map(i => i.id));
+        const settledIds = new Set(installmentsToSettle.map(i => i.id));
+        const remainingUnpaid = tx.installmentsSchedule.filter(
+            inst => !inst.paid && !settledIds.has(inst.id)
+        );
+
+        if (remainingUnpaid.length === 0) {
+          const { error: txError } = await supabase
+            .from('transactions')
+            .update({ paid: true })
+            .eq('id', txId);
+          if (txError) throw txError;
+        }
+
+        addToast('Parcelas quitadas com sucesso!', 'success');
+        supabaseData.refetch();
+
+      } catch (error) {
+        console.error("Error settling installments:", error);
+        addToast('Erro ao quitar parcelas. Tente novamente.', 'error');
+      }
     };
 
     const handleFocusInvoice = (cardId: string, month: string) => {
@@ -1334,8 +1407,9 @@ const App: React.FC = () => {
             
             {/* Modals */}
             <TransactionForm isOpen={modal === 'addTransaction' || modal === 'editTransaction'} onClose={() => {setModal(null); setSelectedTransaction(null)}} onSubmit={handleTransactionSubmit} transaction={selectedTransaction} accounts={accounts} cards={cards} categories={categories} isLoading={isLoading} />
-            <TransactionDetailModal transaction={selectedTransaction} onClose={() => setSelectedTransaction(null)} onEdit={(tx) => {setSelectedTransaction(tx); setModal('editTransaction')}} onDelete={handleDeleteTransaction} onPay={(details) => setPayingInstallment(details)} onUnpay={handleUnpayInstallment} getInstallmentDueDate={getInstallmentDueDate} getCategoryName={getCategoryName} accounts={accounts} cards={cards} onFocusInvoice={handleFocusInvoice} />
+            <TransactionDetailModal transaction={selectedTransaction} onClose={() => setSelectedTransaction(null)} onEdit={(tx) => {setSelectedTransaction(tx); setModal('editTransaction')}} onDelete={handleDeleteTransaction} onPay={(details) => setPayingInstallment(details)} onUnpay={handleUnpayInstallment} onSettle={(tx) => { setSettlingTransaction(tx); setSelectedTransaction(null); }} getInstallmentDueDate={getInstallmentDueDate} getCategoryName={getCategoryName} accounts={accounts} cards={cards} onFocusInvoice={handleFocusInvoice} />
             <PaymentModal payingInstallment={payingInstallment} onClose={() => setPayingInstallment(null)} onConfirm={handlePayInstallment} />
+            <SettleInstallmentsModal transaction={settlingTransaction} onClose={() => setSettlingTransaction(null)} onConfirm={handleSettleInstallments} getInstallmentDueDate={getInstallmentDueDate} />
             <TransactionFilterModal isOpen={modal === 'filters'} onClose={() => setModal(null)} onApply={setFilters} onClear={() => setFilters({ description: '', categoryId: '', accountId: '', cardId: '', status: 'all', startDate: '', endDate: '' })} initialFilters={filters} accounts={accounts} cards={cards} categories={categories} />
             <Dialog open={modal === 'addRecurring' || modal === 'editRecurring'} onOpenChange={() => {setModal(null); setSelectedRecurring(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editRecurring' ? 'Editar' : 'Adicionar'} Recorrência</DialogTitle></DialogHeader><RecurringForm recurringItem={selectedRecurring} onAdd={(item) => {setRecurring(p=>[...p, {...item, id: Date.now().toString()}]); setModal(null);}} onUpdate={(item) => {setRecurring(p=>p.map(r=>r.id===item.id?item:r)); setModal(null);}} accounts={accounts} cards={cards} categories={categories} onClose={() => setModal(null)} isLoading={isLoading}/></DialogContent></Dialog>
             <Dialog open={modal === 'addTransfer' || modal === 'editTransfer'} onOpenChange={() => {setModal(null); setSelectedTransfer(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editTransfer' ? 'Editar' : 'Nova'} Transferência</DialogTitle></DialogHeader><TransferForm accounts={accounts} transfer={selectedTransfer} onTransfer={onAddTransfer} onUpdate={(t) => {setTransfers(p=>p.map(tr=>tr.id===t.id?t:tr)); setModal(null)}} onDismiss={() => setModal(null)} onError={addToast} isLoading={isLoading}/></DialogContent></Dialog>
