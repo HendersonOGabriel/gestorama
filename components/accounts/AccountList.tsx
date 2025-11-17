@@ -47,7 +47,7 @@ const AccountList: React.FC<AccountListProps> = ({ accounts, setAccounts, adjust
       if (delta !== 0) {
         const dateStr = new Date().toISOString().slice(0, 10);
         
-        const { error: txError } = await supabase
+        const { data: newTx, error: txError } = await supabase
           .from('transactions')
           .insert({
             description: `Ajuste de Saldo (${editName || account.name})`,
@@ -62,9 +62,25 @@ const AccountList: React.FC<AccountListProps> = ({ accounts, setAccounts, adjust
             category_id: null,
             paid: true,
             user_id: userId
-          });
+          })
+          .select()
+          .single();
 
         if (txError) throw txError;
+
+        // Create installment record
+        if (newTx) {
+          const installment = buildInstallments(dateStr, Math.abs(delta), 1)[0];
+          await supabase.from('installments').insert({
+            transaction_id: newTx.id,
+            installment_number: installment.installmentNumber,
+            amount: installment.amount,
+            posting_date: installment.postingDate,
+            paid: true,
+            payment_date: dateStr,
+            paid_amount: Math.abs(delta)
+          });
+        }
 
         // Update account balance
         const { error: balanceError } = await supabase
