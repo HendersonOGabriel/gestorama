@@ -76,14 +76,34 @@ export const getInvoiceDueDate = (postingDateStr: string, closingDay: number, du
   }
 };
 
-export const buildInstallments = (date: string, totalAmount: number, count: number): Installment[] => {
+export const buildInstallments = (
+  date: string,
+  totalAmount: number,
+  count: number,
+  isCard: boolean = false,
+  closingDay?: number
+): Installment[] => {
   const installments: Installment[] = [];
   const monthlyAmount = Math.round((totalAmount / count) * 100) / 100;
   let remaining = totalAmount;
 
+  const purchaseDate = new Date(date + 'T12:00:00Z');
+  const purchaseDay = purchaseDate.getUTCDate();
+
   for (let i = 1; i <= count; i++) {
-    const d = new Date(date + 'T12:00:00Z');
-    d.setUTCMonth(d.getUTCMonth() + i - 1);
+    let postingDate = new Date(purchaseDate);
+
+    if (isCard && closingDay) {
+      // If purchase is on or after closing day, first installment is next month
+      if (purchaseDay >= closingDay) {
+        postingDate.setUTCMonth(postingDate.getUTCMonth() + i);
+      } else {
+        postingDate.setUTCMonth(postingDate.getUTCMonth() + i - 1);
+      }
+    } else {
+      // Standard logic for non-card transactions
+      postingDate.setUTCMonth(postingDate.getUTCMonth() + i - 1);
+    }
     
     let amount = monthlyAmount;
     if (i === count) {
@@ -93,8 +113,9 @@ export const buildInstallments = (date: string, totalAmount: number, count: numb
     
     installments.push({
       id: i,
+      installmentNumber: i,
       amount: amount,
-      postingDate: d.toISOString().slice(0, 10),
+      postingDate: postingDate.toISOString().slice(0, 10),
       paid: false,
       paymentDate: null,
       paidAmount: null,
