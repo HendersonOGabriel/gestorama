@@ -445,7 +445,7 @@ const App: React.FC = () => {
           // Insert new installments
           const installmentsData = tx.installmentsSchedule.map(inst => ({
             transaction_id: tx.id,
-            installment_number: inst.id,
+            installment_number: inst.installmentNumber,
             amount: inst.amount,
             posting_date: inst.postingDate,
             paid: inst.paid,
@@ -488,7 +488,7 @@ const App: React.FC = () => {
           // Create installments
           const installmentsData = tx.installmentsSchedule.map(inst => ({
             transaction_id: newTx.id,
-            installment_number: inst.id,
+            installment_number: inst.installmentNumber,
             amount: inst.amount,
             posting_date: inst.postingDate,
             paid: inst.paid,
@@ -595,7 +595,7 @@ const App: React.FC = () => {
                     accountId = tx.account;
                     installmentsToUpdate.push({
                         transaction_id: tx.id,
-                        installment_number: s.id,
+                        installment_number: s.installmentNumber,
                         paid: true,
                         payment_date: new Date().toISOString().slice(0, 10),
                         paid_amount: s.amount
@@ -742,7 +742,7 @@ const App: React.FC = () => {
 
     const handleSettleInstallments = async (
       txId: string,
-      installmentsToSettle: { id: number; amount: number }[],
+      installmentsToSettle: { id: string; amount: number }[],
       totalPaidAmount: number
     ) => {
       const tx = transactions.find((t) => t.id === txId);
@@ -763,42 +763,48 @@ const App: React.FC = () => {
 
       const totalOriginalSelectedAmount = installmentsToSettle.reduce((sum, inst) => sum + inst.amount, 0);
       const paymentRatio = totalOriginalSelectedAmount > 0 ? totalPaidAmount / totalOriginalSelectedAmount : 0;
-      const settledInstallmentIds = new Set(installmentsToSettle.map(i => i.id));
-
-      const updatedSchedule = tx.installmentsSchedule.map(inst => {
-        if (settledInstallmentIds.has(inst.id)) {
-          return {
-            ...inst,
-            paid: true,
-            paidAmount: inst.amount * paymentRatio,
-            paymentDate: new Date().toISOString().slice(0, 10),
-          };
-        }
-        return inst;
-      });
-
-      const allPaid = updatedSchedule.every(inst => inst.paid);
 
       try {
-        // 1. Update the entire transaction with the new schedule
-        const { error: txError } = await supabase
-          .from('transactions')
-          .update({
-            installments_schedule: updatedSchedule,
-            paid: allPaid,
-          })
-          .eq('id', txId);
+        // 1. Update each selected installment individually
+        for (const instToSettle of installmentsToSettle) {
+          const paidAmount = instToSettle.amount * paymentRatio;
+          const { error: instError } = await supabase
+            .from('installments')
+            .update({
+              paid: true,
+              paid_amount: paidAmount,
+              payment_date: new Date().toISOString().slice(0, 10),
+            })
+            .eq('id', instToSettle.id);
 
-        if (txError) throw txError;
+          if (instError) throw instError;
+        }
 
         // 2. Adjust account balance
         const account = accounts.find((a) => a.id === tx.account);
         if (account && tx.type !== 'card') {
-            const { error: accError } = await supabase
-              .from('accounts')
-              .update({ balance: account.balance - totalPaidAmount })
-              .eq('id', account.id);
-            if (accError) throw accError;
+          const { error: accError } = await supabase
+            .from('accounts')
+            .update({ balance: account.balance - totalPaidAmount })
+            .eq('id', account.id);
+          if (accError) throw accError;
+        }
+
+        // 3. Check if all installments are now paid and update the parent transaction
+        const { data: allInstallments, error: fetchError } = await supabase
+          .from('installments')
+          .select('paid')
+          .eq('transaction_id', txId);
+
+        if (fetchError) throw fetchError;
+
+        const allPaid = allInstallments.every(inst => inst.paid);
+        if (allPaid) {
+          const { error: txError } = await supabase
+            .from('transactions')
+            .update({ paid: true })
+            .eq('id', txId);
+          if (txError) throw txError;
         }
 
         addToast('Parcelas quitadas com sucesso!', 'success');
