@@ -353,6 +353,97 @@ const App: React.FC = () => {
     const isLoading = authLoading || supabaseData.loading;
     const ownerProfile = useMemo(() => users.find(u => u.role === 'owner'), [users]);
 
+    // -- Notification Generation Effect --
+    useEffect(() => {
+        if (isLoading) return;
+
+        const newNotifications: { id: string, type: string, message: string }[] = [];
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        // 1. Upcoming Reminders
+        reminders.forEach(reminder => {
+            const reminderDate = new Date(reminder.date);
+            const diffTime = reminderDate.getTime() - today.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays >= 0 && diffDays <= 3) {
+                newNotifications.push({
+                    id: `reminder-${reminder.id}`,
+                    type: 'warning',
+                    message: `Lembrete: "${reminder.title}" em ${diffDays} dia(s).`
+                });
+            }
+        });
+
+        // 2. Achieved Goals
+        goals.forEach(goal => {
+            if (goal.currentAmount >= goal.targetAmount) {
+                newNotifications.push({
+                    id: `goal-${goal.id}`,
+                    type: 'success',
+                    message: `Parabéns! Você alcançou sua meta "${goal.name}".`
+                });
+            }
+        });
+
+        // 3. Exceeded Budgets
+        const expensesByCategory = transactions
+            .filter(t => !t.isIncome && new Date(t.date).getMonth() === today.getMonth())
+            .reduce((acc, t) => {
+                if (t.categoryId) {
+                    acc[t.categoryId] = (acc[t.categoryId] || 0) + t.amount;
+                }
+                return acc;
+            }, {} as Record<string, number>);
+
+        Object.keys(budgets).forEach(categoryId => {
+            const budgetAmount = budgets[categoryId];
+            const spentAmount = expensesByCategory[categoryId] || 0;
+            if (spentAmount > budgetAmount) {
+                const categoryName = getCategoryName(categoryId);
+                newNotifications.push({
+                    id: `budget-${categoryId}`,
+                    type: 'error',
+                    message: `Atenção: Você ultrapassou o orçamento para "${categoryName}".`
+                });
+            }
+        });
+
+        // 4. Card Invoice Reminders
+        cards.forEach(card => {
+            const closingDate = new Date(today.getFullYear(), today.getMonth(), card.closingDay);
+            const dueDate = new Date(today.getFullYear(), today.getMonth(), card.dueDay);
+
+            const closingDiff = Math.ceil((closingDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+            const dueDiff = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+            if (closingDiff >= 0 && closingDiff <= 2) {
+                 newNotifications.push({
+                    id: `card-closing-${card.id}`,
+                    type: 'info',
+                    message: `A fatura do cartão ${card.name} fecha em ${closingDiff} dia(s).`
+                });
+            }
+            if (dueDiff >= 0 && dueDiff <= 3) {
+                 newNotifications.push({
+                    id: `card-due-${card.id}`,
+                    type: 'warning',
+                    message: `A fatura do cartão ${card.name} vence em ${dueDiff} dia(s).`
+                });
+            }
+        });
+
+
+        setNotifications(prev => {
+            const existingIds = new Set(prev.map(n => n.id));
+            const uniqueNew = newNotifications.filter(n => !existingIds.has(n.id));
+            return [...prev, ...uniqueNew];
+        });
+
+    }, [isLoading, reminders, goals, budgets, transactions, cards, categories]);
+
+
     // -- Handlers --
     const addToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
         const id = Date.now().toString();
@@ -1345,6 +1436,18 @@ const App: React.FC = () => {
             setTransactions(prev => [...prev, ...newTxs]);
             setRecurring(updatedRecurringItems);
             addToast(`${newTxs.length} transaç${newTxs.length > 1 ? 'ões' : 'ão'} recorrente${newTxs.length > 1 ? 's' : ''} gerada${newTxs.length > 1 ? 's' : ''}.`, 'success');
+
+            const newRecNotifications = newTxs.map(tx => ({
+                id: `recurring-${tx.id}`,
+                type: 'info',
+                message: `Transação recorrente "${tx.desc}" foi gerada.`
+            }));
+
+            setNotifications(prev => {
+                const existingIds = new Set(prev.map(n => n.id));
+                const uniqueNew = newRecNotifications.filter(n => !existingIds.has(n.id));
+                return [...prev, ...uniqueNew];
+            });
         }
     }, [isLoading]); 
     
