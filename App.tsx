@@ -742,10 +742,10 @@ const App: React.FC = () => {
 
     const handleSettleInstallments = async (
       txId: string,
-      installmentsToSettle: { id: string; amount: number }[],
+      installmentsToSettle: { id: number; amount: number }[],
       totalPaidAmount: number
     ) => {
-      const tx = transactions.find(t => t.id === txId);
+      const tx = transactions.find((t) => t.id === txId);
       if (!tx) {
         addToast('Transação não encontrada.', 'error');
         return;
@@ -756,57 +756,56 @@ const App: React.FC = () => {
         return;
       }
 
+      if (totalPaidAmount < 0) {
+        addToast('O valor pago não pode ser negativo.', 'error');
+        return;
+      }
+
       const totalOriginalSelectedAmount = installmentsToSettle.reduce((sum, inst) => sum + inst.amount, 0);
-      const amountDifference = totalOriginalSelectedAmount - totalPaidAmount;
       const paymentRatio = totalOriginalSelectedAmount > 0 ? totalPaidAmount / totalOriginalSelectedAmount : 0;
+      const settledInstallmentIds = new Set(installmentsToSettle.map(i => i.id));
+
+      const updatedSchedule = tx.installmentsSchedule.map(inst => {
+        if (settledInstallmentIds.has(inst.id)) {
+          return {
+            ...inst,
+            paid: true,
+            paidAmount: inst.amount * paymentRatio,
+            paymentDate: new Date().toISOString().slice(0, 10),
+          };
+        }
+        return inst;
+      });
+
+      const allPaid = updatedSchedule.every(inst => inst.paid);
 
       try {
-        // 1. Update each selected installment
-        for (const inst of installmentsToSettle) {
-          const paidAmountForInst = inst.amount * paymentRatio;
-          const { error: instError } = await supabase
-            .from('installments')
-            .update({
-              paid: true,
-              paid_amount: paidAmountForInst,
-              payment_date: new Date().toISOString().slice(0, 10)
-            })
-            .eq('transaction_id', txId)
-            .eq('id', inst.id);
+        // 1. Update the entire transaction with the new schedule
+        const { error: txError } = await supabase
+          .from('transactions')
+          .update({
+            installments_schedule: updatedSchedule,
+            paid: allPaid,
+          })
+          .eq('id', txId);
 
-          if (instError) throw instError;
-        }
+        if (txError) throw txError;
 
         // 2. Adjust account balance
-        const account = accounts.find(a => a.id === tx.account);
-        if (account) {
-          const { error: accError } = await supabase
-            .from('accounts')
-            .update({ balance: account.balance - totalPaidAmount })
-            .eq('id', account.id);
-          if (accError) throw accError;
-        }
-
-        // 4. Check if all installments are paid now and update the transaction status
-        const allInstallmentIds = new Set(tx.installmentsSchedule.map(i => i.id));
-        const settledIds = new Set(installmentsToSettle.map(i => i.id));
-        const remainingUnpaid = tx.installmentsSchedule.filter(
-            inst => !inst.paid && !settledIds.has(inst.id)
-        );
-
-        if (remainingUnpaid.length === 0) {
-          const { error: txError } = await supabase
-            .from('transactions')
-            .update({ paid: true })
-            .eq('id', txId);
-          if (txError) throw txError;
+        const account = accounts.find((a) => a.id === tx.account);
+        if (account && tx.type !== 'card') {
+            const { error: accError } = await supabase
+              .from('accounts')
+              .update({ balance: account.balance - totalPaidAmount })
+              .eq('id', account.id);
+            if (accError) throw accError;
         }
 
         addToast('Parcelas quitadas com sucesso!', 'success');
         supabaseData.refetch();
 
       } catch (error) {
-        console.error("Error settling installments:", error);
+        console.error('Error settling installments:', error);
         addToast('Erro ao quitar parcelas. Tente novamente.', 'error');
       }
     };

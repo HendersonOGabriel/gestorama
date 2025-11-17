@@ -12,7 +12,7 @@ interface SettleInstallmentsModalProps {
   onClose: () => void;
   onConfirm: (
     txId: string,
-    installmentsToSettle: { id: string; amount: number }[],
+    installmentsToSettle: { id: number; amount: number }[],
     totalPaidAmount: number
   ) => void;
   getInstallmentDueDate: (tx: Transaction, inst: Installment) => string;
@@ -24,7 +24,7 @@ const SettleInstallmentsModal: React.FC<SettleInstallmentsModalProps> = ({
   onConfirm,
   getInstallmentDueDate
 }) => {
-  const [selectedInstallments, setSelectedInstallments] = useState<Set<string>>(new Set());
+  const [selectedInstallments, setSelectedInstallments] = useState<Set<number>>(new Set());
   const [totalPaidAmount, setTotalPaidAmount] = useState('');
 
   const unpaidInstallments = useMemo(() => {
@@ -61,7 +61,7 @@ const SettleInstallmentsModal: React.FC<SettleInstallmentsModalProps> = ({
     }
   };
 
-  const handleToggleInstallment = (instId: string) => {
+  const handleToggleInstallment = (instId: number) => {
     setSelectedInstallments(prev => {
       const newSet = new Set(prev);
       if (newSet.has(instId)) {
@@ -106,7 +106,11 @@ const SettleInstallmentsModal: React.FC<SettleInstallmentsModalProps> = ({
             <Label htmlFor="select-all" className="ml-2 font-semibold">Selecionar Todas</Label>
           </div>
           {unpaidInstallments.map((inst, index) => (
-            <div key={inst.id} className="flex items-center justify-between p-2 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800/50">
+            <Label
+              key={inst.id}
+              htmlFor={`inst-${inst.id}`}
+              className="flex items-center justify-between p-2 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer"
+            >
               <div className="flex items-center">
                 <Checkbox
                   id={`inst-${inst.id}`}
@@ -114,13 +118,13 @@ const SettleInstallmentsModal: React.FC<SettleInstallmentsModalProps> = ({
                   onCheckedChange={() => handleToggleInstallment(inst.id)}
                 />
                 <div className="ml-3">
-                  <Label htmlFor={`inst-${inst.id}`} className="font-medium">
-                    Parcela {inst.installment_number}/{transaction.installments} - {toCurrency(inst.amount)}
-                  </Label>
+                  <span className="font-medium">
+                    Parcela {inst.id}/{transaction.installments} - {toCurrency(inst.amount)}
+                  </span>
                   <p className="text-xs text-slate-500">Vencimento: {displayDate(getInstallmentDueDate(transaction, inst))}</p>
                 </div>
               </div>
-            </div>
+            </Label>
           ))}
         </div>
 

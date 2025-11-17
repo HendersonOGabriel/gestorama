@@ -136,37 +136,37 @@ const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
                       toCurrency(inst.amount)
                     );
 
+                    const handleRowClick = () => {
+                      if (isCardTx) {
+                        if (!cardData) return;
+                        const month = getInvoiceMonthKey(inst.postingDate, cardData.closingDay);
+                        onFocusInvoice(cardData.id, month);
+                      } else {
+                        inst.paid ? onUnpay(transaction.id, inst.id) : onPay({ tx: transaction, inst });
+                      }
+                    };
+
                     return (
-                      <div key={inst.id} className="flex justify-between items-center py-2 border-b border-slate-200 dark:border-slate-700 last:border-b-0">
+                      <div
+                        key={inst.id}
+                        className="flex justify-between items-center py-2 border-b border-slate-200 dark:border-slate-700 last:border-b-0 -mx-3 px-3 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer"
+                        onClick={handleRowClick}
+                      >
                         <div>
                           <div className="font-medium">
-                            {transaction.installments > 1 ? `Parcela ${index + 1}/${transaction.installments} - ` : ''}
+                            {transaction.installments > 1 ? `Parcela ${inst.id}/${transaction.installments} - ` : ''}
                             {amountDisplay}
                           </div>
                           <div className="text-xs text-slate-500">Vencimento: {displayDate(getInstallmentDueDate(transaction, inst))}</div>
                           {inst.paid && inst.paymentDate && <div className="text-xs text-green-600">Pago em: {displayDate(inst.paymentDate)}</div>}
                         </div>
-                        {isCardTx ? (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                                if (!cardData) return;
-                                const month = getInvoiceMonthKey(inst.postingDate, cardData.closingDay);
-                                onFocusInvoice(cardData.id, month);
-                            }}
-                          >
-                            Fatura
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant={inst.paid ? 'outline' : 'default'}
-                            onClick={() => inst.paid ? onUnpay(transaction.id, inst.id) : onPay({ tx: transaction, inst })}
-                          >
-                            {inst.paid ? 'Estornar' : 'Pagar'}
-                          </Button>
-                        )}
+                        <Button
+                          size="sm"
+                          variant={isCardTx ? 'outline' : (inst.paid ? 'outline' : 'default')}
+                          onClick={(e) => { e.stopPropagation(); handleRowClick(); }} // Prevent double event firing
+                        >
+                          {isCardTx ? 'Fatura' : (inst.paid ? 'Estornar' : 'Pagar')}
+                        </Button>
                       </div>
                     );
                 })}
