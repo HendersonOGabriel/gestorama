@@ -96,7 +96,7 @@ export const useSupabaseData = (userId: string | null) => {
       date: tx.date,
       isIncome: tx.is_income,
       type: tx.type as 'card' | 'cash' | 'prazo',
-      installments: Math.max(1, tx.installments ? tx.installments.length : 0),
+      installments: tx.installments,
       account: tx.account_id,
       card: tx.card_id,
       categoryId: tx.category_id,
@@ -113,7 +113,7 @@ export const useSupabaseData = (userId: string | null) => {
         postingDate: inst.posting_date,
         paymentDate: inst.payment_date,
         paidAmount: inst.paid_amount ? Number(inst.paid_amount) : null,
-      })).sort((a: any, b: any) => a.id - b.id) : []
+      })).sort((a: any, b: any) => a.installmentNumber - b.installmentNumber) : []
     }));
   }, [userId]);
 
