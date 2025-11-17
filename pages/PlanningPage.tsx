@@ -381,17 +381,20 @@ const PlanningPage: React.FC<PlanningPageProps> = ({ categories, budgets, setBud
         setGoals(p => p.map(g => g.id === goalId ? {...g, currentAmount: g.currentAmount + amount} : g));
         createGoalTransaction(goal, amount, accountId, false);
         addXp(25, 'Depósito na meta');
+        addToast('Valor adicionado à meta com sucesso!', 'success');
 
         const isNowCompleted = (goal.currentAmount + amount) >= goal.targetAmount;
         if (!wasCompleted && isNowCompleted) {
             addXp(200, 'Meta Concluída!');
+            addToast('Parabéns! Você concluiu sua meta!', 'success');
         }
     };
     const handleWithdrawFunds = (goalId: string, amount: number, accountId: string) => {
         const goal = goals.find(g => g.id === goalId);
-        if(!goal || amount > goal.currentAmount) { addToast("O valor de resgate não pode ser maior que o saldo atual da meta."); return; }
+        if(!goal || amount > goal.currentAmount) { addToast("O valor de resgate não pode ser maior que o saldo atual da meta.", 'error'); return; }
         setGoals(p => p.map(g => g.id === goalId ? {...g, currentAmount: g.currentAmount - amount} : g));
         createGoalTransaction(goal, amount, accountId, true);
+        addToast('Valor resgatado da meta com sucesso!', 'success');
     };
 
     return (
