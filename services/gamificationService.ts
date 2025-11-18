@@ -252,13 +252,34 @@ export async function checkAndAwardSavingsIncreaseXp(userId: string, gamificatio
 }
 
 /**
- * Concede XP de login diário.
+ * Concede XP de login diário, garantindo que seja concedido apenas uma vez por dia.
  * @param userId - O ID do usuário.
- * @param gamificationData - Os dados atuais de gamificação do usuário.
  * @returns - A promessa de dados de gamificação atualizados ou nulo se nenhum XP for concedido.
  */
 export async function grantDailyLoginXp(userId: string): Promise<{ newGamificationData: Tables<'gamification'> } | null> {
-  // Grant daily login XP (simplified - no date tracking)
-  const result = await addXp(userId, XP_VALUES.DAILY_LOGIN);
-  return result;
+  const { data: gamificationData, error } = await supabase
+    .from('gamification')
+    .select('last_login_xp_awarded')
+    .eq('user_id', userId)
+    .single();
+
+  if (error) {
+    console.error('Não foi possível obter os dados de gamificação para a verificação diária de XP', error);
+    return null;
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  if (gamificationData && gamificationData.last_login_xp_awarded === today) {
+    return null; // XP já concedido hoje
+  }
+
+  // Concede XP e atualiza a data da última concessão
+  const { newGamificationData } = await addXp(userId, XP_VALUES.DAILY_LOGIN, { last_login_xp_awarded: today });
+
+  if (newGamificationData) {
+    return { newGamificationData };
+  }
+
+  return null;
 }
