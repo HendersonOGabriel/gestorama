@@ -164,7 +164,7 @@ export default function LandingPage({ onEnter }: LandingPageProps) {
         </div>
 
         <div>
-          <Button size="lg" onClick={() => onEnter()} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full px-10 py-6 text-lg">Comece Grátis Agora</Button>
+          <Button size="lg" onClick={() => onEnter()} className="rounded-full px-10 py-6 text-lg">Comece Grátis Agora</Button>
         </div>
       </section>
 
@@ -189,17 +189,17 @@ export default function LandingPage({ onEnter }: LandingPageProps) {
         <h2 className="text-3xl font-bold mb-12 text-indigo-300">Como funciona? É simples!</h2>
         <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-8">
             <div className="flex flex-col items-center">
-                <div className="w-16 h-16 rounded-full bg-indigo-500 text-white flex items-center justify-center text-2xl font-bold mb-4">1</div>
+                <div className="w-16 h-16 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-2xl font-bold mb-4">1</div>
                 <h3 className="text-xl font-semibold mb-2">Cadastre-se</h3>
                 <p className="text-slate-300">Crie sua conta em segundos e configure suas contas e cartões no dashboard web.</p>
             </div>
              <div className="flex flex-col items-center">
-                <div className="w-16 h-16 rounded-full bg-indigo-500 text-white flex items-center justify-center text-2xl font-bold mb-4">2</div>
+                <div className="w-16 h-16 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-2xl font-bold mb-4">2</div>
                 <h3 className="text-xl font-semibold mb-2">Converse com a Yara</h3>
                 <p className="text-slate-300">Adicione nosso número no WhatsApp e envie seus gastos por texto ou áudio. Ex: "Paguei R$50 no iFood".</p>
             </div>
              <div className="flex flex-col items-center">
-                <div className="w-16 h-16 rounded-full bg-indigo-500 text-white flex items-center justify-center text-2xl font-bold mb-4">3</div>
+                <div className="w-16 h-16 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-2xl font-bold mb-4">3</div>
                 <h3 className="text-xl font-semibold mb-2">Acompanhe e Conquiste</h3>
                 <p className="text-slate-300">Veja tudo organizado no dashboard, analise relatórios e atinja suas metas financeiras.</p>
             </div>
@@ -231,7 +231,7 @@ export default function LandingPage({ onEnter }: LandingPageProps) {
           <span className={cn("font-medium", billingCycle === 'monthly' ? 'text-indigo-400' : 'text-slate-400')}>Mensal</span>
           <label className="relative inline-flex items-center cursor-pointer">
             <input type="checkbox" checked={billingCycle === 'annual'} onChange={() => setBillingCycle(p => p === 'monthly' ? 'annual' : 'monthly')} className="sr-only peer" />
-            <div className="w-14 h-7 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-slate-600 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-indigo-600"></div>
+            <div className="w-14 h-7 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-slate-600 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary"></div>
           </label>
           <span className={cn("font-medium", billingCycle === 'annual' ? 'text-indigo-400' : 'text-slate-400')}>
             Anual
@@ -247,8 +247,8 @@ export default function LandingPage({ onEnter }: LandingPageProps) {
             {/* Desktop Grid */}
             <div className="hidden md:grid grid-cols-3 gap-8 items-stretch">
               {plans.map((plan, i) => (
-                <Card key={i} className={cn("bg-slate-800/50 border rounded-2xl hover:scale-[1.02] transition-transform flex flex-col", plan.recommended ? "border-2 border-indigo-500 relative" : "border-slate-700")}>
-                  {plan.recommended && <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-full z-10">RECOMENDADO</div>}
+                <Card key={i} className={cn("bg-slate-800/50 border rounded-2xl hover:scale-[1.02] transition-transform flex flex-col", plan.recommended ? "border-2 border-primary relative" : "border-slate-700")}>
+                  {plan.recommended && <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-full z-10">RECOMENDADO</div>}
                   <CardContent className={cn("p-8 text-center flex flex-col flex-grow", plan.recommended && "pt-12")}>
                     <div className="flex-grow">
                       <h3 className="text-xl font-bold text-slate-100 mb-4">{plan.name}</h3>
@@ -293,7 +293,7 @@ export default function LandingPage({ onEnter }: LandingPageProps) {
                     <Button 
                         className={cn(
                             "w-full mt-auto rounded-full px-6 py-3",
-                            plan.recommended ? "bg-indigo-600 hover:bg-indigo-700" : "bg-slate-700 hover:bg-slate-600"
+                            plan.recommended ? "" : "bg-slate-700 hover:bg-slate-600"
                         )}
                         onClick={() => onEnter(plan.price > 0 ? 'subscription' : undefined)}
                     >
@@ -308,8 +308,8 @@ export default function LandingPage({ onEnter }: LandingPageProps) {
             <div className="md:hidden">
                 <PricingCarousel initialSlide={1}>
                   {plans.map((plan, i) => (
-                    <Card key={i} className={cn("bg-slate-800/50 border rounded-2xl flex flex-col h-full", plan.recommended ? "border-2 border-indigo-500 relative" : "border-slate-700")}>
-                      {plan.recommended && <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-full z-10">RECOMENDADO</div>}
+                    <Card key={i} className={cn("bg-slate-800/50 border rounded-2xl flex flex-col h-full", plan.recommended ? "border-2 border-primary relative" : "border-slate-700")}>
+                      {plan.recommended && <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-full z-10">RECOMENDADO</div>}
                       <CardContent className={cn("p-8 text-center flex flex-col flex-grow", plan.recommended && "pt-12")}>
                         <div className="flex-grow">
                           <h3 className="text-xl font-bold text-slate-100 mb-4">{plan.name}</h3>
@@ -354,7 +354,7 @@ export default function LandingPage({ onEnter }: LandingPageProps) {
                         <Button
                             className={cn(
                                 "w-full mt-auto rounded-full px-6 py-3",
-                                plan.recommended ? "bg-indigo-600 hover:bg-indigo-700" : "bg-slate-700 hover:bg-slate-600"
+                                plan.recommended ? "" : "bg-slate-700 hover:bg-slate-600"
                             )}
                             onClick={() => onEnter(plan.price > 0 ? 'subscription' : undefined)}
                         >

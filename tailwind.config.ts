@@ -57,7 +57,7 @@ export default {
       },
       keyframes: {
         'flash-bg': {
-          '0%': { backgroundColor: 'rgba(79, 70, 229, 0.2)' },
+          '0%': { backgroundColor: 'hsl(var(--primary) / 0.2)' },
           '100%': { backgroundColor: 'transparent' },
         },
         'toast-in': {
