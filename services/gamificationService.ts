@@ -37,12 +37,16 @@ export const XP_VALUES = {
  * @param xpToAdd - A quantidade de XP a ser adicionada.
  * @returns - Um objeto indicando se o usuário subiu de nível e o novo estado de gamificação.
  */
-export async function addXp(userId: string, xpToAdd: number): Promise<{ leveledUp: boolean; newGamificationData: Gamification | null }> {
-  if (!userId || xpToAdd <= 0) {
+export async function addXp(
+  userId: string,
+  xpToAdd: number,
+  additionalUpdates: Partial<Omit<Gamification, 'user_id' | 'id'>> = {}
+): Promise<{ leveledUp: boolean; newGamificationData: Gamification | null }> {
+  if (!userId || xpToAdd < 0) { // Allow 0 xp for updates without xp change
     return { leveledUp: false, newGamificationData: null };
   }
 
-  // 1. Buscar o estado atual de gamificação do usuário
+  // 1. Fetch current gamification state
   const { data: currentGamification, error: fetchError } = await supabase
     .from('gamification')
     .select('*')
@@ -50,19 +54,17 @@ export async function addXp(userId: string, xpToAdd: number): Promise<{ leveledU
     .single();
 
   if (fetchError || !currentGamification) {
-    console.error('Erro ao buscar dados de gamificação:', fetchError?.message);
+    console.error('Error fetching gamification data:', fetchError?.message);
     return { leveledUp: false, newGamificationData: null };
   }
 
-  // 2. Calcular o novo XP e verificar se houve level up
+  // 2. Calculate new XP and handle level ups
   const newXp = currentGamification.xp + xpToAdd;
   let newLevel = currentGamification.level;
   let leveledUp = false;
 
-  // Encontra o próximo nível possível na lista
   let nextLevelIndex = LEVELS.findIndex(l => l.level === newLevel + 1);
 
-  // Loop para lidar com múltiplos level ups de uma vez
   while (nextLevelIndex !== -1 && newXp >= LEVELS[nextLevelIndex].xpRequired) {
     newLevel = LEVELS[nextLevelIndex].level;
     leveledUp = true;
@@ -71,21 +73,27 @@ export async function addXp(userId: string, xpToAdd: number): Promise<{ leveledU
 
   const xpForNextLevel = nextLevelIndex !== -1 ? LEVELS[nextLevelIndex].xpRequired : (LEVELS.find(l=> l.level === newLevel)?.xpRequired || newXp);
 
-  // 3. Atualizar os dados no banco se algo mudou
-  if (newXp !== currentGamification.xp || leveledUp) {
+  // 3. Update the database if anything changed
+  const hasXpChanged = newXp !== currentGamification.xp;
+  const hasUpdates = Object.keys(additionalUpdates).length > 0;
+
+  if (hasXpChanged || leveledUp || hasUpdates) {
+    const updatePayload = {
+      ...additionalUpdates,
+      xp: newXp,
+      level: newLevel,
+      xp_to_next_level: xpForNextLevel,
+    };
+
     const { data: updatedGamification, error: updateError } = await supabase
       .from('gamification')
-      .update({
-        xp: newXp,
-        level: newLevel,
-        xp_to_next_level: xpForNextLevel,
-      })
+      .update(updatePayload)
       .eq('user_id', userId)
       .select()
       .single();
 
     if (updateError) {
-      console.error('Erro ao atualizar dados de gamificação:', updateError.message);
+      console.error('Error updating gamification data:', updateError.message);
       return { leveledUp: false, newGamificationData: null };
     }
 
@@ -250,6 +258,20 @@ export async function checkAndAwardSavingsIncreaseXp(userId: string, gamificatio
  * @returns - A promessa de dados de gamificação atualizados ou nulo se nenhum XP for concedido.
  */
 export async function grantDailyLoginXp(userId: string, gamificationData: Gamification): Promise<Gamification | null> {
-  const { newGamificationData } = await addXp(userId, XP_VALUES.DAILY_LOGIN);
-  return newGamificationData || null;
+  const today = new Date().toISOString().slice(0, 10);
+
+  // 1. Check if XP for today has already been awarded.
+  // The column type is DATE, so it's stored as 'YYYY-MM-DD'.
+  if (gamificationData.last_login_xp_awarded === today) {
+    return null; // Already awarded, do nothing.
+  }
+
+  // 2. Grant XP and update the last login date in a single atomic operation.
+  const { newGamificationData } = await addXp(
+    userId,
+    XP_VALUES.DAILY_LOGIN,
+    { last_login_xp_awarded: today }
+  );
+
+  return newGamificationData;
 }
