@@ -7,14 +7,17 @@ import { buildInstallments } from '../../utils/helpers';
 import { supabase } from '@/src/integrations/supabase/client';
 import { accountSchema } from '../../utils/validation';
 
+import { XP_VALUES } from '../../services/gamificationService';
+
 interface AccountFormProps {
   setAccounts: React.Dispatch<React.SetStateAction<Account[]>>;
   setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
   userId: string;
   addToast: (message: string, type?: 'error' | 'success') => void;
+  addXp: (amount: number) => void;
 }
 
-const AccountForm: React.FC<AccountFormProps> = ({ setAccounts, setTransactions, userId, addToast }) => {
+const AccountForm: React.FC<AccountFormProps> = ({ setAccounts, setTransactions, userId, addToast, addXp }) => {
   const [name, setName] = useState('');
   const [balance, setBalance] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -99,6 +102,7 @@ const AccountForm: React.FC<AccountFormProps> = ({ setAccounts, setTransactions,
       }
 
       addToast('Conta adicionada com sucesso!', 'success');
+      addXp(XP_VALUES.ADD_ACCOUNT);
       setName('');
       setBalance('');
     } catch (error) {

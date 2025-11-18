@@ -8,6 +8,7 @@ import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/Dialog';
 import { supabase } from '../src/integrations/supabase/client';
+import { XP_VALUES } from '../services/gamificationService';
 
 interface BudgetSectionProps {
   categories: Category[];
@@ -273,7 +274,7 @@ interface PlanningPageProps {
   addToast: (message: string, type?: 'error' | 'success') => void;
   transactions: Transaction[]; // Added transactions prop
   isLoading: boolean;
-  addXp: (amount: number, reason: string) => void;
+  addXp: (amount: number) => void;
   userId: string;
 }
 
@@ -289,13 +290,12 @@ const PlanningPage: React.FC<PlanningPageProps> = ({ categories, budgets, setBud
     const [goalFundsAccount, setGoalFundsAccount] = useState(accounts[0]?.id || '');
 
     const handleSetBudget = async (categoryId: string, amount: number) => {
-      const isNew = !budgets[categoryId] || budgets[categoryId] === 0;
+      const isNewBudget = !budgets[categoryId] || budgets[categoryId] === 0;
       const month = monthKey(viewingMonth);
       const previousBudgets = { ...budgets };
 
       // Optimistic update
       setBudgets(p => ({...p, [categoryId]: amount}));
-      addToast('Orçamento salvo com sucesso!', 'success');
 
       try {
         const { error } = await supabase
@@ -311,8 +311,9 @@ const PlanningPage: React.FC<PlanningPageProps> = ({ categories, budgets, setBud
 
         if (error) throw error;
 
-        if (isNew) {
-          addXp(50, 'Novo orçamento');
+        addToast('Orçamento salvo com sucesso!', 'success');
+        if (isNewBudget) {
+          addXp(XP_VALUES.CREATE_BUDGET);
         }
       } catch (error) {
         console.error('Erro ao salvar orçamento:', error);
@@ -344,7 +345,7 @@ const PlanningPage: React.FC<PlanningPageProps> = ({ categories, budgets, setBud
           currentAmount: data.current_amount
         }, ...p]);
         
-        addXp(100, 'Nova meta criada');
+        addXp(XP_VALUES.CREATE_GOAL);
         addToast('Meta criada com sucesso!', 'success');
       } catch (error) {
         console.error('Erro ao criar meta:', error);
@@ -410,11 +411,10 @@ const PlanningPage: React.FC<PlanningPageProps> = ({ categories, budgets, setBud
         
         setGoals(p => p.map(g => g.id === goalId ? {...g, currentAmount: g.currentAmount + amount} : g));
         createGoalTransaction(goal, amount, accountId, false);
-        addXp(25, 'Depósito na meta');
 
         const isNowCompleted = (goal.currentAmount + amount) >= goal.targetAmount;
         if (!wasCompleted && isNowCompleted) {
-            addXp(200, 'Meta Concluída!');
+            addXp(XP_VALUES.ACHIEVE_GOAL);
         }
     };
     const handleWithdrawFunds = (goalId: string, amount: number, accountId: string) => {

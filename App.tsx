@@ -37,6 +37,7 @@ import {
 import { DEFAULT_CATEGORIES } from './data/initialData';
 import { monthKey, getInvoiceMonthKey, getInvoiceDueDate, toCurrency } from './utils/helpers';
 import { runRecurringItem } from './services/recurringService';
+import { addXp as addXpService, XP_VALUES, checkAndAwardMonthlyBudgetXp, grantDailyLoginXp, checkAndAwardSavingsIncreaseXp } from './services/gamificationService';
 import { loadState, saveState, getOnboardingStatus, setOnboardingCompleted, resetOnboardingStatus } from './services/storageService';
 import { cn } from './utils/helpers';
 import { Button } from './components/ui/Button';
@@ -454,16 +455,18 @@ const App: React.FC = () => {
         setToasts(prev => prev.filter(t => t.id !== id));
     };
 
-    const addXp = (amount: number, reason: string) => {
-        setGamification(prev => {
-            const newXp = prev.xp + amount;
-            if (newXp >= prev.xpToNextLevel) {
-                addToast(`Você subiu para o Nível ${prev.level + 1}!`, 'success');
-                return { level: prev.level + 1, xp: newXp - prev.xpToNextLevel, xpToNextLevel: Math.round(prev.xpToNextLevel * 1.5) };
-            }
-            return { ...prev, xp: newXp };
-        });
-    };
+    const addXp = useCallback(async (amount: number) => {
+      if (!user) return;
+
+      const { leveledUp, newGamificationData } = await addXpService(user.id, amount);
+
+      if (newGamificationData) {
+        setGamification(newGamificationData);
+        if (leveledUp) {
+          addToast(`Parabéns! Você subiu para o Nível ${newGamificationData.level}!`, 'success');
+        }
+      }
+    }, [user, addToast]);
 
     const incrementYaraUsage = useCallback(async () => {
         if (!user) return;
@@ -606,7 +609,7 @@ const App: React.FC = () => {
           }
 
           addToast('Transação adicionada com sucesso!', 'success');
-          addXp(10, 'Transação adicionada');
+          addXp(XP_VALUES.ADD_TRANSACTION);
           supabaseData.refetch();
         }
       } catch (error) {
@@ -1414,6 +1417,62 @@ const App: React.FC = () => {
         }
     }, [themePreference, authLoading, supabaseData.loading]);
 
+    // Daily Login XP Award
+    useEffect(() => {
+      const runDailyLoginCheck = async () => {
+        if (!user || !gamification.user_id) return;
+
+        const result = await grantDailyLoginXp(user.id, gamification);
+
+        if (result) {
+          setGamification(result);
+          if (result.leveledUp) {
+            addToast(`Parabéns! Você subiu para o Nível ${result.level}!`, 'success');
+          } else {
+            addToast(`Você ganhou ${XP_VALUES.DAILY_LOGIN} XP por acessar hoje!`, 'success');
+          }
+        }
+      };
+
+      if (!isLoading && user?.id && gamification.user_id) {
+        runDailyLoginCheck();
+      }
+    }, [isLoading, user?.id, gamification.user_id, gamification.last_login_xp_awarded, addToast]);
+
+    // Monthly Budget XP Award Check
+    useEffect(() => {
+      const runBudgetCheck = async () => {
+        if (!user || !gamification.user_id) return;
+
+        const updatedGamification = await checkAndAwardMonthlyBudgetXp(user.id, gamification);
+        if (updatedGamification) {
+          setGamification(updatedGamification);
+          addToast('Parabéns! Você se manteve no orçamento e ganhou XP!', 'success');
+        }
+      };
+
+      if (!isLoading) {
+        runBudgetCheck();
+      }
+    }, [isLoading, user?.id, gamification.user_id]);
+
+    // Monthly Savings Increase XP Award Check
+    useEffect(() => {
+      const runSavingsCheck = async () => {
+        if (!user || !gamification.user_id) return;
+
+        const updatedGamification = await checkAndAwardSavingsIncreaseXp(user.id, gamification);
+        if (updatedGamification) {
+          setGamification(updatedGamification);
+          addToast('Você economizou mais este mês! Continue assim e ganhou XP!', 'success');
+        }
+      };
+
+      if (!isLoading) {
+        runSavingsCheck();
+      }
+    }, [isLoading, user?.id, gamification.user_id]);
+
     // Effect to scroll to top on page change
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -1570,10 +1629,10 @@ const App: React.FC = () => {
             <PaymentModal payingInstallment={payingInstallment} onClose={() => setPayingInstallment(null)} onConfirm={handlePayInstallment} />
             <SettleInstallmentsModal transaction={settlingTransaction} onClose={() => setSettlingTransaction(null)} onConfirm={handleSettleInstallments} getInstallmentDueDate={getInstallmentDueDate} />
             <TransactionFilterModal isOpen={modal === 'filters'} onClose={() => setModal(null)} onApply={setFilters} onClear={() => setFilters({ description: '', categoryId: '', accountId: '', cardId: '', status: 'all', startDate: '', endDate: '' })} initialFilters={filters} accounts={accounts} cards={cards} categories={categories} />
-            <Dialog open={modal === 'addRecurring' || modal === 'editRecurring'} onOpenChange={() => {setModal(null); setSelectedRecurring(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editRecurring' ? 'Editar' : 'Adicionar'} Recorrência</DialogTitle></DialogHeader><RecurringForm recurringItem={selectedRecurring} onAdd={(item) => {setRecurring(p=>[...p, {...item, id: Date.now().toString()}]); setModal(null);}} onUpdate={(item) => {setRecurring(p=>p.map(r=>r.id===item.id?item:r)); setModal(null);}} accounts={accounts} cards={cards} categories={categories} onClose={() => setModal(null)} isLoading={isLoading}/></DialogContent></Dialog>
+            <Dialog open={modal === 'addRecurring' || modal === 'editRecurring'} onOpenChange={() => {setModal(null); setSelectedRecurring(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editRecurring' ? 'Editar' : 'Adicionar'} Recorrência</DialogTitle></DialogHeader><RecurringForm recurringItem={selectedRecurring} onAdd={handleRecurringAdd} onUpdate={handleRecurringUpdate} accounts={accounts} cards={cards} categories={categories} onClose={() => setModal(null)} isLoading={isLoading} addXp={addXp} /></DialogContent></Dialog>
             <Dialog open={modal === 'addTransfer' || modal === 'editTransfer'} onOpenChange={() => {setModal(null); setSelectedTransfer(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editTransfer' ? 'Editar' : 'Nova'} Transferência</DialogTitle></DialogHeader><TransferForm accounts={accounts} transfer={selectedTransfer} onTransfer={onAddTransfer} onUpdate={(t) => {setTransfers(p=>p.map(tr=>tr.id===t.id?t:tr)); setModal(null)}} onDismiss={() => setModal(null)} onError={addToast} isLoading={isLoading}/></DialogContent></Dialog>
-            <Dialog open={modal === 'accounts'} onOpenChange={() => setModal(null)}><DialogContent className="w-full"><DialogHeader><DialogTitle>Contas</DialogTitle></DialogHeader><AccountList accounts={accounts} setAccounts={setAccounts} adjustAccountBalance={adjustAccountBalance} setTransactions={setTransactions} addToast={addToast} onConfirmDelete={(acc) => {}} />{user && <AccountForm setAccounts={setAccounts} setTransactions={setTransactions} userId={user.id} addToast={addToast} />}</DialogContent></Dialog>
-            <Dialog open={modal === 'cards'} onOpenChange={() => setModal(null)}><DialogContent className="w-full"><DialogHeader><DialogTitle>Cartões</DialogTitle></DialogHeader><CardList cards={cards} setCards={setCards} transactions={transactions} addToast={addToast} onConfirmDelete={(c) => {}} accounts={accounts}/>{user && <CardForm setCards={setCards} accounts={accounts} addToast={addToast} userId={user.id}/>}</DialogContent></Dialog>
+            <Dialog open={modal === 'accounts'} onOpenChange={() => setModal(null)}><DialogContent className="w-full"><DialogHeader><DialogTitle>Contas</DialogTitle></DialogHeader><AccountList accounts={accounts} setAccounts={setAccounts} adjustAccountBalance={adjustAccountBalance} setTransactions={setTransactions} addToast={addToast} onConfirmDelete={(acc) => {}} />{user && <AccountForm setAccounts={setAccounts} setTransactions={setTransactions} userId={user.id} addToast={addToast} addXp={addXp} />}</DialogContent></Dialog>
+            <Dialog open={modal === 'cards'} onOpenChange={() => setModal(null)}><DialogContent className="w-full"><DialogHeader><DialogTitle>Cartões</DialogTitle></DialogHeader><CardList cards={cards} setCards={setCards} transactions={transactions} addToast={addToast} onConfirmDelete={(c) => {}} accounts={accounts}/>{user && <CardForm setCards={setCards} accounts={accounts} addToast={addToast} userId={user.id} addXp={addXp} />}</DialogContent></Dialog>
             <Dialog open={modal === 'categories'} onOpenChange={() => setModal(null)}><DialogContent className="flex flex-col"><DialogHeader><DialogTitle>Categorias</DialogTitle></DialogHeader>{user && <CategoryManager categories={categories} setCategories={setCategories} transactions={transactions} recurring={recurring} userId={user.id} addToast={addToast} />}</DialogContent></Dialog>
             <ImportTransactionsModal isOpen={modal === 'import'} onClose={() => setModal(null)} accounts={accounts} onConfirmImport={(txs) => {}} addToast={addToast} isLoading={isLoading} />
 
