@@ -97,12 +97,12 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ addToast, onUpgrade
       </div>
       
       <div className="flex flex-wrap justify-center items-center gap-4">
-        <span className={cn("font-medium", billingCycle === 'monthly' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500')}>Mensal</span>
+        <span className={cn("font-medium", billingCycle === 'monthly' ? 'text-primary' : 'text-slate-500')}>Mensal</span>
         <label className="relative inline-flex items-center cursor-pointer">
           <input type="checkbox" checked={billingCycle === 'annual'} onChange={() => setBillingCycle(p => p === 'monthly' ? 'annual' : 'monthly')} className="sr-only peer" />
-          <div className="w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-slate-600 peer-checked:bg-indigo-600"></div>
+          <div className="w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-slate-600 peer-checked:bg-primary"></div>
         </label>
-        <span className={cn("font-medium transition-colors", billingCycle === 'annual' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500')}>
+        <span className={cn("font-medium transition-colors", billingCycle === 'annual' ? 'text-primary' : 'text-slate-500')}>
           Anual
           {billingCycle === 'annual' && (
             <span className="ml-2 text-xs whitespace-nowrap bg-emerald-100 text-emerald-800 font-bold px-2 py-1 rounded-full dark:bg-emerald-900/50 dark:text-emerald-300 animate-fade-in">
@@ -117,8 +117,8 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ addToast, onUpgrade
         {plans.map((plan) => {
           const isCurrentPlan = currentSubscription.plan === plan.planType;
           return (
-            <Card key={plan.name} className={cn("flex flex-col h-full", plan.recommended && !isCurrentPlan && "border-2 border-indigo-500 relative", isCurrentPlan && "border-2 border-green-500 bg-slate-50 dark:bg-slate-800/50 relative")}>
-              {plan.recommended && !isCurrentPlan && <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-full z-10">RECOMENDADO</div>}
+            <Card key={plan.name} className={cn("flex flex-col h-full", plan.recommended && !isCurrentPlan && "border-2 border-primary relative", isCurrentPlan && "border-2 border-green-500 bg-slate-50 dark:bg-slate-800/50 relative")}>
+              {plan.recommended && !isCurrentPlan && <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-full z-10">RECOMENDADO</div>}
               {isCurrentPlan && <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full z-10">SEU PLANO ATUAL</div>}
               <CardContent className={cn("p-8 flex-grow flex flex-col", (plan.recommended || isCurrentPlan) && "pt-12")}>
                 <div className="flex-grow">
@@ -189,8 +189,8 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ addToast, onUpgrade
           {plans.map((plan) => {
             const isCurrentPlan = currentSubscription.plan === plan.planType;
             return (
-              <Card key={plan.name} className={cn("flex flex-col h-full", plan.recommended && !isCurrentPlan && "border-2 border-indigo-500 relative", isCurrentPlan && "border-2 border-green-500 bg-slate-50 dark:bg-slate-800/50 relative")}>
-                {plan.recommended && !isCurrentPlan && <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-full z-10">RECOMENDADO</div>}
+              <Card key={plan.name} className={cn("flex flex-col h-full", plan.recommended && !isCurrentPlan && "border-2 border-primary relative", isCurrentPlan && "border-2 border-green-500 bg-slate-50 dark:bg-slate-800/50 relative")}>
+                {plan.recommended && !isCurrentPlan && <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-full z-10">RECOMENDADO</div>}
                 {isCurrentPlan && <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full z-10">SEU PLANO ATUAL</div>}
                 <CardContent className={cn("p-8 flex-grow flex flex-col", (plan.recommended || isCurrentPlan) && "pt-12")}>
                   <div className="flex-grow">
