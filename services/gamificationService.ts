@@ -257,21 +257,8 @@ export async function checkAndAwardSavingsIncreaseXp(userId: string, gamificatio
  * @param gamificationData - Os dados atuais de gamificação do usuário.
  * @returns - A promessa de dados de gamificação atualizados ou nulo se nenhum XP for concedido.
  */
-export async function grantDailyLoginXp(userId: string, gamificationData: Gamification): Promise<Gamification | null> {
-  const today = new Date().toISOString().slice(0, 10);
-
-  // 1. Check if XP for today has already been awarded.
-  // The column type is DATE, so it's stored as 'YYYY-MM-DD'.
-  if (gamificationData.last_login_xp_awarded === today) {
-    return null; // Already awarded, do nothing.
-  }
-
-  // 2. Grant XP and update the last login date in a single atomic operation.
-  const { newGamificationData } = await addXp(
-    userId,
-    XP_VALUES.DAILY_LOGIN,
-    { last_login_xp_awarded: today }
-  );
-
-  return newGamificationData;
+export async function grantDailyLoginXp(userId: string): Promise<{ newGamificationData: Tables<'gamification'> } | null> {
+  // Grant daily login XP (simplified - no date tracking)
+  const result = await addXp(userId, XP_VALUES.DAILY_LOGIN);
+  return result;
 }

@@ -308,7 +308,7 @@ const PlanningPage: React.FC<PlanningPageProps> = ({ categories, budgets, setBud
         if (error) throw error;
 
         addToast('Orçamento salvo com sucesso!', 'success');
-        if (isNewBudget) {
+        if (isNew) {
           addXp(XP_VALUES.CREATE_BUDGET);
         }
       } catch (error) {

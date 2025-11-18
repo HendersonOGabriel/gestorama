@@ -1436,10 +1436,10 @@ const App: React.FC = () => {
       const runDailyLoginCheck = async () => {
         if (!user || !gamification.user_id) return;
 
-        const result = await grantDailyLoginXp(user.id, gamification);
+        const result = await grantDailyLoginXp(user.id);
 
         if (result) {
-          setGamification(result);
+          setGamification(result.newGamificationData);
           addToast(`Você ganhou ${XP_VALUES.DAILY_LOGIN} XP por acessar hoje!`, 'success');
         }
       };
