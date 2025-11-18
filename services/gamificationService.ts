@@ -1,5 +1,7 @@
 import { supabase } from '../src/integrations/supabase/client';
-import { Gamification } from '../types';
+import { Tables } from '../src/integrations/supabase/types';
+
+type Gamification = Tables<'gamification'>;
 
 // Definição dos níveis e XP necessário para alcançá-los
 export const LEVELS = [
@@ -133,7 +135,6 @@ export function calculateProgress(gamification: Gamification): { progress: numbe
 
 /**
  * Verifica se o usuário se manteve dentro do orçamento no mês anterior e concede XP se a meta foi atingida.
- * A verificação é feita apenas uma vez por mês.
  * @param userId - O ID do usuário.
  * @param gamificationData - Os dados atuais de gamificação do usuário.
  * @returns - A promessa de uma possível atualização nos dados de gamificação.
@@ -143,12 +144,7 @@ export async function checkAndAwardMonthlyBudgetXp(userId: string, gamificationD
   const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const lastMonthKey = `${lastMonth.getFullYear()}-${(lastMonth.getMonth() + 1).toString().padStart(2, '0')}`;
 
-  // 1. Verificar se este mês já foi checado
-  if (gamificationData.last_budget_check_month === lastMonthKey) {
-    return null;
-  }
-
-  // 2. Buscar orçamentos e transações do mês anterior
+  // Buscar orçamentos e transações do mês anterior
   const { data: budgets, error: budgetError } = await supabase
     .from('budgets')
     .select('category_id, amount')
@@ -157,8 +153,6 @@ export async function checkAndAwardMonthlyBudgetXp(userId: string, gamificationD
 
   if (budgetError || !budgets || budgets.length === 0) {
     // Sem orçamentos definidos para o mês, não há o que checar.
-    // Atualiza a data de checagem para não tentar novamente este mês.
-    await supabase.from('gamification').update({ last_budget_check_month: lastMonthKey }).eq('user_id', userId);
     return null;
   }
 
@@ -191,14 +185,9 @@ export async function checkAndAwardMonthlyBudgetXp(userId: string, gamificationD
   // 5. Conceder XP e atualizar o estado
   if (allBudgetsMet) {
     const { newGamificationData } = await addXp(userId, XP_VALUES.WITHIN_BUDGET_MONTH);
-    // Atualiza a data de checagem junto com a nova pontuação
     if (newGamificationData) {
-      await supabase.from('gamification').update({ last_budget_check_month: lastMonthKey }).eq('user_id', userId);
-      return { ...newGamificationData, last_budget_check_month: lastMonthKey };
+      return newGamificationData;
     }
-  } else {
-    // Se não cumpriu, apenas atualiza a data para não checar de novo
-    await supabase.from('gamification').update({ last_budget_check_month: lastMonthKey }).eq('user_id', userId);
   }
 
   return null;
@@ -219,12 +208,7 @@ export async function checkAndAwardSavingsIncreaseXp(userId: string, gamificatio
   const lastMonthKey = `${lastMonthDate.getFullYear()}-${(lastMonthDate.getMonth() + 1).toString().padStart(2, '0')}`;
   const monthBeforeLastKey = `${monthBeforeLastDate.getFullYear()}-${(monthBeforeLastDate.getMonth() + 1).toString().padStart(2, '0')}`;
 
-  // 1. Verificar se este mês já foi checado
-  if (gamificationData.last_savings_check_month === lastMonthKey) {
-    return null;
-  }
-
-  // 2. Buscar transações dos últimos dois meses completos
+  // Buscar transações dos últimos dois meses completos
   const { data: transactions, error } = await supabase
     .from('transactions')
     .select('date, amount, is_income')
@@ -248,54 +232,24 @@ export async function checkAndAwardSavingsIncreaseXp(userId: string, gamificatio
   const lastMonthSavings = calculateSavings(lastMonthKey);
   const monthBeforeLastSavings = calculateSavings(monthBeforeLastKey);
 
-  // 3. Comparar a economia e conceder XP se houver aumento
+  // Comparar a economia e conceder XP se houver aumento
   if (lastMonthSavings > monthBeforeLastSavings) {
     const { newGamificationData } = await addXp(userId, XP_VALUES.INCREASED_SAVINGS);
-    // Atualiza a data de checagem
     if (newGamificationData) {
-      await supabase.from('gamification').update({ last_savings_check_month: lastMonthKey }).eq('user_id', userId);
-      return { ...newGamificationData, last_savings_check_month: lastMonthKey };
+      return newGamificationData;
     }
-  } else {
-    // Se não cumpriu, apenas atualiza a data para não checar de novo
-    await supabase.from('gamification').update({ last_savings_check_month: lastMonthKey }).eq('user_id', userId);
   }
 
   return null;
 }
 
 /**
- * Concede XP de login diário se ainda não foi concedido hoje.
- * Realiza a adição de XP e a atualização da data em uma única operação.
+ * Concede XP de login diário.
  * @param userId - O ID do usuário.
  * @param gamificationData - Os dados atuais de gamificação do usuário.
  * @returns - A promessa de dados de gamificação atualizados ou nulo se nenhum XP for concedido.
  */
 export async function grantDailyLoginXp(userId: string, gamificationData: Gamification): Promise<Gamification | null> {
-  const today = new Date().toISOString().slice(0, 10);
-
-  if (gamificationData.last_login_xp_awarded === today) {
-    return null;
-  }
-
-  const { leveledUp, newGamificationData } = await addXp(userId, XP_VALUES.DAILY_LOGIN);
-
-  if (newGamificationData) {
-    // Atualiza a data do último login junto com o novo XP
-    const { data: finalGamificationData, error } = await supabase
-      .from('gamification')
-      .update({ last_login_xp_awarded: today })
-      .eq('user_id', userId)
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Erro ao atualizar a data de login diário:", error);
-      return newGamificationData; // Retorna os dados mesmo que a data falhe
-    }
-
-    return { ...finalGamificationData, leveledUp }; // Adiciona a propriedade leveledUp para a notificação
-  }
-
-  return null;
+  const { newGamificationData } = await addXp(userId, XP_VALUES.DAILY_LOGIN);
+  return newGamificationData || null;
 }

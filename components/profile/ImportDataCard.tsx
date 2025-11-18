@@ -53,10 +53,16 @@ const ImportDataCard: React.FC<ImportDataCardProps> = ({ addToast, onImportCompl
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: { 'text/csv': ['.csv'], 'text/plain': ['.txt'] },
+    accept: { 
+      'text/csv': ['.csv'], 
+      'text/plain': ['.txt'] 
+    },
     multiple: false,
     disabled: isLoading,
-  });
+    onDragEnter: () => {},
+    onDragLeave: () => {},
+    onDragOver: () => {}
+  } as any);
 
   const renderContent = () => {
     if (isLoading) {
