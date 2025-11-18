@@ -54,7 +54,7 @@ const AccountList: React.FC<AccountListProps> = ({ accounts, setAccounts, adjust
             amount: Math.abs(delta),
             date: dateStr,
             installments: 1,
-            type: 'cash',
+            type: 'transfer',
             is_income: delta > 0,
             person: 'Ajuste Interno',
             account_id: accountId,
@@ -82,13 +82,6 @@ const AccountList: React.FC<AccountListProps> = ({ accounts, setAccounts, adjust
           });
         }
 
-        // Update account balance
-        const { error: balanceError } = await supabase
-          .from('accounts')
-          .update({ balance: newBalance })
-          .eq('id', accountId);
-
-        if (balanceError) throw balanceError;
       }
 
       addToast('Conta atualizada com sucesso!', 'success');
