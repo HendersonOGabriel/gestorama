@@ -160,7 +160,7 @@ export default function LandingPage({ onEnter }: LandingPageProps) {
         </p>
 
         <div className="flex justify-center mb-10">
-          <img src="https://placehold.co/450x280/1e293b/4f46e5/png?text=Gestorama+App" alt="Preview do app Gestorama" width="450" height="280" fetchPriority="high" className="rounded-3xl shadow-2xl w-full max-w-md border border-slate-700/40" />
+          <img src="https://placehold.co/800x500/1e293b/4f46e5/png?text=Gestorama+App" alt="Preview do app Gestorama" width="800" height="500" fetchPriority="high" className="rounded-3xl shadow-2xl w-full max-w-md border border-slate-700/40" />
         </div>
 
         <div>
