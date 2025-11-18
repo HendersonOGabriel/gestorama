@@ -401,7 +401,7 @@ export const useSupabaseData = (userId: string | null) => {
     loadAllData();
   }, [loadAllData]);
 
-  // Set up realtime subscriptions
+  // Set up realtime subscriptions with granular updates
   useEffect(() => {
     if (!userId) return;
 
@@ -410,39 +410,248 @@ export const useSupabaseData = (userId: string | null) => {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'transactions', filter: `user_id=eq.${userId}` },
-        () => fetchTransactions().then(data => setState(prev => ({ ...prev, transactions: data })))
+        async (payload) => {
+          if (payload.eventType === 'INSERT' && payload.new) {
+            const newTx = await mapTransaction(payload.new);
+            setState(prev => ({
+              ...prev,
+              transactions: [newTx, ...prev.transactions]
+            }));
+          } else if (payload.eventType === 'UPDATE' && payload.new) {
+            const updatedTx = await mapTransaction(payload.new);
+            setState(prev => ({
+              ...prev,
+              transactions: prev.transactions.map(t => t.id === updatedTx.id ? updatedTx : t)
+            }));
+          } else if (payload.eventType === 'DELETE' && payload.old) {
+            setState(prev => ({
+              ...prev,
+              transactions: prev.transactions.filter(t => t.id !== payload.old.id)
+            }));
+          }
+        }
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'installments' },
-        () => fetchTransactions().then(data => setState(prev => ({ ...prev, transactions: data })))
+        async (payload) => {
+          // For installments, update the parent transaction
+          const txId = (payload.new as any)?.transaction_id || (payload.old as any)?.transaction_id;
+          if (txId) {
+            // Fetch just this transaction with its installments
+            const { data: txData } = await supabase
+              .from('transactions')
+              .select('*')
+              .eq('id', txId)
+              .single();
+            
+            if (txData) {
+              const { data: instData } = await supabase
+                .from('installments')
+                .select('*')
+                .eq('transaction_id', txId);
+              
+              const updatedTx = await mapTransaction(txData, instData || []);
+              setState(prev => ({
+                ...prev,
+                transactions: prev.transactions.map(t => t.id === updatedTx.id ? updatedTx : t)
+              }));
+            }
+          }
+        }
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'accounts', filter: `user_id=eq.${userId}` },
-        () => fetchAccounts().then(data => setState(prev => ({ ...prev, accounts: data })))
+        (payload) => {
+          if (payload.eventType === 'INSERT' && payload.new) {
+            const newAcc: Account = {
+              id: payload.new.id,
+              name: payload.new.name,
+              balance: Number(payload.new.balance),
+              isDefault: payload.new.is_default
+            };
+            setState(prev => ({
+              ...prev,
+              accounts: [...prev.accounts, newAcc]
+            }));
+          } else if (payload.eventType === 'UPDATE' && payload.new) {
+            const updatedAcc: Account = {
+              id: payload.new.id,
+              name: payload.new.name,
+              balance: Number(payload.new.balance),
+              isDefault: payload.new.is_default
+            };
+            setState(prev => ({
+              ...prev,
+              accounts: prev.accounts.map(a => a.id === updatedAcc.id ? updatedAcc : a)
+            }));
+          } else if (payload.eventType === 'DELETE' && payload.old) {
+            setState(prev => ({
+              ...prev,
+              accounts: prev.accounts.filter(a => a.id !== payload.old.id)
+            }));
+          }
+        }
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'cards', filter: `user_id=eq.${userId}` },
-        () => fetchCards().then(data => setState(prev => ({ ...prev, cards: data })))
+        (payload) => {
+          if (payload.eventType === 'INSERT' && payload.new) {
+            const newCard: Card = {
+              id: payload.new.id,
+              name: payload.new.name,
+              closingDay: payload.new.closing_day,
+              dueDay: payload.new.due_day,
+              isDefault: payload.new.is_default,
+              limit: Number(payload.new.limit_amount),
+              accountId: payload.new.account_id,
+              deleted: payload.new.deleted
+            };
+            setState(prev => ({
+              ...prev,
+              cards: [...prev.cards, newCard]
+            }));
+          } else if (payload.eventType === 'UPDATE' && payload.new) {
+            const updatedCard: Card = {
+              id: payload.new.id,
+              name: payload.new.name,
+              closingDay: payload.new.closing_day,
+              dueDay: payload.new.due_day,
+              isDefault: payload.new.is_default,
+              limit: Number(payload.new.limit_amount),
+              accountId: payload.new.account_id,
+              deleted: payload.new.deleted
+            };
+            setState(prev => ({
+              ...prev,
+              cards: prev.cards.map(c => c.id === updatedCard.id ? updatedCard : c)
+            }));
+          } else if (payload.eventType === 'DELETE' && payload.old) {
+            setState(prev => ({
+              ...prev,
+              cards: prev.cards.filter(c => c.id !== payload.old.id)
+            }));
+          }
+        }
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'goals', filter: `user_id=eq.${userId}` },
-        () => fetchGoals().then(data => setState(prev => ({ ...prev, goals: data })))
+        (payload) => {
+          if (payload.eventType === 'INSERT' && payload.new) {
+            const newGoal: Goal = {
+              id: payload.new.id,
+              name: payload.new.name,
+              targetAmount: Number(payload.new.target_amount),
+              currentAmount: Number(payload.new.current_amount)
+            };
+            setState(prev => ({
+              ...prev,
+              goals: [...prev.goals, newGoal]
+            }));
+          } else if (payload.eventType === 'UPDATE' && payload.new) {
+            const updatedGoal: Goal = {
+              id: payload.new.id,
+              name: payload.new.name,
+              targetAmount: Number(payload.new.target_amount),
+              currentAmount: Number(payload.new.current_amount)
+            };
+            setState(prev => ({
+              ...prev,
+              goals: prev.goals.map(g => g.id === updatedGoal.id ? updatedGoal : g)
+            }));
+          } else if (payload.eventType === 'DELETE' && payload.old) {
+            setState(prev => ({
+              ...prev,
+              goals: prev.goals.filter(g => g.id !== payload.old.id)
+            }));
+          }
+        }
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'reminders', filter: `user_id=eq.${userId}` },
-        () => fetchReminders().then(data => setState(prev => ({ ...prev, reminders: data })))
+        (payload) => {
+          if (payload.eventType === 'INSERT' && payload.new) {
+            const newReminder: Reminder = {
+              id: (payload.new as any).id,
+              desc: (payload.new as any).description,
+              date: (payload.new as any).date,
+              time: (payload.new as any).time
+            };
+            setState(prev => ({
+              ...prev,
+              reminders: [...prev.reminders, newReminder]
+            }));
+          } else if (payload.eventType === 'UPDATE' && payload.new) {
+            const updatedReminder: Reminder = {
+              id: (payload.new as any).id,
+              desc: (payload.new as any).description,
+              date: (payload.new as any).date,
+              time: (payload.new as any).time
+            };
+            setState(prev => ({
+              ...prev,
+              reminders: prev.reminders.map(r => r.id === updatedReminder.id ? updatedReminder : r)
+            }));
+          } else if (payload.eventType === 'DELETE' && payload.old) {
+            setState(prev => ({
+              ...prev,
+              reminders: prev.reminders.filter(r => r.id !== (payload.old as any).id)
+            }));
+          }
+        }
       )
       .subscribe();
+
+    // Helper function to map a transaction record
+    async function mapTransaction(txData: any, installmentsData?: any[]): Promise<Transaction> {
+      let installments = installmentsData;
+      
+      // If installments not provided, fetch them
+      if (!installments && txData.installments > 1) {
+        const { data } = await supabase
+          .from('installments')
+          .select('*')
+          .eq('transaction_id', txData.id);
+        installments = data || [];
+      }
+
+      const schedule = (installments || []).map((inst: any) => ({
+        id: inst.id,
+        installmentNumber: inst.installment_number,
+        amount: Number(inst.amount),
+        paid: inst.paid,
+        postingDate: inst.posting_date,
+        paymentDate: inst.payment_date,
+        paidAmount: inst.paid_amount ? Number(inst.paid_amount) : null
+      }));
+
+      return {
+        id: txData.id,
+        desc: txData.description,
+        amount: Number(txData.amount),
+        date: txData.date,
+        account: txData.account_id,
+        card: txData.card_id,
+        categoryId: txData.category_id,
+        installments: txData.installments,
+        type: txData.type,
+        paid: txData.paid,
+        isIncome: txData.is_income,
+        person: txData.person,
+        installmentsSchedule: schedule,
+        recurringSourceId: txData.recurring_source_id,
+        reminderDaysBefore: txData.reminder_days_before
+      };
+    }
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userId, fetchTransactions, fetchAccounts, fetchCards, fetchGoals, fetchReminders]);
+  }, [userId]);
 
   return {
     ...state,
