@@ -6,6 +6,7 @@ import { Button } from '../components/ui/Button';
 import ProfileEditModal from '../components/profile/ProfileEditModal';
 import PlanManagementCard from '../components/profile/PlanManagementCard';
 import YaraWhatsAppCard from '../components/profile/YaraWhatsAppCard';
+import ImportDataCard from '../components/profile/ImportDataCard';
 import { Edit3, LogOut, Trash2, Moon, Sun, User as UserIcon, Monitor, Upload, Download, Star } from 'lucide-react';
 
 interface ProfilePageProps {
@@ -21,6 +22,7 @@ interface ProfilePageProps {
   onSetThemePreference: (theme: 'light' | 'dark' | 'system') => void;
   isLoading: boolean;
   onOpenImport: () => void;
+  onImportComplete: () => void;
   appState: Partial<AppState>;
   gamification: GamificationState;
   onLogout: () => void;
@@ -39,6 +41,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
   onSetThemePreference,
   isLoading,
   onOpenImport,
+  onImportComplete,
   appState,
   gamification,
   onLogout
@@ -151,13 +154,10 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
           onRemoveUser={onRemoveUser}
           isLoading={isLoading}
         />
+        <ImportDataCard addToast={addToast} onImportComplete={onImportComplete} />
         <Card>
             <CardHeader><CardTitle>Gerenciamento de Dados</CardTitle></CardHeader>
             <CardContent className="flex flex-col sm:flex-row flex-wrap gap-3">
-                 <Button variant="outline" className="w-full" onClick={onOpenImport}>
-                    <Upload className="w-4 h-4 mr-2" />
-                    Importar Transações (CSV)
-                 </Button>
                 <Button variant="outline" className="w-full" onClick={handleExportData}>
                     <Download className="w-4 h-4 mr-2" />
                     Exportar Dados (JSON)
