@@ -18,9 +18,10 @@ interface AccountListProps {
   onConfirmDelete: (account: Account) => void;
   userId: string;
   transactions: Transaction[];
+  onDataNeedsRefresh: () => void;
 }
 
-const AccountList: React.FC<AccountListProps> = ({ accounts, setAccounts, adjustAccountBalance, setTransactions, addToast, onConfirmDelete, userId, transactions }) => {
+const AccountList: React.FC<AccountListProps> = ({ accounts, setAccounts, adjustAccountBalance, setTransactions, addToast, onConfirmDelete, userId, transactions, onDataNeedsRefresh }) => {
   const [editAccount, setEditAccount] = useState<Account | null>(null);
   const [editName, setEditName] = useState('');
   const [editBalance, setEditBalance] = useState('');
@@ -30,65 +31,56 @@ const AccountList: React.FC<AccountListProps> = ({ accounts, setAccounts, adjust
   const handleSaveEdit = async (accountId: string) => {
     const account = accounts.find(a => a.id === accountId);
     if (!account) return;
-    
+
     const newBalance = parseFloat(editBalance);
     const delta = newBalance - account.balance;
 
     try {
-      // Update account name in Supabase
-      const { error: updateError } = await supabase
-        .from('accounts')
-        .update({ name: editName })
-        .eq('id', accountId);
+      // 1. Update account name
+      if (editName !== account.name) {
+        const { error: updateError } = await supabase
+          .from('accounts')
+          .update({ name: editName })
+          .eq('id', accountId);
+        if (updateError) throw updateError;
+      }
 
-      if (updateError) throw updateError;
-
-      // Create balance adjustment transaction if needed
+      // 2. Create balance adjustment transfer if balance has changed
       if (delta !== 0) {
-        const dateStr = new Date().toISOString().slice(0, 10);
+        const isIncome = delta > 0;
         
-        const { data: newTx, error: txError } = await supabase
-          .from('transactions')
+        // Create a "transfer" record
+        const { error: transferError } = await supabase
+          .from('transfers')
           .insert({
-            description: `Ajuste de Saldo (${editName || account.name})`,
+            // If income, it's coming from an external source TO the current account
+            // If expense, it's going FROM the current account TO an external destination
+            from_account: isIncome ? null : accountId,
+            to_account: isIncome ? accountId : null,
             amount: Math.abs(delta),
-            date: dateStr,
-            installments: 1,
-            type: 'cash',
-            is_income: delta > 0,
-            person: 'Ajuste Interno',
-            account_id: accountId,
-            card_id: null,
-            category_id: null,
-            paid: true,
+            date: new Date().toISOString().slice(0, 10),
+            description: `Ajuste de Saldo`,
             user_id: userId
-          })
-          .select()
-          .single();
-
-        if (txError) throw txError;
-
-        // Create installment record
-        if (newTx) {
-          const installment = buildInstallments(dateStr, Math.abs(delta), 1)[0];
-          await supabase.from('installments').insert({
-            transaction_id: newTx.id,
-            installment_number: installment.installmentNumber,
-            amount: installment.amount,
-            posting_date: installment.postingDate,
-            paid: true,
-            payment_date: dateStr,
-            paid_amount: Math.abs(delta)
           });
-        }
 
+        if (transferError) throw transferError;
+
+        // Directly update the account's balance
+        const { error: balanceError } = await supabase
+          .from('accounts')
+          .update({ balance: account.balance + delta })
+          .eq('id', accountId);
+
+        if (balanceError) throw balanceError;
       }
 
       addToast('Conta atualizada com sucesso!', 'success');
       setEditAccount(null);
-    } catch (error) {
+      onDataNeedsRefresh(); // This will refetch all data and update the UI
+
+    } catch (error: any) {
       console.error('Erro ao editar conta:', error);
-      addToast('Erro ao atualizar conta. Tente novamente.', 'error');
+      addToast(error.message || 'Erro ao atualizar conta. Tente novamente.', 'error');
     }
   };
 
