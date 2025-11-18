@@ -418,7 +418,6 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
     });
 
     return Object.values(results)
-        .filter(r => r.total > 0)
         .sort((a, b) => a.monthKey.localeCompare(b.monthKey));
   }, [transactions, cards, invoiceOverviewRange, getInvoiceMonthKey]);
 

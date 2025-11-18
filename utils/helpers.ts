@@ -51,7 +51,7 @@ export const monthKey = (date: Date | string): string => {
 export const getInvoiceMonthKey = (postingDateStr: string, closingDay: number): string => {
   const d = new Date(postingDateStr + 'T12:00:00Z');
   const postDay = d.getUTCDate();
-  return postDay >= closingDay ? monthKey(addMonths(d, 1)) : monthKey(d);
+  return postDay > closingDay ? monthKey(addMonths(d, 1)) : monthKey(d);
 };
 
 export const getInvoiceDueDate = (postingDateStr: string, closingDay: number, dueDay: number): string => {
@@ -60,7 +60,7 @@ export const getInvoiceDueDate = (postingDateStr: string, closingDay: number, du
     const postDay = d.getUTCDate();
     let invoiceDate = new Date(d);
 
-    if (postDay >= closingDay) {
+    if (postDay > closingDay) {
       invoiceDate.setUTCMonth(invoiceDate.getUTCMonth() + 1);
     }
     
@@ -95,7 +95,7 @@ export const buildInstallments = (
 
     if (isCard && closingDay) {
       // If purchase is on or after closing day, first installment is next month
-      if (purchaseDay >= closingDay) {
+      if (purchaseDay > closingDay) {
         postingDate.setUTCMonth(postingDate.getUTCMonth() + i);
       } else {
         postingDate.setUTCMonth(postingDate.getUTCMonth() + i - 1);
