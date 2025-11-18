@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { Account, Transaction } from '../../types';
-import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
-import { Label } from '../ui/Label';
-import { buildInstallments } from '../../utils/helpers';
-import { supabase } from '@/src/integrations/supabase/client';
-import { accountSchema } from '../../utils/validation';
+import { Account, Transaction } from '@/types';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
+import { buildInstallments } from '@/utils/helpers';
+import { supabase } from '@/integrations/supabase/client';
+import { accountSchema } from '@/utils/validation';
 
-import { XP_VALUES } from '../../services/gamificationService';
+import { XP_VALUES } from '@/services/gamificationService';
 
 interface AccountFormProps {
   setAccounts: React.Dispatch<React.SetStateAction<Account[]>>;

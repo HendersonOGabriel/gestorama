@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Card, Transaction, Account } from '../../types';
-import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
-import { Label } from '../ui/Label';
-import { toCurrency, cn } from '../../utils/helpers';
+import { Card, Transaction, Account } from '@/types';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
+import { toCurrency, cn } from '@/utils/helpers';
 import { CreditCard } from 'lucide-react';
-import { supabase } from '@/src/integrations/supabase/client';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/Dialog';
+import { supabase } from '@/integrations/supabase/client';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 
 interface CardListProps {
   cards: Card[];

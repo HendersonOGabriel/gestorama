@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Bot, Star } from 'lucide-react';
-import { cn } from '../../utils/helpers';
-import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
-import { Subscription, YaraUsage } from '../../types';
-import { supabase } from '@/src/integrations/supabase/client';
+import { cn } from '@/utils/helpers';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Subscription, YaraUsage } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
   text: string;

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/Card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { UploadCloud, Loader2, CheckCircle, AlertTriangle } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
-import { supabase } from '../../src/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ImportDataCardProps {
   addToast: (message: string, type?: 'error' | 'success') => void;

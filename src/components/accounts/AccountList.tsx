@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { Account, Transaction } from '../../types';
-import { toCurrency } from '../../utils/helpers';
-import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
-import { Label } from '../ui/Label';
-import { buildInstallments } from '../../utils/helpers';
+import { Account, Transaction } from '@/types';
+import { toCurrency } from '@/utils/helpers';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
+import { buildInstallments } from '@/utils/helpers';
 import { PiggyBank } from 'lucide-react';
-import { supabase } from '@/src/integrations/supabase/client';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/Dialog';
+import { supabase } from '@/integrations/supabase/client';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 
 interface AccountListProps {
   accounts: Account[];

@@ -1,11 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { Plus, Edit3, Clock, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
-import { Transaction, Reminder } from '../types';
-import { toCurrency, cn, displayMonthYear, monthKey, addMonths, displayDate } from '../utils/helpers';
-import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
-import ReminderFormModal from '../components/calendar/ReminderFormModal';
-import { supabase } from '../src/integrations/supabase/client';
+import { Transaction, Reminder } from '@/types';
+import { toCurrency, cn, displayMonthYear, monthKey, addMonths, displayDate } from '@/utils/helpers';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import ReminderFormModal from '@/components/calendar/ReminderFormModal';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CalendarPageProps {
   transactions: Transaction[];

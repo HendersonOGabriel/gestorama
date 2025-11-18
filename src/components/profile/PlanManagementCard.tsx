@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Subscription, User } from '../../types';
-import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
-import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
+import { Subscription, User } from '@/types';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { Plus, Trash2, User as UserIcon } from 'lucide-react';
-import { supabase } from '@/src/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PlanManagementCardProps {
   subscription: Subscription;
