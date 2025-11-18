@@ -6,14 +6,17 @@ import { Label } from '../ui/Label';
 import { supabase } from '@/src/integrations/supabase/client';
 import { cardSchema } from '../../utils/validation';
 
+import { XP_VALUES } from '../../services/gamificationService';
+
 interface CardFormProps {
   setCards: React.Dispatch<React.SetStateAction<Card[]>>;
   accounts: Account[];
   addToast: (message: string, type?: 'error' | 'success') => void;
   userId: string;
+  addXp: (amount: number) => void;
 }
 
-const CardForm: React.FC<CardFormProps> = ({ setCards, accounts, addToast, userId }) => {
+const CardForm: React.FC<CardFormProps> = ({ setCards, accounts, addToast, userId, addXp }) => {
   const [name, setName] = useState('');
   const [closingDay, setClosingDay] = useState('');
   const [dueDay, setDueDay] = useState('');
@@ -78,6 +81,7 @@ const CardForm: React.FC<CardFormProps> = ({ setCards, accounts, addToast, userI
       }
 
       addToast('Cartão adicionado com sucesso!', 'success');
+      addXp(XP_VALUES.ADD_CARD);
       setName('');
       setClosingDay('');
       setDueDay('');

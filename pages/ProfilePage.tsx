@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { User, Subscription, AppState, GamificationState } from '../types';
+import { getLevelName, calculateProgress } from '../services/gamificationService';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import ProfileEditModal from '../components/profile/ProfileEditModal';
@@ -47,7 +48,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
   onLogout
 }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const progress = (gamification.xp / gamification.xpToNextLevel) * 100;
+  const { progress, currentLevelXp, nextLevelXp } = calculateProgress(gamification);
 
   const handleExportData = () => {
     const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
@@ -93,6 +94,9 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+                <div className="text-center mb-4">
+                    <span className="font-semibold text-lg text-indigo-500 dark:text-indigo-400">{getLevelName(gamification.level)}</span>
+                </div>
                 <div className="flex items-center justify-center gap-6">
                     <div className="flex flex-col items-center">
                         <span className="text-xs text-slate-500 dark:text-slate-400">Nível</span>
@@ -106,7 +110,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                         ></div>
                         </div>
                         <p className="text-sm text-center mt-2 text-slate-500 dark:text-slate-400">
-                        {gamification.xp} / {gamification.xpToNextLevel} XP
+                        {gamification.xp - currentLevelXp} / {nextLevelXp - currentLevelXp} XP para o próximo nível
                         </p>
                     </div>
                 </div>

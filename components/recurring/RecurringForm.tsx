@@ -3,6 +3,8 @@ import { RecurringItem, Account, Card, Category } from '../../types';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
+import { XP_VALUES } from '../../services/gamificationService';
+import { recurringSchema } from '../../utils/validation';
 
 interface RecurringFormProps {
   recurringItem?: RecurringItem | null;
@@ -13,9 +15,10 @@ interface RecurringFormProps {
   categories: Category[];
   onClose: () => void;
   isLoading: boolean;
+  addXp: (amount: number) => void;
 }
 
-const RecurringForm: React.FC<RecurringFormProps> = ({ recurringItem, onAdd, onUpdate, accounts, cards, categories, onClose, isLoading }) => {
+const RecurringForm: React.FC<RecurringFormProps> = ({ recurringItem, onAdd, onUpdate, accounts, cards, categories, onClose, isLoading, addXp }) => {
     const [desc, setDesc] = useState('');
     const [amount, setAmount] = useState('');
     const [day, setDay] = useState(new Date().getDate().toString());
@@ -71,6 +74,19 @@ const RecurringForm: React.FC<RecurringFormProps> = ({ recurringItem, onAdd, onU
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         
+        // Validate with Zod schema
+        const validation = recurringSchema.safeParse({
+            desc,
+            amount: parseFloat(amount),
+            day: parseInt(day)
+        });
+        
+        if (!validation.success) {
+            const firstError = validation.error.issues[0];
+            alert(firstError.message);
+            return;
+        }
+        
         if (recurringItem) {
             const updatedItem: RecurringItem = {
                 ...recurringItem,
@@ -109,6 +125,7 @@ const RecurringForm: React.FC<RecurringFormProps> = ({ recurringItem, onAdd, onU
                 lastRun: null, 
                 nextRun: nextRunDate.toISOString().slice(0, 10)
             });
+            addXp(XP_VALUES.ADD_RECURRING);
         }
     };
     

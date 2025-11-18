@@ -3,6 +3,7 @@ import { Category } from '../../types';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
+import { categorySchema } from '../../utils/validation';
 
 interface CategoryFormProps {
   setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
@@ -15,7 +16,19 @@ const CategoryForm: React.FC<CategoryFormProps> = ({ setCategories, existingGrou
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name) return;
+    
+    // Validate with Zod schema
+    const validation = categorySchema.safeParse({
+      name,
+      group: group || undefined
+    });
+    
+    if (!validation.success) {
+      const firstError = validation.error.issues[0];
+      alert(firstError.message);
+      return;
+    }
+    
     setCategories(prev => [...prev, { id: Date.now().toString(), name, group: group || null }]);
     setName(''); setGroup('');
   };
