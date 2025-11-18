@@ -77,7 +77,8 @@ const BudgetSection: React.FC<BudgetSectionProps> = ({ categories, budgets, onSe
                             <h4 className="font-semibold text-indigo-600 dark:text-indigo-400 mb-2">{groupName}</h4>
                             <div className="space-y-3">
                                 {categoryGroups[groupName].map(cat => {
-                                    const budget = budgets[cat.id] || 0;
+                                    const budgetKey = `${cat.id}_${monthKey(viewingMonth)}`;
+                                    const budget = budgets[budgetKey] || 0;
                                     const spent = spentThisMonth[cat.id] || 0;
                                     const remaining = budget - spent;
                                     const progress = budget > 0 ? (spent / budget) * 100 : 0;
@@ -105,7 +106,14 @@ const BudgetSection: React.FC<BudgetSectionProps> = ({ categories, budgets, onSe
                                                 </div>
                                             ) : (
                                                 <div>
-                                                    <div className="flex justify-between items-center mb-1"><span className="font-medium text-sm truncate">{cat.name}</span><Button size="sm" variant="ghost" onClick={() => { setEditingCatId(cat.id); setTempBudgetValue(budgets[cat.id]?.toString() || ''); }}><Edit3 className="w-3 h-3 mr-1" /> Editar</Button></div>
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <span className="font-medium text-sm truncate">{cat.name}</span>
+                                                        <Button size="sm" variant="ghost" onClick={() => {
+                                                            const budgetKey = `${cat.id}_${monthKey(viewingMonth)}`;
+                                                            setEditingCatId(cat.id);
+                                                            setTempBudgetValue(budgets[budgetKey]?.toString() || '');
+                                                        }}><Edit3 className="w-3 h-3 mr-1" /> Editar</Button>
+                                                    </div>
                                                     <div className="flex justify-between items-center text-sm mb-1"><span className={isOverBudget ? "font-bold text-red-500" : ""}>{toCurrency(spent)}</span><span className="text-sm text-slate-500">/ {toCurrency(budget)}</span></div>
                                                     <div className="w-full bg-slate-200 rounded-full h-2 dark:bg-slate-700"><div className={cn("h-2 rounded-full", isOverBudget ? "bg-red-500" : "bg-indigo-600")} style={{ width: `${Math.min(100, progress)}%` }}></div></div>
                                                 </div>
@@ -132,25 +140,17 @@ interface GoalsSectionProps {
     onAddFunds: (goalId: string, amount: number, accountId: string) => void;
     onWithdrawFunds: (goalId: string, amount: number, accountId: string) => void;
     isLoading: boolean;
-    modalOpen: 'add' | 'edit' | 'funds' | 'withdraw' | null;
-    setModalOpen: React.Dispatch<React.SetStateAction<'add' | 'edit' | 'funds' | 'withdraw' | null>>;
-    selectedGoal: Goal | null;
-    setSelectedGoal: React.Dispatch<React.SetStateAction<Goal | null>>;
-    form: { name: string; targetAmount: string; };
-    setForm: React.Dispatch<React.SetStateAction<{ name: string; targetAmount: string; }>>;
-    fundsAmount: string;
-    setFundsAmount: React.Dispatch<React.SetStateAction<string>>;
-    fundsAccount: string;
-    setFundsAccount: React.Dispatch<React.SetStateAction<string>>;
 }
 
 const GoalsSection: React.FC<GoalsSectionProps> = ({
     goals, accounts, onAddGoal, onUpdateGoal, onRemoveGoal,
-    onAddFunds, onWithdrawFunds, isLoading,
-    // Modal state and handlers passed from parent
-    modalOpen, setModalOpen, selectedGoal, setSelectedGoal,
-    form, setForm, fundsAmount, setFundsAmount, fundsAccount, setFundsAccount
+    onAddFunds, onWithdrawFunds, isLoading
 }) => {
+    const [modalOpen, setModalOpen] = useState<'add' | 'edit' | 'funds' | 'withdraw' | null>(null);
+    const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
+    const [form, setForm] = useState({ name: '', targetAmount: '' });
+    const [fundsAmount, setFundsAmount] = useState('');
+    const [fundsAccount, setFundsAccount] = useState(accounts[0]?.id || '');
     const handleGoalSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         
@@ -281,20 +281,15 @@ const PlanningPage: React.FC<PlanningPageProps> = ({ categories, budgets, setBud
     
     const [viewingMonth, setViewingMonth] = useState(new Date());
 
-    // State for GoalsSection modal lifted up to PlanningPage
-    const [goalModalOpen, setGoalModalOpen] = useState<'add' | 'edit' | 'funds' | 'withdraw' | null>(null);
-    const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
-    const [goalForm, setGoalForm] = useState({ name: '', targetAmount: '' });
-    const [goalFundsAmount, setGoalFundsAmount] = useState('');
-    const [goalFundsAccount, setGoalFundsAccount] = useState(accounts[0]?.id || '');
 
     const handleSetBudget = async (categoryId: string, amount: number) => {
-      const isNew = !budgets[categoryId] || budgets[categoryId] === 0;
       const month = monthKey(viewingMonth);
+      const budgetKey = `${categoryId}_${month}`;
+      const isNew = !budgets[budgetKey] || budgets[budgetKey] === 0;
       const previousBudgets = { ...budgets };
 
       // Optimistic update
-      setBudgets(p => ({...p, [categoryId]: amount}));
+      setBudgets(p => ({...p, [budgetKey]: amount}));
       addToast('Orçamento salvo com sucesso!', 'success');
 
       try {
@@ -443,16 +438,6 @@ const PlanningPage: React.FC<PlanningPageProps> = ({ categories, budgets, setBud
                 onRemoveGoal={handleRemoveGoal}
                 onAddFunds={handleAddFunds}
                 onWithdrawFunds={handleWithdrawFunds}
-                modalOpen={goalModalOpen}
-                setModalOpen={setGoalModalOpen}
-                selectedGoal={selectedGoal}
-                setSelectedGoal={setSelectedGoal}
-                form={goalForm}
-                setForm={setGoalForm}
-                fundsAmount={goalFundsAmount}
-                setFundsAmount={setGoalFundsAmount}
-                fundsAccount={goalFundsAccount}
-                setFundsAccount={setGoalFundsAccount}
             />
         </div>
     );
