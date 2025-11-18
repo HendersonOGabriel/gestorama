@@ -54,7 +54,7 @@ const AccountList: React.FC<AccountListProps> = ({ accounts, setAccounts, adjust
             amount: Math.abs(delta),
             date: dateStr,
             installments: 1,
-            type: 'transfer',
+            type: 'cash',
             is_income: delta > 0,
             person: 'Ajuste Interno',
             account_id: accountId,

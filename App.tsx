@@ -1440,11 +1440,7 @@ const App: React.FC = () => {
 
         if (result) {
           setGamification(result);
-          if (result.leveledUp) {
-            addToast(`Parabéns! Você subiu para o Nível ${result.level}!`, 'success');
-          } else {
-            addToast(`Você ganhou ${XP_VALUES.DAILY_LOGIN} XP por acessar hoje!`, 'success');
-          }
+          addToast(`Você ganhou ${XP_VALUES.DAILY_LOGIN} XP por acessar hoje!`, 'success');
         }
       };
 
