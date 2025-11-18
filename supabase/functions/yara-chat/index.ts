@@ -69,8 +69,6 @@ serve(async (req) => {
     
     const { messages } = validationResult.data;
     const authHeader = req.headers.get('Authorization');
-    
-    console.log('Received validated messages:', messages.length, 'messages');
 
     if (!openAIApiKey) {
       throw new Error('OPENAI_API_KEY not configured');
@@ -229,16 +227,12 @@ serve(async (req) => {
 
     const data = await response.json();
     const assistantMessage = data.choices[0].message;
-    
-    console.log('Assistant response:', assistantMessage);
 
     // Check if the assistant wants to call a function
     if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
       const toolCall = assistantMessage.tool_calls[0];
       const functionName = toolCall.function.name;
       const functionArgs = JSON.parse(toolCall.function.arguments);
-
-      console.log('Function call:', functionName, functionArgs);
 
       if (functionName === 'add_transaction') {
         // Get user's default account and card
@@ -271,8 +265,6 @@ serve(async (req) => {
         // Validate transaction arguments
         const argsValidation = transactionArgsSchema.safeParse(functionArgs);
         if (!argsValidation.success) {
-          const errorDetails = (argsValidation as any).error.errors;
-          console.error('Transaction args validation error:', errorDetails);
           return new Response(
             JSON.stringify({ 
               message: 'Desculpe, não consegui entender os dados da transação. Por favor, tente novamente com informações mais claras.' 

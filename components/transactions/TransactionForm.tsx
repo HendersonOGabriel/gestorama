@@ -5,6 +5,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { buildInstallments } from '../../utils/helpers';
+import { transactionSchema } from '../../utils/validation';
 
 // FIX: Added an interface for the form state to prevent type inference issues.
 interface TransactionFormData {
@@ -73,7 +74,20 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ isOpen, onClose, onSu
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const amount = parseFloat(form.amount);
-    if (!form.desc || !amount) return;
+    
+    // Validate with Zod schema
+    const validation = transactionSchema.safeParse({
+      description: form.desc,
+      amount,
+      date: form.date,
+      person: form.person || undefined
+    });
+    
+    if (!validation.success) {
+      const firstError = validation.error.issues[0];
+      alert(firstError.message);
+      return;
+    }
 
     const installmentsCount = form.type === 'cash' ? 1 : form.installments;
     const cardData = isCardExpense ? cards.find(c => c.id === selectedCard) : null;

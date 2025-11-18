@@ -4,6 +4,7 @@ import { toCurrency } from '../../utils/helpers';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
+import { transferSchema } from '../../utils/validation';
 
 interface TransferFormProps {
   accounts: Account[];
@@ -38,11 +39,19 @@ const TransferForm: React.FC<TransferFormProps> = ({ accounts, transfer, onTrans
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fromAccount || !toAccount || !amount || parseFloat(amount) <= 0) {
-      onError('Por favor, preencha todos os campos com valores válidos.'); return;
-    }
-    if (fromAccount === toAccount) {
-      onError('A conta de origem e destino não podem ser as mesmas.'); return;
+    
+    // Validate with Zod schema
+    const validation = transferSchema.safeParse({
+      amount: parseFloat(amount),
+      date,
+      fromAccount,
+      toAccount
+    });
+    
+    if (!validation.success) {
+      const firstError = validation.error.issues[0];
+      onError(firstError.message);
+      return;
     }
 
     if (transfer && onUpdate) {
