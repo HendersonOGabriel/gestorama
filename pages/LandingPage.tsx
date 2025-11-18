@@ -150,6 +150,8 @@ export default function LandingPage({ onEnter }: LandingPageProps) {
         )}
       </header>
 
+      {/* Main Content */}
+      <main>
       {/* Hero Section */}
       <section className="text-center py-24 px-4 max-w-5xl mx-auto">
         <h1 className="text-5xl font-bold mb-6 text-indigo-300">
@@ -408,6 +410,7 @@ export default function LandingPage({ onEnter }: LandingPageProps) {
           <p>Você tem controle total sobre seus dados e pode solicitar a exclusão de sua conta e de todas as informações a qualquer momento.</p>
         </div>
       </section>
+      </main>
       
       {/* Footer */}
       <footer className="py-12 px-6 bg-slate-950 border-t border-slate-700/40">
