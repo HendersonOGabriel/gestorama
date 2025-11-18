@@ -232,7 +232,7 @@ export default function LandingPage({ onEnter }: LandingPageProps) {
         <div className="flex justify-center items-center gap-4 mb-10">
           <span className={cn("font-medium", billingCycle === 'monthly' ? 'text-indigo-400' : 'text-slate-400')}>Mensal</span>
           <label className="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" checked={billingCycle === 'annual'} onChange={() => setBillingCycle(p => p === 'monthly' ? 'annual' : 'monthly')} className="sr-only peer" />
+            <input type="checkbox" checked={billingCycle === 'annual'} onChange={() => setBillingCycle(p => p === 'monthly' ? 'annual' : 'monthly')} className="sr-only peer" aria-label="Alternar entre planos mensais e anuais" />
             <div className="w-14 h-7 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-slate-600 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary"></div>
           </label>
           <span className={cn("font-medium", billingCycle === 'annual' ? 'text-indigo-400' : 'text-slate-400')}>

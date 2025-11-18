@@ -99,7 +99,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ addToast, onUpgrade
       <div className="flex flex-wrap justify-center items-center gap-4">
         <span className={cn("font-medium", billingCycle === 'monthly' ? 'text-primary' : 'text-slate-500')}>Mensal</span>
         <label className="relative inline-flex items-center cursor-pointer">
-          <input type="checkbox" checked={billingCycle === 'annual'} onChange={() => setBillingCycle(p => p === 'monthly' ? 'annual' : 'monthly')} className="sr-only peer" />
+          <input type="checkbox" checked={billingCycle === 'annual'} onChange={() => setBillingCycle(p => p === 'monthly' ? 'annual' : 'monthly')} className="sr-only peer" aria-label="Alternar entre planos mensais e anuais" />
           <div className="w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-slate-600 peer-checked:bg-primary"></div>
         </label>
         <span className={cn("font-medium transition-colors", billingCycle === 'annual' ? 'text-primary' : 'text-slate-500')}>
