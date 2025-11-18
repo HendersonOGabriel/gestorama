@@ -1,5 +1,5 @@
-import { supabase } from '../src/integrations/supabase/client';
-import { Tables } from '../src/integrations/supabase/types';
+import { supabase } from '@/integrations/supabase/client';
+import { Tables } from '@/integrations/supabase/types';
 
 type Gamification = Tables<'gamification'>;
 

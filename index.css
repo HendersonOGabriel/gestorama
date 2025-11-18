@@ -65,15 +65,6 @@
   --ring: 263.4 70% 50.4%;
 }
 
-* {
-  @apply border-border;
-}
-
-body {
-  @apply bg-background text-foreground;
-  font-feature-settings: "rlig" 1, "calt" 1;
-}
-
 @layer utilities {
   @keyframes fade-in-up {
     from {
@@ -88,16 +79,5 @@ body {
 
   .animate-fade-in-up {
     animation: fade-in-up both;
-  }
-
-  .highlight-invoice {
-      animation: highlight-animation 2s ease-in-out;
-  }
-
-  @keyframes highlight-animation {
-      0% { background-color: transparent; }
-      25% { background-color: theme('colors.indigo.200 / 50%'); }
-      75% { background-color: theme('colors.indigo.200 / 50%'); }
-      100% { background-color: transparent; }
   }
 }

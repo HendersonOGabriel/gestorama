@@ -1,14 +1,14 @@
 import React, { useMemo, useState } from 'react';
 import { Plus, Edit3, DollarSign, Landmark, Trash2, X, ChevronLeft, ChevronRight, Target } from 'lucide-react';
-import { Category, Goal, Account, Transaction } from '../types';
-import { toCurrency, cn, displayMonthYear, monthKey, addMonths } from '../utils/helpers';
-import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
-import { Label } from '../components/ui/Label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/Dialog';
-import { supabase } from '../src/integrations/supabase/client';
-import { XP_VALUES } from '../services/gamificationService';
+import { Category, Goal, Account, Transaction } from '@/types';
+import { toCurrency, cn, displayMonthYear, monthKey, addMonths } from '@/utils/helpers';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
+import { supabase } from '@/integrations/supabase/client';
+import { XP_VALUES } from '@/services/gamificationService';
 
 interface BudgetSectionProps {
   categories: Category[];

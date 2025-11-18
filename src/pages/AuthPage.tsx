@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../src/integrations/supabase/client';
-import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
-import { Label } from '../components/ui/Label';
-import { loadState } from '../services/storageService';
-import { cn } from '../utils/helpers';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
+import { loadState } from '@/services/storageService';
+import { cn } from '@/utils/helpers';
 
 interface AuthPageProps {
   onAuthSuccess: () => void;

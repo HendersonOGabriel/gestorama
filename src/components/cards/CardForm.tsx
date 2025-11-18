@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Account, Card } from '../../types';
-import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
-import { Label } from '../ui/Label';
-import { supabase } from '@/src/integrations/supabase/client';
-import { cardSchema } from '../../utils/validation';
+import { Account, Card } from '@/types';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
+import { supabase } from '@/integrations/supabase/client';
+import { cardSchema } from '@/utils/validation';
 
-import { XP_VALUES } from '../../services/gamificationService';
+import { XP_VALUES } from '@/services/gamificationService';
 
 interface CardFormProps {
   setCards: React.Dispatch<React.SetStateAction<Card[]>>;

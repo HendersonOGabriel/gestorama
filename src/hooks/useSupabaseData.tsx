@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/src/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Transaction, Account, Card, Transfer, RecurringItem, Category, 
   Goal, Reminder, Subscription, GamificationState, YaraUsage 
-} from '../types';
-import { DEFAULT_CATEGORIES } from '../data/initialData';
+} from '@/types';
+import { DEFAULT_CATEGORIES } from '@/data/initialData';
 
 interface SupabaseDataState {
   transactions: Transaction[];
