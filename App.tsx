@@ -1513,6 +1513,7 @@ const App: React.FC = () => {
                 themePreference={themePreference} onSetThemePreference={setThemePreference}
                 isLoading={isLoading}
                 onOpenImport={() => setModal('import')}
+                onImportComplete={supabaseData.refetch}
                 appState={stateToExport}
                 gamification={gamification}
                 onLogout={handleLogout}
