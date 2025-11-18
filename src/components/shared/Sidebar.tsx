@@ -59,8 +59,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, onOpenAc
 
       <div className="flex items-center justify-between mb-6">
         <button onClick={onGoToLanding} className={cn("flex items-center gap-3 text-left", isMinimized ? "md:justify-center" : "")} aria-label="Ir para a página inicial">
-            <div className="p-2 bg-indigo-600 rounded-lg flex-shrink-0"><Wallet className="text-white w-6 h-6" /></div>
-            <h1 className={cn("text-xl font-semibold", logoClasses)}>Gestorama</h1>
+          <img src="/icons/logo-32x32.png" alt="Gestorama Logo" className="w-8 h-8 flex-shrink-0" />
+          <h1 className={cn("text-xl font-semibold", logoClasses)}>Gestorama</h1>
         </button>
         <Button variant="ghost" size="icon" className="md:hidden -mr-2" onClick={() => setIsMobileMenuOpen(false)} aria-label="Fechar menu"><X className="w-5 h-5"/></Button>
       </div>

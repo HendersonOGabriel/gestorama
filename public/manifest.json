@@ -1,0 +1,21 @@
+{
+  "name": "Gestorama - Personal Finance Manager",
+  "short_name": "Gestorama",
+  "description": "Gestorama é o app de controle financeiro que conversa com você. Registre gastos pelo WhatsApp com a Yara IA e visualize tudo em um dashboard completo. Simplifique suas finanças hoje!",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "/icons/logo-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/icons/logo-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}
