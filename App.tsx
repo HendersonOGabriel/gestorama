@@ -1070,7 +1070,7 @@ const App: React.FC = () => {
                 return;
             }
 
-            const { data: newRecurringItem, error } = await supabase
+            const { error } = await supabase
                 .from('recurring_items')
                 .insert({
                     description: item.desc,
@@ -1085,16 +1085,11 @@ const App: React.FC = () => {
                     last_run: item.lastRun,
                     next_run: item.nextRun,
                     user_id: user!.id
-                })
-                .select()
-                .single();
+                });
 
             if (error) throw error;
 
-            if (newRecurringItem) {
-                // Explicitly process the newly created item to generate the first transaction if needed.
-                await processRecurringItems([newRecurringItem]);
-            }
+            // The main useEffect will pick up the new recurring item and process it automatically.
 
             addToast('Recorrência criada!', 'success');
             setModal(null);
@@ -1521,6 +1516,9 @@ const App: React.FC = () => {
 
         if (newTxs.length > 0) {
             try {
+                // Create a mutable copy of accounts to track balance changes within this process.
+                const currentAccounts = accounts.map(a => ({ ...a }));
+
                 // Insert transactions
                 for (const tx of newTxs) {
                     const { data: newTxData, error: txError } = await supabase
@@ -1558,6 +1556,25 @@ const App: React.FC = () => {
                         }));
                         await supabase.from('installments').insert(installmentsData);
                     }
+
+                    // --- BALANCE UPDATE ---
+                    // Adjust account balance for new, non-card, paid transactions
+                    if (tx.paid && tx.type !== 'card' && tx.account) {
+                        const account = currentAccounts.find(a => a.id === tx.account);
+                        if (account) {
+                            const amountToAdjust = tx.isIncome ? tx.amount : -tx.amount;
+                            const newBalance = account.balance + amountToAdjust;
+
+                            // Update account in Supabase
+                            await supabase
+                                .from('accounts')
+                                .update({ balance: newBalance })
+                                .eq('id', account.id);
+
+                            // Update the local copy for the next iteration in this loop
+                            account.balance = newBalance;
+                        }
+                    }
                 }
 
                 // Update recurring items with their final state
@@ -1569,13 +1586,13 @@ const App: React.FC = () => {
                 }
 
                 addToast(`${newTxs.length} transaç${newTxs.length > 1 ? 'ões' : 'ão'} recorrente${newTxs.length > 1 ? 's' : ''} gerada${newTxs.length > 1 ? 's' : ''}.`, 'success');
-                supabaseData.refetch(); // Refetch all data to update UI
+                // Don't refetch here to avoid race conditions. The realtime subscription will update the UI.
             } catch (error) {
                 console.error('Erro ao processar itens recorrentes:', error);
                 addToast('Erro ao gerar transações recorrentes.', 'error');
             }
         }
-    }, [user, supabaseData, addToast]);
+    }, [user, addToast, accounts]);
 
     useEffect(() => {
         if (isLoading || !user) return;
