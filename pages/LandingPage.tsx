@@ -270,11 +270,11 @@ export default function LandingPage({ onEnter }: LandingPageProps) {
                         <div className="my-8 text-center">
                             <p className="font-semibold mb-2 text-slate-200">Número de Contas</p>
                             <div className="flex items-center justify-center gap-2">
-                              <Button size="icon" variant="outline" className="h-8 w-8 rounded-full border-slate-600" onClick={() => handleFamilyMembersChange(-1)} disabled={familyMembers <= 2}>
+                              <Button size="icon" variant="outline" className="h-8 w-8 rounded-full border-slate-600" onClick={() => handleFamilyMembersChange(-1)} disabled={familyMembers <= 2} aria-label="Diminuir número de contas">
                                   <Minus className="w-4 h-4" />
                               </Button>
                               <span className="text-lg font-bold w-10 text-center text-slate-100">{familyMembers}</span>
-                              <Button size="icon" variant="outline" className="h-8 w-8 rounded-full border-slate-600" onClick={() => handleFamilyMembersChange(1)} disabled={familyMembers >= 10}>
+                              <Button size="icon" variant="outline" className="h-8 w-8 rounded-full border-slate-600" onClick={() => handleFamilyMembersChange(1)} disabled={familyMembers >= 10} aria-label="Aumentar número de contas">
                                   <Plus className="w-4 h-4" />
                               </Button>
                             </div>
@@ -331,11 +331,11 @@ export default function LandingPage({ onEnter }: LandingPageProps) {
                             <div className="my-8 text-center">
                                 <p className="font-semibold mb-2 text-slate-200">Número de Contas</p>
                                 <div className="flex items-center justify-center gap-2">
-                                  <Button size="icon" variant="outline" className="h-8 w-8 rounded-full border-slate-600" onClick={() => handleFamilyMembersChange(-1)} disabled={familyMembers <= 2}>
+                                  <Button size="icon" variant="outline" className="h-8 w-8 rounded-full border-slate-600" onClick={() => handleFamilyMembersChange(-1)} disabled={familyMembers <= 2} aria-label="Diminuir número de contas">
                                       <Minus className="w-4 h-4" />
                                   </Button>
                                   <span className="text-lg font-bold w-10 text-center text-slate-100">{familyMembers}</span>
-                                  <Button size="icon" variant="outline" className="h-8 w-8 rounded-full border-slate-600" onClick={() => handleFamilyMembersChange(1)} disabled={familyMembers >= 10}>
+                                  <Button size="icon" variant="outline" className="h-8 w-8 rounded-full border-slate-600" onClick={() => handleFamilyMembersChange(1)} disabled={familyMembers >= 10} aria-label="Aumentar número de contas">
                                       <Plus className="w-4 h-4" />
                                   </Button>
                                 </div>
