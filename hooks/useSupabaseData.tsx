@@ -604,6 +604,34 @@ export const useSupabaseData = (userId: string | null) => {
           }
         }
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'budgets', filter: `user_id=eq.${userId}` },
+        (payload) => {
+          if ((payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') && payload.new) {
+            const newBudget = payload.new as any;
+            const key = `${newBudget.category_id}_${newBudget.month}`;
+            setState(prev => ({
+              ...prev,
+              budgets: {
+                ...prev.budgets,
+                [key]: Number(newBudget.amount)
+              }
+            }));
+          } else if (payload.eventType === 'DELETE' && payload.old) {
+            const oldBudget = payload.old as any;
+            const key = `${oldBudget.category_id}_${oldBudget.month}`;
+            setState(prev => {
+              const newBudgets = { ...prev.budgets };
+              delete newBudgets[key];
+              return {
+                ...prev,
+                budgets: newBudgets
+              };
+            });
+          }
+        }
+      )
       .subscribe();
 
     // Helper function to map a transaction record
