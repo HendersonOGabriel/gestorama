@@ -1447,7 +1447,7 @@ const App: React.FC = () => {
       if (!isLoading && user?.id && gamification.user_id) {
         runDailyLoginCheck();
       }
-    }, [isLoading, user?.id, gamification.user_id, gamification.last_login_xp_awarded, addToast]);
+    }, [isLoading, user?.id, gamification.user_id, addToast]);
 
     // Monthly Budget XP Award Check
     useEffect(() => {
@@ -1493,15 +1493,31 @@ const App: React.FC = () => {
 
         const todayKey = new Date().toISOString().slice(0, 10);
         const newTxs: Transaction[] = [];
-        const itemsToUpdate: RecurringItem[] = [];
+        const itemsToUpdate: { [id: string]: RecurringItem } = {};
 
-        for (const item of itemsToProcess) {
-            const { item: updatedItem, newTx } = runRecurringItem(item, todayKey);
-            if (newTx) {
-                newTxs.push(newTx);
-                itemsToUpdate.push(updatedItem);
+        for (const initialItem of itemsToProcess) {
+            let currentItem = { ...initialItem };
+            let hasRun = false;
+
+            // Loop until the item's next run is in the future
+            while (currentItem.enabled && currentItem.nextRun && currentItem.nextRun <= todayKey) {
+                const { item: updatedItem, newTx } = runRecurringItem(currentItem, todayKey);
+                if (newTx) {
+                    newTxs.push(newTx);
+                    currentItem = updatedItem; // Update the item for the next iteration
+                    hasRun = true;
+                } else {
+                    // Break to avoid infinite loops if the date logic fails
+                    break;
+                }
+            }
+
+            if (hasRun) {
+                itemsToUpdate[currentItem.id] = currentItem;
             }
         }
+
+        const finalItemsToUpdate = Object.values(itemsToUpdate);
 
         if (newTxs.length > 0) {
             try {
@@ -1544,8 +1560,8 @@ const App: React.FC = () => {
                     }
                 }
 
-                // Update recurring items
-                for (const item of itemsToUpdate) {
+                // Update recurring items with their final state
+                for (const item of finalItemsToUpdate) {
                     await supabase
                         .from('recurring_items')
                         .update({ last_run: item.lastRun, next_run: item.nextRun })
