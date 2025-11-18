@@ -29,7 +29,6 @@ const RecurringForm: React.FC<RecurringFormProps> = ({ recurringItem, onAdd, onU
     const [categoryId, setCategoryId] = useState('');
     
     const isCardTransaction = type === 'card';
-    const isCardExpense = type === 'card' && !isIncome;
 
     useEffect(() => {
         if (recurringItem) {
@@ -54,13 +53,13 @@ const RecurringForm: React.FC<RecurringFormProps> = ({ recurringItem, onAdd, onU
     }, [recurringItem, accounts, cards]);
 
     useEffect(() => {
-        if (isCardExpense && card) {
+        if (isCardTransaction && card) {
             const selectedCardData = cards.find(c => c.id === card);
             if (selectedCardData) {
                 setAccount(selectedCardData.accountId);
             }
         }
-    }, [isCardExpense, card, cards]);
+    }, [isCardTransaction, card, cards]);
 
 
     const groupedCategories = useMemo(() => {
@@ -175,7 +174,7 @@ const RecurringForm: React.FC<RecurringFormProps> = ({ recurringItem, onAdd, onU
             
             <div className="space-y-1">
                 <Label>Conta</Label>
-                <select value={account} onChange={e => setAccount(e.target.value)} className="w-full p-2 h-10 border rounded-md bg-white dark:bg-slate-800 dark:border-slate-700" disabled={isCardExpense}>
+                <select value={account} onChange={e => setAccount(e.target.value)} className="w-full p-2 h-10 border rounded-md bg-white dark:bg-slate-800 dark:border-slate-700" disabled={isCardTransaction}>
                     {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                 </select>
             </div>

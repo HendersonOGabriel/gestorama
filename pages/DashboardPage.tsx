@@ -954,7 +954,6 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
               </CardContent>
           </Card>
       </div>
-
     </div>
   );
 };
