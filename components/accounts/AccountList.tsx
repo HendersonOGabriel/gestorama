@@ -59,7 +59,6 @@ const AccountList: React.FC<AccountListProps> = ({ accounts, setAccounts, adjust
             to_account: isIncome ? accountId : null,
             amount: Math.abs(delta),
             date: new Date().toISOString().slice(0, 10),
-            description: `Ajuste de Saldo`,
             user_id: userId
           });
 
