@@ -28,6 +28,7 @@ const RecurringForm: React.FC<RecurringFormProps> = ({ recurringItem, onAdd, onU
     const [card, setCard] = useState(cards.find(c => c.isDefault)?.id || cards[0]?.id || '');
     const [categoryId, setCategoryId] = useState('');
     
+    const isCardTransaction = type === 'card';
     const isCardExpense = type === 'card' && !isIncome;
 
     useEffect(() => {
@@ -96,7 +97,7 @@ const RecurringForm: React.FC<RecurringFormProps> = ({ recurringItem, onAdd, onU
                 type,
                 isIncome,
                 account,
-                card: isCardExpense ? card : null,
+                card: isCardTransaction ? card : null,
                 categoryId: categoryId || null,
             };
             onUpdate(updatedItem);
@@ -119,7 +120,7 @@ const RecurringForm: React.FC<RecurringFormProps> = ({ recurringItem, onAdd, onU
                 type, 
                 isIncome, 
                 account, 
-                card: isCardExpense ? card : null, 
+                card: isCardTransaction ? card : null,
                 categoryId: categoryId || null,
                 enabled: true, 
                 lastRun: null, 
@@ -163,7 +164,7 @@ const RecurringForm: React.FC<RecurringFormProps> = ({ recurringItem, onAdd, onU
                 </div>
             </div>
 
-            {isCardExpense && (
+            {isCardTransaction && (
                 <div className="space-y-1">
                     <Label>Cartão</Label>
                     <select value={card} onChange={e => setCard(e.target.value)} className="w-full p-2 h-10 border rounded-md bg-white dark:bg-slate-800 dark:border-slate-700">
