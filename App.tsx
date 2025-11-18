@@ -1067,7 +1067,7 @@ const App: React.FC = () => {
                 return;
             }
 
-            const { error } = await supabase
+            const { data: newRecurringItem, error } = await supabase
                 .from('recurring_items')
                 .insert({
                     description: item.desc,
@@ -1082,9 +1082,16 @@ const App: React.FC = () => {
                     last_run: item.lastRun,
                     next_run: item.nextRun,
                     user_id: user!.id
-                });
+                })
+                .select()
+                .single();
 
             if (error) throw error;
+
+            if (newRecurringItem) {
+                // Explicitly process the newly created item to generate the first transaction if needed.
+                await processRecurringItems([newRecurringItem]);
+            }
 
             addToast('Recorrência criada!', 'success');
             setModal(null);
@@ -1213,7 +1220,7 @@ const App: React.FC = () => {
                 return;
             }
 
-            const { error } = await supabase
+            const { data: updatedItem, error } = await supabase
                 .from('recurring_items')
                 .update({
                     description: item.desc,
@@ -1228,9 +1235,15 @@ const App: React.FC = () => {
                     last_run: item.lastRun,
                     next_run: item.nextRun
                 })
-                .eq('id', item.id);
+                .eq('id', item.id)
+                .select()
+                .single();
 
             if (error) throw error;
+
+            if (updatedItem) {
+                setRecurring(prev => prev.map(r => r.id === updatedItem.id ? updatedItem : r));
+            }
 
             addToast('Recorrência atualizada!', 'success');
             setModal(null);
@@ -1420,117 +1433,83 @@ const App: React.FC = () => {
         window.scrollTo(0, 0);
     }, [currentPage]);
 
+    const processRecurringItems = useCallback(async (itemsToProcess: RecurringItem[]) => {
+        if (!user || itemsToProcess.length === 0) return;
+
+        const todayKey = new Date().toISOString().slice(0, 10);
+        const newTxs: Transaction[] = [];
+        const itemsToUpdate: RecurringItem[] = [];
+
+        for (const item of itemsToProcess) {
+            const { item: updatedItem, newTx } = runRecurringItem(item, todayKey);
+            if (newTx) {
+                newTxs.push(newTx);
+                itemsToUpdate.push(updatedItem);
+            }
+        }
+
+        if (newTxs.length > 0) {
+            try {
+                // Insert transactions
+                for (const tx of newTxs) {
+                    const { data: newTxData, error: txError } = await supabase
+                        .from('transactions')
+                        .insert({
+                            description: tx.desc,
+                            amount: tx.amount,
+                            date: tx.date,
+                            installments: tx.installments,
+                            type: tx.type,
+                            is_income: tx.isIncome,
+                            person: tx.person,
+                            account_id: tx.account,
+                            card_id: tx.card,
+                            category_id: tx.categoryId,
+                            paid: tx.paid,
+                            recurring_source_id: tx.recurringSourceId,
+                            reminder_days_before: tx.reminderDaysBefore,
+                            user_id: user.id
+                        })
+                        .select()
+                        .single();
+
+                    if (txError) throw txError;
+
+                    if (newTxData) {
+                        const installmentsData = tx.installmentsSchedule.map(inst => ({
+                            transaction_id: newTxData.id,
+                            installment_number: inst.installmentNumber,
+                            amount: inst.amount,
+                            posting_date: inst.postingDate,
+                            paid: inst.paid,
+                            payment_date: inst.paymentDate,
+                            paid_amount: inst.paidAmount
+                        }));
+                        await supabase.from('installments').insert(installmentsData);
+                    }
+                }
+
+                // Update recurring items
+                for (const item of itemsToUpdate) {
+                    await supabase
+                        .from('recurring_items')
+                        .update({ last_run: item.lastRun, next_run: item.nextRun })
+                        .eq('id', item.id);
+                }
+
+                addToast(`${newTxs.length} transaç${newTxs.length > 1 ? 'ões' : 'ão'} recorrente${newTxs.length > 1 ? 's' : ''} gerada${newTxs.length > 1 ? 's' : ''}.`, 'success');
+                supabaseData.refetch(); // Refetch all data to update UI
+            } catch (error) {
+                console.error('Erro ao processar itens recorrentes:', error);
+                addToast('Erro ao gerar transações recorrentes.', 'error');
+            }
+        }
+    }, [user, supabaseData, addToast]);
+
     useEffect(() => {
-        if (isLoading || !user) return; // Prevent running on initial load before state is settled
-        
-        const processRecurringItems = async () => {
-            const todayKey = new Date().toISOString().slice(0, 10);
-            const newTxs: Transaction[] = [];
-            const itemsToUpdate: RecurringItem[] = [];
-            
-            for (const item of recurring) {
-                const { item: updatedItem, newTx } = runRecurringItem(item, todayKey);
-                
-                if (newTx) {
-                    newTxs.push(newTx);
-                    itemsToUpdate.push(updatedItem);
-                }
-            }
-            
-            if (newTxs.length > 0) {
-                try {
-                    // Insert transactions into Supabase with user_id
-                    for (const tx of newTxs) {
-                        const { data: newTx, error: txError } = await supabase
-                            .from('transactions')
-                            .insert({
-                                description: tx.desc,
-                                amount: tx.amount,
-                                date: tx.date,
-                                installments: tx.installments,
-                                type: tx.type,
-                                is_income: tx.isIncome,
-                                person: tx.person,
-                                account_id: tx.account,
-                                card_id: tx.card,
-                                category_id: tx.categoryId,
-                                paid: tx.paid,
-                                recurring_source_id: tx.recurringSourceId,
-                                reminder_days_before: tx.reminderDaysBefore,
-                                user_id: user.id
-                            })
-                            .select()
-                            .single();
-
-                        if (txError) throw txError;
-
-                        if (newTx) {
-                            // Create installments
-                            const installmentsData = tx.installmentsSchedule.map(inst => ({
-                                transaction_id: newTx.id,
-                                installment_number: inst.installmentNumber,
-                                amount: inst.amount,
-                                posting_date: inst.postingDate,
-                                paid: inst.paid,
-                                payment_date: inst.paymentDate,
-                                paid_amount: inst.paidAmount
-                            }));
-
-                            const { error: instError } = await supabase
-                                .from('installments')
-                                .insert(installmentsData);
-
-                            if (instError) throw instError;
-
-                            // Adjust account balance for paid income transactions
-                            if (tx.isIncome && tx.paid) {
-                                const account = accounts.find(a => a.id === tx.account);
-                                if (account) {
-                                    await supabase
-                                        .from('accounts')
-                                        .update({ balance: account.balance + tx.amount })
-                                        .eq('id', tx.account);
-                                }
-                            }
-                        }
-                    }
-
-                    // Update recurring items with new lastRun/nextRun dates
-                    for (const item of itemsToUpdate) {
-                        await supabase
-                            .from('recurring_items')
-                            .update({
-                                last_run: item.lastRun,
-                                next_run: item.nextRun
-                            })
-                            .eq('id', item.id);
-                    }
-
-                    addToast(`${newTxs.length} transaç${newTxs.length > 1 ? 'ões' : 'ão'} recorrente${newTxs.length > 1 ? 's' : ''} gerada${newTxs.length > 1 ? 's' : ''}.`, 'success');
-
-                    const newRecNotifications = newTxs.map(tx => ({
-                        id: `recurring-${tx.id}`,
-                        type: 'info',
-                        message: `Transação recorrente "${tx.desc}" foi gerada.`
-                    }));
-
-                    setNotifications(prev => {
-                        const existingIds = new Set(prev.map(n => n.id));
-                        const uniqueNew = newRecNotifications.filter(n => !existingIds.has(n.id));
-                        return [...prev, ...uniqueNew];
-                    });
-
-                    // Refetch data to update UI with new transactions
-                    supabaseData.refetch();
-                } catch (error) {
-                    console.error('Erro ao processar itens recorrentes:', error);
-                    addToast('Erro ao gerar transações recorrentes.', 'error');
-                }
-            }
-        };
-
-        processRecurringItems();
-    }, [recurring, isLoading, user, addToast, accounts, supabaseData]);
+        if (isLoading || !user) return;
+        processRecurringItems(recurring);
+    }, [recurring, isLoading, user, processRecurringItems]);
     
     useEffect(() => {
         const applyTheme = (theme: 'light' | 'dark') => {
@@ -1652,7 +1631,7 @@ const App: React.FC = () => {
             <PaymentModal payingInstallment={payingInstallment} onClose={() => setPayingInstallment(null)} onConfirm={handlePayInstallment} />
             <SettleInstallmentsModal transaction={settlingTransaction} onClose={() => setSettlingTransaction(null)} onConfirm={handleSettleInstallments} getInstallmentDueDate={getInstallmentDueDate} />
             <TransactionFilterModal isOpen={modal === 'filters'} onClose={() => setModal(null)} onApply={setFilters} onClear={() => setFilters({ description: '', categoryId: '', accountId: '', cardId: '', status: 'all', startDate: '', endDate: '' })} initialFilters={filters} accounts={accounts} cards={cards} categories={categories} />
-            <Dialog open={modal === 'addRecurring' || modal === 'editRecurring'} onOpenChange={() => {setModal(null); setSelectedRecurring(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editRecurring' ? 'Editar' : 'Adicionar'} Recorrência</DialogTitle></DialogHeader><RecurringForm recurringItem={selectedRecurring} onAdd={(item) => {setRecurring(p=>[...p, {...item, id: Date.now().toString()}]); setModal(null);}} onUpdate={(item) => {setRecurring(p=>p.map(r=>r.id===item.id?item:r)); setModal(null);}} accounts={accounts} cards={cards} categories={categories} onClose={() => setModal(null)} isLoading={isLoading}/></DialogContent></Dialog>
+            <Dialog open={modal === 'addRecurring' || modal === 'editRecurring'} onOpenChange={() => {setModal(null); setSelectedRecurring(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editRecurring' ? 'Editar' : 'Adicionar'} Recorrência</DialogTitle></DialogHeader><RecurringForm recurringItem={selectedRecurring} onAdd={handleRecurringAdd} onUpdate={handleRecurringUpdate} accounts={accounts} cards={cards} categories={categories} onClose={() => setModal(null)} isLoading={isLoading}/></DialogContent></Dialog>
             <Dialog open={modal === 'addTransfer' || modal === 'editTransfer'} onOpenChange={() => {setModal(null); setSelectedTransfer(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editTransfer' ? 'Editar' : 'Nova'} Transferência</DialogTitle></DialogHeader><TransferForm accounts={accounts} transfer={selectedTransfer} onTransfer={onAddTransfer} onUpdate={(t) => {setTransfers(p=>p.map(tr=>tr.id===t.id?t:tr)); setModal(null)}} onDismiss={() => setModal(null)} onError={addToast} isLoading={isLoading}/></DialogContent></Dialog>
             <Dialog open={modal === 'accounts'} onOpenChange={() => setModal(null)}><DialogContent className="w-full"><DialogHeader><DialogTitle>Contas</DialogTitle></DialogHeader><AccountList accounts={accounts} setAccounts={setAccounts} adjustAccountBalance={adjustAccountBalance} setTransactions={setTransactions} addToast={addToast} onConfirmDelete={(acc) => {}} />{user && <AccountForm setAccounts={setAccounts} setTransactions={setTransactions} userId={user.id} addToast={addToast} />}</DialogContent></Dialog>
             <Dialog open={modal === 'cards'} onOpenChange={() => setModal(null)}><DialogContent className="w-full"><DialogHeader><DialogTitle>Cartões</DialogTitle></DialogHeader><CardList cards={cards} setCards={setCards} transactions={transactions} addToast={addToast} onConfirmDelete={(c) => {}} accounts={accounts}/>{user && <CardForm setCards={setCards} accounts={accounts} addToast={addToast} userId={user.id}/>}</DialogContent></Dialog>
