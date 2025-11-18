@@ -4,6 +4,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { XP_VALUES } from '../../services/gamificationService';
+import { recurringSchema } from '../../utils/validation';
 
 interface RecurringFormProps {
   recurringItem?: RecurringItem | null;
@@ -72,6 +73,19 @@ const RecurringForm: React.FC<RecurringFormProps> = ({ recurringItem, onAdd, onU
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        
+        // Validate with Zod schema
+        const validation = recurringSchema.safeParse({
+            desc,
+            amount: parseFloat(amount),
+            day: parseInt(day)
+        });
+        
+        if (!validation.success) {
+            const firstError = validation.error.issues[0];
+            alert(firstError.message);
+            return;
+        }
         
         if (recurringItem) {
             const updatedItem: RecurringItem = {

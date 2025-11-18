@@ -116,7 +116,7 @@ serve(async (req) => {
 
     const validation = openAIResponseSchema.safeParse(parsedContent);
     if (!validation.success) {
-        console.error("OpenAI response validation failed:", validation.error);
+        console.error("OpenAI response validation failed");
         throw new Error("A IA retornou uma resposta em um formato inesperado.");
     }
     const { transactions, errors = [] } = validation.data;
@@ -171,7 +171,7 @@ serve(async (req) => {
             successCount++;
         } catch(dbError) {
             console.error('Error saving transaction:', dbError);
-            errors.push(`Erro ao salvar transação: "${tx.description}"`);
+            errors.push('Erro ao salvar uma das transações');
         }
     }
 
