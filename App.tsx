@@ -1434,20 +1434,20 @@ const App: React.FC = () => {
     // Daily Login XP Award
     useEffect(() => {
       const runDailyLoginCheck = async () => {
-        if (!user || !gamification.user_id) return;
+        if (!user) return;
 
         const result = await grantDailyLoginXp(user.id);
 
-        if (result) {
-          setGamification(result.newGamificationData);
+        if (result && result.newGamificationData) {
+          setGamification(prev => ({...prev, ...result.newGamificationData}));
           addToast(`Você ganhou ${XP_VALUES.DAILY_LOGIN} XP por acessar hoje!`, 'success');
         }
       };
 
-      if (!isLoading && user?.id && gamification.user_id) {
+      if (!isLoading && user?.id) {
         runDailyLoginCheck();
       }
-    }, [isLoading, user?.id, gamification.user_id, addToast]);
+    }, [isLoading, user?.id]);
 
     // Monthly Budget XP Award Check
     useEffect(() => {
