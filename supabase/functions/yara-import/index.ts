@@ -27,7 +27,7 @@ const requestSchema = z.object({
 
 const transactionArgsSchema = z.object({
   description: z.string().min(1).max(200),
-  amount: z.number().positive().max(999999999),
+  amount: z.number().positive().max(100000), // Reasonable transaction limit
   is_income: z.boolean(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
 });
@@ -67,6 +67,14 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
 
+    // --- Sanitize input to prevent prompt injection ---
+    const sanitizedContent = fileContent
+      .slice(0, 50000)  // Hard limit beyond schema validation
+      .replace(/ignore\s+(all\s+)?(previous\s+)?instructions?/gi, '[filtered]')
+      .replace(/system\s+prompt/gi, '[filtered]')
+      .replace(/you\s+are\s+(now|a)/gi, '[filtered]')
+      .trim();
+
     // --- OpenAI Call ---
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -98,7 +106,7 @@ serve(async (req) => {
               "errors": [ "Não foi possível analisar a linha: ...", ... ]
             }`
           },
-          { role: 'user', content: fileContent }
+          { role: 'user', content: sanitizedContent }
         ],
         response_format: { type: "json_object" },
         temperature: 0.1,
