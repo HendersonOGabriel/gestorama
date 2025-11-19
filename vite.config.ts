@@ -11,6 +11,9 @@ export default defineConfig(({ mode }) => {
         host: 'localhost',
         allowedHosts: ['d2b2ecf5-5b1a-4c42-a724-9bf49d7199fb-00-1rme94zsj4bhq.spock.replit.dev'],
       },
+      build: {
+        sourcemap: true,
+      },
       plugins: [
         react(),
         mode === 'development' && componentTagger(),
