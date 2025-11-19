@@ -554,7 +554,7 @@ const App: React.FC = () => {
           if (instError) throw instError;
 
           addToast('Transação atualizada com sucesso!', 'success');
-          supabaseData.refetch();
+          supabaseData.refetch(false);
         } else {
           // Create new transaction
           const { data: newTx, error: txError } = await supabase
@@ -610,7 +610,7 @@ const App: React.FC = () => {
 
           addToast('Transação adicionada com sucesso!', 'success');
           addXp(XP_VALUES.ADD_TRANSACTION);
-          supabaseData.refetch();
+          supabaseData.refetch(false);
         }
       } catch (error) {
         console.error('Erro ao salvar transação:', error);
@@ -743,7 +743,7 @@ const App: React.FC = () => {
                 }
 
                 addToast(`Fatura de ${toCurrency(totalPaid)} paga!`, 'success');
-                supabaseData.refetch();
+                supabaseData.refetch(false);
             } catch (error) {
                 console.error('Erro ao pagar fatura:', error);
                 addToast('Erro ao pagar fatura. Tente novamente.', 'error');
@@ -800,7 +800,7 @@ const App: React.FC = () => {
             }
 
             addToast('Parcela paga com sucesso!', 'success');
-            supabaseData.refetch(); // Refetch all data to ensure UI consistency
+            supabaseData.refetch(false); // Refetch all data to ensure UI consistency
         } catch (error) {
             console.error("Error paying installment:", error);
             addToast('Erro ao processar pagamento. Tente novamente.', 'error');
@@ -852,7 +852,7 @@ const App: React.FC = () => {
             }
 
             addToast('Estorno realizado com sucesso!', 'success');
-            supabaseData.refetch();
+            supabaseData.refetch(false);
         } catch (error) {
             console.error("Error processing refund:", error);
             addToast('Erro ao processar estorno. Tente novamente.', 'error');
@@ -927,7 +927,7 @@ const App: React.FC = () => {
         }
 
         addToast('Parcelas quitadas com sucesso!', 'success');
-        supabaseData.refetch();
+        supabaseData.refetch(false);
 
       } catch (error) {
         console.error('Error settling installments:', error);
@@ -993,7 +993,7 @@ const App: React.FC = () => {
             if (balanceError) throw balanceError;
 
             addToast('Estorno da fatura realizado.', 'success');
-            supabaseData.refetch();
+            supabaseData.refetch(false);
         } catch (error) {
             console.error('Erro ao estornar fatura:', error);
             addToast('Erro ao estornar fatura. Tente novamente.', 'error');
@@ -1129,7 +1129,7 @@ const App: React.FC = () => {
 
             addToast('Transação excluída com sucesso!', 'success');
             setSelectedTransaction(null);
-            supabaseData.refetch();
+            supabaseData.refetch(false);
         } catch (error) {
             console.error('Erro ao excluir transação:', error);
             addToast('Erro ao excluir transação. Tente novamente.', 'error');
@@ -1196,7 +1196,7 @@ const App: React.FC = () => {
             if (error) throw error;
 
             addToast('Transferência excluída com sucesso!', 'success');
-            supabaseData.refetch();
+            supabaseData.refetch(false);
         } catch (error) {
             console.error('Erro ao excluir transferência:', error);
             addToast('Erro ao excluir transferência. Tente novamente.', 'error');
@@ -1416,7 +1416,7 @@ const App: React.FC = () => {
     }, [user]);
 
     const refreshTransactions = useCallback(async () => {
-        await supabaseData.refetchTransactions();
+        await supabaseData.refetch(false);
     }, [supabaseData]);
 
     // Save theme preference to localStorage (UI preference only)
@@ -1704,6 +1704,7 @@ const App: React.FC = () => {
                         onToggleMobileMenu={() => setIsMobileMenuOpen(prev => !prev)}
                         isMobileMenuOpen={isMobileMenuOpen}
                         gamification={gamification}
+                        isRefreshing={supabaseData.refreshing}
                     />
                     <main className="flex-1 p-4 sm:p-6 overflow-y-auto">
                         <div className="pb-32 w-full">
@@ -1721,7 +1722,7 @@ const App: React.FC = () => {
             <TransactionFilterModal isOpen={modal === 'filters'} onClose={() => setModal(null)} onApply={setFilters} onClear={() => setFilters({ description: '', categoryId: '', accountId: '', cardId: '', status: 'all', startDate: '', endDate: '' })} initialFilters={filters} accounts={accounts} cards={cards} categories={categories} />
             <Dialog open={modal === 'addRecurring' || modal === 'editRecurring'} onOpenChange={() => {setModal(null); setSelectedRecurring(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editRecurring' ? 'Editar' : 'Adicionar'} Recorrência</DialogTitle></DialogHeader><RecurringForm recurringItem={selectedRecurring} onAdd={handleRecurringAdd} onUpdate={handleRecurringUpdate} accounts={accounts} cards={cards} categories={categories} onClose={() => setModal(null)} isLoading={isLoading} addXp={addXp} /></DialogContent></Dialog>
             <Dialog open={modal === 'addTransfer' || modal === 'editTransfer'} onOpenChange={() => {setModal(null); setSelectedTransfer(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editTransfer' ? 'Editar' : 'Nova'} Transferência</DialogTitle></DialogHeader><TransferForm accounts={accounts} transfer={selectedTransfer} onTransfer={onAddTransfer} onUpdate={(t) => {setTransfers(p=>p.map(tr=>tr.id===t.id?t:tr)); setModal(null)}} onDismiss={() => setModal(null)} onError={addToast} isLoading={isLoading}/></DialogContent></Dialog>
-            <Dialog open={modal === 'accounts'} onOpenChange={() => setModal(null)}><DialogContent className="w-full"><DialogHeader><DialogTitle>Contas</DialogTitle></DialogHeader>{user && <AccountList accounts={accounts} setAccounts={setAccounts} adjustAccountBalance={adjustAccountBalance} setTransactions={setTransactions} addToast={addToast} onConfirmDelete={(acc) => {}} userId={user.id} transactions={transactions} onDataNeedsRefresh={supabaseData.refetch} />}{user && <AccountForm setAccounts={setAccounts} setTransactions={setTransactions} userId={user.id} addToast={addToast} addXp={addXp} />}</DialogContent></Dialog>
+            <Dialog open={modal === 'accounts'} onOpenChange={() => setModal(null)}><DialogContent className="w-full"><DialogHeader><DialogTitle>Contas</DialogTitle></DialogHeader>{user && <AccountList accounts={accounts} setAccounts={setAccounts} adjustAccountBalance={adjustAccountBalance} setTransactions={setTransactions} addToast={addToast} onConfirmDelete={(acc) => {}} userId={user.id} transactions={transactions} onDataNeedsRefresh={() => supabaseData.refetch(false)} />}{user && <AccountForm setAccounts={setAccounts} setTransactions={setTransactions} userId={user.id} addToast={addToast} addXp={addXp} />}</DialogContent></Dialog>
             <Dialog open={modal === 'cards'} onOpenChange={() => setModal(null)}><DialogContent className="w-full"><DialogHeader><DialogTitle>Cartões</DialogTitle></DialogHeader><CardList cards={cards} setCards={setCards} transactions={transactions} addToast={addToast} onConfirmDelete={(c) => {}} accounts={accounts}/>{user && <CardForm setCards={setCards} accounts={accounts} addToast={addToast} userId={user.id} addXp={addXp} />}</DialogContent></Dialog>
             <Dialog open={modal === 'categories'} onOpenChange={() => setModal(null)}><DialogContent className="flex flex-col"><DialogHeader><DialogTitle>Categorias</DialogTitle></DialogHeader>{user && <CategoryManager categories={categories} setCategories={setCategories} transactions={transactions} recurring={recurring} userId={user.id} addToast={addToast} />}</DialogContent></Dialog>
             <ImportTransactionsModal isOpen={modal === 'import'} onClose={() => setModal(null)} accounts={accounts} onConfirmImport={(txs) => {}} addToast={addToast} isLoading={isLoading} />
