@@ -9,6 +9,7 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 8080,
         host: 'localhost',
+        allowedHosts: ['d2b2ecf5-5b1a-4c42-a724-9bf49d7199fb-00-1rme94zsj4bhq.spock.replit.dev'],
       },
       plugins: [
         react(),
