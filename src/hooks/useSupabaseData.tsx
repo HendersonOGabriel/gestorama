@@ -20,6 +20,7 @@ interface SupabaseDataState {
   gamification: GamificationState;
   yaraUsage: YaraUsage;
   loading: boolean;
+  refreshing: boolean;
   error: string | null;
 }
 
@@ -38,6 +39,7 @@ export const useSupabaseData = (userId: string | null) => {
     gamification: { level: 1, xp: 0, xpToNextLevel: 100 },
     yaraUsage: { count: 0, lastReset: new Date().toISOString().slice(0, 10) },
     loading: true,
+    refreshing: false,
     error: null
   });
 
@@ -307,13 +309,17 @@ export const useSupabaseData = (userId: string | null) => {
     };
   }, [userId]);
 
-  const loadAllData = useCallback(async () => {
+  const loadAllData = useCallback(async (forceLoading = true) => {
     if (!userId) {
-      setState(prev => ({ ...prev, loading: false }));
+      setState(prev => ({ ...prev, loading: false, refreshing: false }));
       return;
     }
 
-    setState(prev => ({ ...prev, loading: true, error: null }));
+    if (forceLoading) {
+      setState(prev => ({ ...prev, loading: true, refreshing: false, error: null }));
+    } else {
+      setState(prev => ({ ...prev, refreshing: true, error: null }));
+    }
 
     try {
       const [
@@ -382,6 +388,7 @@ export const useSupabaseData = (userId: string | null) => {
         gamification,
         yaraUsage,
         loading: false,
+        refreshing: false,
         error: null
       });
     } catch (error) {
@@ -389,6 +396,7 @@ export const useSupabaseData = (userId: string | null) => {
       setState(prev => ({
         ...prev,
         loading: false,
+        refreshing: false,
         error: error instanceof Error ? error.message : 'Failed to load data'
       }));
     }

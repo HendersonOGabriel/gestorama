@@ -1,7 +1,7 @@
 
 import React from 'react';
 import NotificationBell from './NotificationBell';
-import { Menu, Star } from 'lucide-react';
+import { Menu, Star, Loader2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { GamificationState } from '../../types';
 import { cn } from '../../utils/helpers';
@@ -13,6 +13,7 @@ interface GlobalHeaderProps {
   onToggleMobileMenu: () => void;
   isMobileMenuOpen: boolean;
   gamification: GamificationState;
+  isRefreshing?: boolean;
 }
 
 const GamificationWidget: React.FC<{ gamification: GamificationState }> = ({ gamification }) => {
@@ -33,7 +34,7 @@ const GamificationWidget: React.FC<{ gamification: GamificationState }> = ({ gam
   );
 };
 
-const GlobalHeader: React.FC<GlobalHeaderProps> = ({ currentPage, notifications, onClearNotifications, onToggleMobileMenu, isMobileMenuOpen, gamification }) => {
+const GlobalHeader: React.FC<GlobalHeaderProps> = ({ currentPage, notifications, onClearNotifications, onToggleMobileMenu, isMobileMenuOpen, gamification, isRefreshing }) => {
   const getTitle = () => {
     switch(currentPage) {
       case 'dashboard': return 'Visão Geral';
@@ -67,6 +68,9 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ currentPage, notifications,
             <Menu className="w-6 h-6" />
           </Button>
           <h1 className="flex-shrink min-w-0 truncate text-xl font-semibold sm:text-2xl">{getTitle()}</h1>
+          {isRefreshing && (
+             <Loader2 className="w-4 h-4 text-slate-400 animate-spin ml-2" />
+          )}
         </div>
         <div className="flex flex-shrink items-center gap-2 sm:gap-4">
             <GamificationWidget gamification={gamification} />
