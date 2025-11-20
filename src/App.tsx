@@ -339,12 +339,42 @@ const App: React.FC = () => {
     
     // Modals State
     const [modal, setModal] = useState<string | null>(null);
-    const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+    const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
     const [payingInstallment, setPayingInstallment] = useState<PayingInstallment | null>(null);
-    const [settlingTransaction, setSettlingTransaction] = useState<Transaction | null>(null);
-    const [selectedRecurring, setSelectedRecurring] = useState<RecurringItem | null>(null);
-    const [selectedTransfer, setSelectedTransfer] = useState<Transfer | null>(null);
+    const [settlingTransactionId, setSettlingTransactionId] = useState<string | null>(null);
+    const [selectedRecurringId, setSelectedRecurringId] = useState<string | null>(null);
+    const [selectedTransferId, setSelectedTransferId] = useState<string | null>(null);
     const [filters, setFilters] = useState({ description: '', categoryId: '', accountId: '', cardId: '', status: 'all', startDate: '', endDate: '' });
+
+    // Derived Modal State
+    const selectedTransaction = useMemo(() =>
+        transactions.find(t => t.id === selectedTransactionId) || null
+    , [transactions, selectedTransactionId]);
+
+    const settlingTransaction = useMemo(() =>
+        transactions.find(t => t.id === settlingTransactionId) || null
+    , [transactions, settlingTransactionId]);
+
+    const selectedRecurring = useMemo(() =>
+        recurring.find(r => r.id === selectedRecurringId) || null
+    , [recurring, selectedRecurringId]);
+
+    const selectedTransfer = useMemo(() =>
+        transfers.find(t => t.id === selectedTransferId) || null
+    , [transfers, selectedTransferId]);
+
+    // Automatically close edit modals if the selected item is deleted (becomes null)
+    useEffect(() => {
+        if (modal === 'editTransaction' && !selectedTransaction) {
+            setModal(null);
+        }
+        if (modal === 'editRecurring' && !selectedRecurring) {
+            setModal(null);
+        }
+        if (modal === 'editTransfer' && !selectedTransfer) {
+            setModal(null);
+        }
+    }, [modal, selectedTransaction, selectedRecurring, selectedTransfer]);
 
     // Feature State
     const [showOnboarding, setShowOnboarding] = useState(false);
@@ -939,7 +969,7 @@ const App: React.FC = () => {
         setFocusedInvoice({ cardId, month });
         setCurrentPage('dashboard');
         // Close the transaction detail modal as we navigate away
-        setSelectedTransaction(null);
+        setSelectedTransactionId(null);
     };
 
     const handleUnpayInvoice = async (details: UnpayInvoiceDetails) => {
@@ -1128,7 +1158,7 @@ const App: React.FC = () => {
             if (error) throw error;
 
             addToast('Transação excluída com sucesso!', 'success');
-            setSelectedTransaction(null);
+            setSelectedTransactionId(null);
             supabaseData.refetch(false);
         } catch (error) {
             console.error('Erro ao excluir transação:', error);
@@ -1630,11 +1660,11 @@ const App: React.FC = () => {
                 transactions={transactions} filters={filters} accounts={accounts} cards={cards} transfers={transfers}
                 recurring={recurring} categories={categories} getCategoryName={getCategoryName}
                 getInstallmentDueDate={getInstallmentDueDate} addToast={addToast} onPayInvoice={handlePayInvoice}
-                onUnpayInvoice={handleUnpayInvoice} onAddTransaction={() => {setSelectedTransaction(null); setModal('addTransaction')}}
-                onViewTransaction={(tx) => setSelectedTransaction(tx)}
-                onAddRecurring={() => {setSelectedRecurring(null); setModal('addRecurring')}} onEditRecurring={(item) => {setSelectedRecurring(item); setModal('editRecurring')}}
+                onUnpayInvoice={handleUnpayInvoice} onAddTransaction={() => {setSelectedTransactionId(null); setModal('addTransaction')}}
+                onViewTransaction={(tx) => setSelectedTransactionId(tx.id)}
+                onAddRecurring={() => {setSelectedRecurringId(null); setModal('addRecurring')}} onEditRecurring={(item) => {setSelectedRecurringId(item.id); setModal('editRecurring')}}
                 onUpdateRecurring={setRecurring as any} onRemoveRecurring={handleDeleteRecurring}
-                onAddTransfer={() => {setSelectedTransfer(null); setModal('addTransfer')}} onEditTransfer={(t) => {setSelectedTransfer(t); setModal('editTransfer')}}
+                onAddTransfer={() => {setSelectedTransferId(null); setModal('addTransfer')}} onEditTransfer={(t) => {setSelectedTransferId(t.id); setModal('editTransfer')}}
                 onDeleteTransfer={handleDeleteTransfer} onOpenFilter={() => setModal('filters')}
                 ownerProfile={ownerProfile} isLoading={isLoading}
                 focusedInvoice={focusedInvoice} setFocusedInvoice={setFocusedInvoice}
@@ -1715,13 +1745,13 @@ const App: React.FC = () => {
             </div>
             
             {/* Modals */}
-            <TransactionForm isOpen={modal === 'addTransaction' || modal === 'editTransaction'} onClose={() => {setModal(null); setSelectedTransaction(null)}} onSubmit={handleTransactionSubmit} transaction={selectedTransaction} accounts={accounts} cards={cards} categories={categories} isLoading={isLoading} />
-            <TransactionDetailModal transaction={selectedTransaction} onClose={() => setSelectedTransaction(null)} onEdit={(tx) => {setSelectedTransaction(tx); setModal('editTransaction')}} onDelete={handleDeleteTransaction} onPay={(details) => setPayingInstallment(details)} onUnpay={handleUnpayInstallment} onSettle={(tx) => { setSettlingTransaction(tx); setSelectedTransaction(null); }} getInstallmentDueDate={getInstallmentDueDate} getCategoryName={getCategoryName} accounts={accounts} cards={cards} onFocusInvoice={handleFocusInvoice} />
+            <TransactionForm isOpen={modal === 'addTransaction' || modal === 'editTransaction'} onClose={() => {setModal(null); setSelectedTransactionId(null)}} onSubmit={handleTransactionSubmit} transaction={selectedTransaction} accounts={accounts} cards={cards} categories={categories} isLoading={isLoading} />
+            <TransactionDetailModal transaction={selectedTransaction} onClose={() => setSelectedTransactionId(null)} onEdit={(tx) => {setSelectedTransactionId(tx.id); setModal('editTransaction')}} onDelete={handleDeleteTransaction} onPay={(details) => setPayingInstallment(details)} onUnpay={handleUnpayInstallment} onSettle={(tx) => { setSettlingTransactionId(tx.id); setSelectedTransactionId(null); }} getInstallmentDueDate={getInstallmentDueDate} getCategoryName={getCategoryName} accounts={accounts} cards={cards} onFocusInvoice={handleFocusInvoice} />
             <PaymentModal payingInstallment={payingInstallment} onClose={() => setPayingInstallment(null)} onConfirm={handlePayInstallment} />
-            <SettleInstallmentsModal transaction={settlingTransaction} onClose={() => setSettlingTransaction(null)} onConfirm={handleSettleInstallments} getInstallmentDueDate={getInstallmentDueDate} />
+            <SettleInstallmentsModal transaction={settlingTransaction} onClose={() => setSettlingTransactionId(null)} onConfirm={handleSettleInstallments} getInstallmentDueDate={getInstallmentDueDate} />
             <TransactionFilterModal isOpen={modal === 'filters'} onClose={() => setModal(null)} onApply={setFilters} onClear={() => setFilters({ description: '', categoryId: '', accountId: '', cardId: '', status: 'all', startDate: '', endDate: '' })} initialFilters={filters} accounts={accounts} cards={cards} categories={categories} />
-            <Dialog open={modal === 'addRecurring' || modal === 'editRecurring'} onOpenChange={() => {setModal(null); setSelectedRecurring(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editRecurring' ? 'Editar' : 'Adicionar'} Recorrência</DialogTitle></DialogHeader><RecurringForm recurringItem={selectedRecurring} onAdd={handleRecurringAdd} onUpdate={handleRecurringUpdate} accounts={accounts} cards={cards} categories={categories} onClose={() => setModal(null)} isLoading={isLoading} addXp={addXp} /></DialogContent></Dialog>
-            <Dialog open={modal === 'addTransfer' || modal === 'editTransfer'} onOpenChange={() => {setModal(null); setSelectedTransfer(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editTransfer' ? 'Editar' : 'Nova'} Transferência</DialogTitle></DialogHeader><TransferForm accounts={accounts} transfer={selectedTransfer} onTransfer={onAddTransfer} onUpdate={(t) => {setTransfers(p=>p.map(tr=>tr.id===t.id?t:tr)); setModal(null)}} onDismiss={() => setModal(null)} onError={addToast} isLoading={isLoading}/></DialogContent></Dialog>
+            <Dialog open={modal === 'addRecurring' || modal === 'editRecurring'} onOpenChange={() => {setModal(null); setSelectedRecurringId(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editRecurring' ? 'Editar' : 'Adicionar'} Recorrência</DialogTitle></DialogHeader><RecurringForm recurringItem={selectedRecurring} onAdd={handleRecurringAdd} onUpdate={handleRecurringUpdate} accounts={accounts} cards={cards} categories={categories} onClose={() => setModal(null)} isLoading={isLoading} addXp={addXp} /></DialogContent></Dialog>
+            <Dialog open={modal === 'addTransfer' || modal === 'editTransfer'} onOpenChange={() => {setModal(null); setSelectedTransferId(null);}}><DialogContent><DialogHeader><DialogTitle>{modal === 'editTransfer' ? 'Editar' : 'Nova'} Transferência</DialogTitle></DialogHeader><TransferForm accounts={accounts} transfer={selectedTransfer} onTransfer={onAddTransfer} onUpdate={(t) => {setTransfers(p=>p.map(tr=>tr.id===t.id?t:tr)); setModal(null)}} onDismiss={() => setModal(null)} onError={addToast} isLoading={isLoading}/></DialogContent></Dialog>
             <Dialog open={modal === 'accounts'} onOpenChange={() => setModal(null)}><DialogContent className="w-full"><DialogHeader><DialogTitle>Contas</DialogTitle></DialogHeader>{user && <AccountList accounts={accounts} setAccounts={setAccounts} adjustAccountBalance={adjustAccountBalance} setTransactions={setTransactions} addToast={addToast} onConfirmDelete={(acc) => {}} userId={user.id} transactions={transactions} onDataNeedsRefresh={() => supabaseData.refetch(false)} />}{user && <AccountForm setAccounts={setAccounts} setTransactions={setTransactions} userId={user.id} addToast={addToast} addXp={addXp} />}</DialogContent></Dialog>
             <Dialog open={modal === 'cards'} onOpenChange={() => setModal(null)}><DialogContent className="w-full"><DialogHeader><DialogTitle>Cartões</DialogTitle></DialogHeader><CardList cards={cards} setCards={setCards} transactions={transactions} addToast={addToast} onConfirmDelete={(c) => {}} accounts={accounts}/>{user && <CardForm setCards={setCards} accounts={accounts} addToast={addToast} userId={user.id} addXp={addXp} />}</DialogContent></Dialog>
             <Dialog open={modal === 'categories'} onOpenChange={() => setModal(null)}><DialogContent className="flex flex-col"><DialogHeader><DialogTitle>Categorias</DialogTitle></DialogHeader>{user && <CategoryManager categories={categories} setCategories={setCategories} transactions={transactions} recurring={recurring} userId={user.id} addToast={addToast} />}</DialogContent></Dialog>
