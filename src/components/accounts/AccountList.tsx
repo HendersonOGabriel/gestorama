@@ -49,20 +49,47 @@ const AccountList: React.FC<AccountListProps> = ({ accounts, setAccounts, adjust
       if (delta !== 0) {
         const isIncome = delta > 0;
         
-        // Create a "transfer" record
-        const { error: transferError } = await supabase
-          .from('transfers')
-          .insert({
-            // If income, it's coming from an external source TO the current account
-            // If expense, it's going FROM the current account TO an external destination
-            from_account: isIncome ? null : accountId,
-            to_account: isIncome ? accountId : null,
-            amount: Math.abs(delta),
-            date: new Date().toISOString().slice(0, 10),
-            user_id: userId
-          });
+        // Create a transaction record for "Internal Adjustment"
+        const dateStr = new Date().toISOString().slice(0, 10);
 
-        if (transferError) throw transferError;
+        const { data: newTx, error: txError } = await supabase
+          .from('transactions')
+          .insert({
+            description: 'Ajuste de Saldo',
+            amount: Math.abs(delta),
+            date: dateStr,
+            installments: 1,
+            type: 'cash',
+            is_income: isIncome,
+            person: 'Ajuste Interno',
+            account_id: accountId,
+            card_id: null,
+            category_id: null,
+            paid: true,
+            user_id: userId
+          })
+          .select()
+          .single();
+
+        if (txError) throw txError;
+
+        // Create installment record
+        if (newTx) {
+          const installment = buildInstallments(dateStr, Math.abs(delta), 1)[0];
+          const { error: instError } = await supabase
+            .from('installments')
+            .insert({
+              transaction_id: newTx.id,
+              installment_number: installment.installmentNumber,
+              amount: installment.amount,
+              posting_date: installment.postingDate,
+              paid: true,
+              payment_date: dateStr,
+              paid_amount: Math.abs(delta)
+            });
+
+          if (instError) throw instError;
+        }
 
         // Directly update the account's balance
         const { error: balanceError } = await supabase
