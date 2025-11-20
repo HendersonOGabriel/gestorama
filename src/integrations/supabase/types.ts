@@ -534,7 +534,7 @@ export type Database = {
           amount: number
           created_at: string
           date: string
-          from_account: string
+          from_account: string | null
           id: string
           to_account: string
           user_id: string
@@ -543,7 +543,7 @@ export type Database = {
           amount: number
           created_at?: string
           date: string
-          from_account: string
+          from_account: string | null
           id?: string
           to_account: string
           user_id: string
@@ -552,7 +552,7 @@ export type Database = {
           amount?: number
           created_at?: string
           date?: string
-          from_account?: string
+          from_account?: string | null
           id?: string
           to_account?: string
           user_id?: string
